@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
-from fastapi import FastAPI
+import logging
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .core.config import settings
 from .routes import admin, analytics, auth, chains, checkpoints, receipts, verify, webhooks
 from .schemas.schemas import HealthResponse
+
+logger = logging.getLogger("pruv.api")
 
 app = FastAPI(
     title="pruv API",
@@ -17,7 +22,7 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# CORS
+# CORS — explicit methods and headers, no wildcards
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins or [
@@ -27,9 +32,20 @@ app.add_middleware(
         "http://localhost:3001",
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Request-ID"],
 )
+
+
+# Global exception handler — never leak stack traces
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.exception("Unhandled exception on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
 
 # Routes
 app.include_router(auth.router)

@@ -7,7 +7,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..core.dependencies import get_current_user
+from ..core.dependencies import check_rate_limit, get_current_user
+from ..core.rate_limit import RateLimitResult
 from ..schemas.schemas import CertificateResponse, SharedChainResponse
 from ..services.chain_service import chain_service
 
@@ -18,6 +19,7 @@ router = APIRouter(tags=["verification"])
 async def get_certificate(
     chain_id: str,
     user: dict[str, Any] = Depends(get_current_user),
+    _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Get a verification certificate for a chain."""
     chain = chain_service.get_chain(chain_id, user["id"])
@@ -39,7 +41,7 @@ async def get_certificate(
 
 @router.get("/v1/shared/{share_id}", response_model=SharedChainResponse)
 async def get_shared_chain(share_id: str):
-    """Get a publicly shared chain."""
+    """Get a publicly shared chain. Intentionally public."""
     result = chain_service.get_shared_chain(share_id)
     if not result:
         raise HTTPException(status_code=404, detail="Shared chain not found")
