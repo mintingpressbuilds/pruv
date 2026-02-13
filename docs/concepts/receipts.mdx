@@ -1,0 +1,207 @@
+---
+title: "Receipts"
+description: "XYReceipt provides a compact, hashable summary of a verified chain of operations. Use receipts for auditing, sharing, and compliance."
+---
+
+# Receipts
+
+An `XYReceipt` is a compact summary of a completed chain of operations. Think of it as a **cryptographic certificate of work**: it captures what was done, when, how many steps, and whether everything verified.
+
+## Receipt Structure
+
+```python
+@dataclass
+class XYReceipt:
+    id: str                         # Unique receipt identifier
+    task: str                       # Description of the task
+    started: float                  # Unix timestamp of first entry
+    completed: float                # Unix timestamp of last entry
+    duration: float                 # Total duration in seconds
+
+    chain_id: str                   # ID of the source chain
+    entry_count: int                # Number of entries in the chain
+
+    first_x: str                    # X value of the first entry ("GENESIS")
+    final_y: str                    # Y value of the last entry
+    root_xy: str                    # XY proof of the first entry
+    head_xy: str                    # XY proof of the last entry
+
+    all_verified: bool              # Whether the entire chain verified
+    all_signatures_valid: bool      # Whether all signatures are valid
+
+    agent_type: str | None          # Type of agent (if AI-generated)
+    thinking: ThinkingPhase | None  # AI reasoning data (if applicable)
+    metadata: dict                  # Arbitrary metadata
+```
+
+## Creating a Receipt
+
+Receipts are typically created by `xy_wrap` after a wrapped operation completes. You can also create them manually:
+
+```python
+from xycore import XYReceipt
+
+receipt = XYReceipt(
+    id="r_abc123def456",
+    task="deploy-my-app-v2.0",
+    started=1706745600.0,
+    completed=1706745645.2,
+    duration=45.2,
+    chain_id=chain.id,
+    entry_count=chain.length,
+    first_x=chain.entries[0].x,
+    final_y=chain.entries[-1].y,
+    root_xy=chain.root,
+    head_xy=chain.entries[-1].xy,
+    all_verified=True,
+    all_signatures_valid=True,
+    metadata={"environment": "production"},
+)
+```
+
+## The Receipt Hash
+
+Every receipt has a deterministic `hash` property computed from its core fields:
+
+```python
+print(receipt.hash)
+# "8f3a2e1c5d7b4f9a6c8d2b7e1f3a5c9d..."
+```
+
+The hash is computed from:
+
+```python
+data = {
+    "id": self.id,
+    "task": self.task,
+    "chain_id": self.chain_id,
+    "entry_count": self.entry_count,
+    "first_x": self.first_x,
+    "final_y": self.final_y,
+    "root_xy": self.root_xy,
+    "head_xy": self.head_xy,
+    "all_verified": self.all_verified,
+}
+canonical = json.dumps(data, sort_keys=True, separators=(",", ":"))
+return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+```
+
+This hash uniquely identifies the verified work. Two receipts with the same hash represent identical verified operations.
+
+## AI Agent Receipts
+
+When wrapping AI agents, receipts can include the agent's thinking process:
+
+```python
+from xycore import ThinkingPhase
+
+thinking = ThinkingPhase(
+    prompt="Deploy the application to production",
+    reasoning="I need to run tests first, then build, then deploy...",
+    plan=["run tests", "build image", "deploy to k8s", "verify health"],
+    duration=2.3,
+)
+
+receipt = XYReceipt(
+    ...,
+    agent_type="langchain",
+    thinking=thinking,
+)
+```
+
+The `ThinkingPhase` captures:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `prompt` | `str` | The original prompt given to the agent |
+| `reasoning` | `str \| None` | The agent's reasoning process |
+| `plan` | `list[str]` | Steps the agent planned to take |
+| `duration` | `float` | Time spent thinking (seconds) |
+
+## Serialization
+
+```python
+# To dictionary
+data = receipt.to_dict()
+
+# Includes all fields plus the computed hash:
+# {
+#   "id": "r_abc123def456",
+#   "task": "deploy-my-app-v2.0",
+#   "hash": "8f3a2e1c5d7b...",
+#   ...
+# }
+
+# From dictionary
+restored = XYReceipt.from_dict(data)
+```
+
+## Receipts via xy_wrap
+
+The easiest way to generate receipts is through `xy_wrap`:
+
+```python
+from pruv import xy_wrap
+
+@xy_wrap(chain_name="deploy-pipeline")
+async def deploy(task: str):
+    # ... deployment logic ...
+    return {"version": "2.0"}
+
+result = await deploy("deploy my app")
+
+# The receipt is automatically generated
+print(result.receipt.id)
+print(result.receipt.hash)
+print(result.receipt.all_verified)  # True
+print(result.receipt.entry_count)   # Number of entries created
+```
+
+## Cloud Receipts
+
+Upload receipts to pruv cloud for persistent storage and sharing:
+
+```python
+from pruv import CloudClient
+
+client = CloudClient(api_key="pv_live_your_key")
+await client.upload_receipt(receipt)
+```
+
+Cloud-stored receipts can be accessed via the API:
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key" \
+  https://api.pruv.dev/v1/receipts/{receipt_id}
+```
+
+## Receipt Badges
+
+Get an embeddable SVG badge for any receipt:
+
+```
+https://api.pruv.dev/v1/receipts/{receipt_id}/badge
+```
+
+This returns an SVG badge showing the verification status, suitable for embedding in README files, dashboards, or reports.
+
+## Use Cases for Receipts
+
+| Use Case | How Receipts Help |
+|----------|-------------------|
+| **Audit Compliance** | Provide auditors with a cryptographic summary of verified operations |
+| **Client Reporting** | Share proof of work completion with clients |
+| **CI/CD Pipelines** | Attach receipt hashes to deployment artifacts |
+| **Legal Evidence** | Prove that specific operations occurred in sequence |
+| **AI Agent Oversight** | Document what an AI agent did and verify it was correct |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Verification" icon="shield-check" href="/concepts/verification">
+    How pruv verifies chain integrity.
+  </Card>
+  <Card title="Cloud Receipts API" icon="cloud" href="/cloud/receipts-api">
+    Store and retrieve receipts via the cloud API.
+  </Card>
+</CardGroup>

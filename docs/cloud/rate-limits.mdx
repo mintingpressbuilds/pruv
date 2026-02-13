@@ -1,0 +1,169 @@
+---
+title: "Rate Limits"
+description: "Understand rate limits for the pruv cloud API. Limits vary by plan and are enforced per API key."
+---
+
+# Rate Limits
+
+The pruv cloud API enforces rate limits to ensure fair usage and system stability. Limits are applied per API key using a sliding window algorithm.
+
+## Limits by Plan
+
+| Plan | Requests per Minute | Entries per Month | Price |
+|------|:---:|:---:|:---:|
+| **Free** | 60 | 1,000 | $0 |
+| **Pro** | 300 | 50,000 | Contact us |
+| **Team** | 1,000 | 500,000 | Contact us |
+| **Enterprise** | 10,000 | Unlimited | Contact us |
+
+## Rate Limit Headers
+
+Every API response includes rate limit headers:
+
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 58
+X-RateLimit-Reset: 1706745660
+```
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Maximum requests per minute for your plan |
+| `X-RateLimit-Remaining` | Remaining requests in the current window |
+| `X-RateLimit-Reset` | Unix timestamp when the window resets |
+
+## Rate Limit Exceeded
+
+When you exceed the rate limit, the API returns HTTP 429:
+
+```json
+{
+  "detail": "Rate limit exceeded"
+}
+```
+
+The response includes the rate limit headers so you know when to retry.
+
+## Handling Rate Limits
+
+### Python SDK (Automatic)
+
+The `CloudClient` automatically handles rate limits with exponential backoff:
+
+```python
+from pruv import CloudClient
+
+client = CloudClient(
+    api_key="pv_live_your_key",
+    max_retries=3,
+)
+
+# Automatically retries on 429 with exponential backoff
+result = await client.upload_chain(chain)
+```
+
+The retry delays are:
+- 1st retry: 2 seconds
+- 2nd retry: 4 seconds
+- 3rd retry: 8 seconds
+
+After all retries are exhausted, the request is queued offline for later.
+
+### Manual Handling
+
+```python
+import asyncio
+
+async def upload_with_backoff(client, chain, max_retries=3):
+    for attempt in range(max_retries + 1):
+        result = await client.upload_chain(chain)
+        if result is not None:
+            return result
+        if attempt < max_retries:
+            wait = 2 ** (attempt + 1)
+            await asyncio.sleep(wait)
+    return None
+```
+
+### Batch Operations
+
+To minimize API calls, use batch endpoints:
+
+```python
+# Instead of 100 individual calls:
+for entry in entries:
+    await client.append_entry(chain_id, entry)
+
+# Use a single batch call:
+# POST /v1/chains/{chain_id}/entries/batch
+# (Up to 100 entries per batch)
+```
+
+## Entry Limits
+
+In addition to request rate limits, each plan has a monthly entry limit:
+
+| Plan | Entries per Month |
+|------|:---:|
+| Free | 1,000 |
+| Pro | 50,000 |
+| Team | 500,000 |
+| Enterprise | Unlimited |
+
+Entry limits count the total number of entries appended across all chains. The counter resets on the first of each month.
+
+When you reach your entry limit:
+
+```json
+{
+  "detail": "Monthly entry limit exceeded",
+  "code": "ENTRY_LIMIT_EXCEEDED"
+}
+```
+
+## Sliding Window Algorithm
+
+Rate limits use a sliding window algorithm:
+- The window is 60 seconds
+- Each request is timestamped
+- Requests older than 60 seconds are removed from the window
+- If the window contains fewer than the limit, the request is allowed
+
+This provides smoother rate limiting than fixed windows.
+
+## Monitoring Usage
+
+Check your current usage on the [pruv dashboard](https://app.pruv.dev) or via the API:
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key" \
+  https://api.pruv.dev/v1/usage
+```
+
+## Requesting Higher Limits
+
+For higher limits, upgrade your plan or contact us for Enterprise pricing at [hello@pruv.dev](mailto:hello@pruv.dev).
+
+## Offline Queue
+
+When rate limited or offline, the Python SDK queues requests to disk:
+
+```python
+# Requests are automatically queued to .pruv/queue/
+client = CloudClient(api_key="pv_live_your_key")
+
+# When back online or rate limit resets:
+sent = await client.flush_queue()
+print(f"Flushed {sent} queued requests")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/cloud/authentication">
+    Managing API keys and scopes.
+  </Card>
+  <Card title="Cloud Sync Guide" icon="cloud" href="/guides/cloud-sync">
+    Best practices for cloud sync.
+  </Card>
+</CardGroup>

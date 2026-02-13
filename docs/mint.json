@@ -1,0 +1,146 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "pruv",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#10B981",
+    "light": "#34D399",
+    "dark": "#059669",
+    "anchors": {
+      "from": "#10B981",
+      "to": "#059669"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "API Status",
+      "url": "https://status.pruv.dev"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Dashboard",
+    "url": "https://app.pruv.dev"
+  },
+  "tabs": [
+    {
+      "name": "API Reference",
+      "url": "cloud"
+    },
+    {
+      "name": "SDKs",
+      "url": "reference"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/pruv-dev/pruv"
+    },
+    {
+      "name": "Community",
+      "icon": "discord",
+      "url": "https://discord.gg/pruv"
+    },
+    {
+      "name": "API Reference",
+      "icon": "square-terminal",
+      "url": "https://api.pruv.dev"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Get Started",
+      "pages": [
+        "introduction",
+        "getting-started/installation",
+        "getting-started/quickstart",
+        "getting-started/first-chain",
+        "getting-started/concepts"
+      ]
+    },
+    {
+      "group": "Core Concepts",
+      "pages": [
+        "concepts/xy-primitive",
+        "concepts/chains",
+        "concepts/entries",
+        "concepts/receipts",
+        "concepts/verification",
+        "concepts/signatures",
+        "concepts/redaction",
+        "concepts/checkpoints"
+      ]
+    },
+    {
+      "group": "Industries",
+      "pages": [
+        "industries/overview",
+        "industries/ai-agents",
+        "industries/devops",
+        "industries/finance",
+        "industries/healthcare",
+        "industries/government",
+        "industries/supply-chain",
+        "industries/legal"
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "guides/wrapping-agents",
+        "guides/scanning-projects",
+        "guides/checkpoint-restore",
+        "guides/approval-gates",
+        "guides/cloud-sync",
+        "guides/digital-signatures",
+        "guides/cli-reference"
+      ]
+    },
+    {
+      "group": "Cloud API",
+      "pages": [
+        "cloud/overview",
+        "cloud/authentication",
+        "cloud/chains-api",
+        "cloud/entries-api",
+        "cloud/checkpoints-api",
+        "cloud/receipts-api",
+        "cloud/rate-limits"
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages": [
+        "reference/xycore-api",
+        "reference/pruv-sdk-api",
+        "reference/environment-variables",
+        "reference/changelog"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/pruv-dev/pruv",
+    "discord": "https://discord.gg/pruv",
+    "x": "https://x.com/pruvdev"
+  },
+  "api": {
+    "baseUrl": "https://api.pruv.dev",
+    "auth": {
+      "method": "bearer"
+    }
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true
+  },
+  "analytics": {
+    "posthog": {
+      "apiKey": ""
+    }
+  }
+}

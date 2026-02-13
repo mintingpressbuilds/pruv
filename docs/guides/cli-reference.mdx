@@ -1,0 +1,232 @@
+---
+title: "CLI Reference"
+description: "Complete reference for the pruv command-line interface. Scan projects, verify chains, export data, manage checkpoints, and upload to cloud."
+---
+
+# CLI Reference
+
+The pruv CLI provides command-line access to scanning, verification, export, undo, and cloud upload.
+
+## Installation
+
+The CLI is installed with the `pruv` package:
+
+```bash
+pip install pruv
+pruv --version
+# pruv, version 1.0.0
+```
+
+## Commands
+
+### pruv scan
+
+Scan a project directory for files, imports, frameworks, and services.
+
+```bash
+pruv scan [DIRECTORY] [OPTIONS]
+```
+
+| Option | Description |
+|--------|-------------|
+| `DIRECTORY` | Directory to scan (default: `.`) |
+| `--output, -o FILE` | Write output to a file |
+| `--json-output` | Output as JSON |
+| `--include-contents` | Include file contents in output |
+
+**Examples:**
+
+```bash
+# Basic scan
+pruv scan
+
+# Scan a specific directory
+pruv scan ./my-project
+
+# JSON output
+pruv scan ./my-project --json-output
+
+# Save to file
+pruv scan ./my-project --output scan.json --json-output
+
+# Full scan with contents
+pruv scan ./my-project --include-contents --output full-scan.json
+```
+
+**Output:**
+
+```
+pruv scan: ./my-project
+  Files: 42
+  Lines: 3847
+  Hash:  a3f8c2e1d4b75e9f2a6c8d4b7e1f3a5c9d2b8e4f6a1c7d3b9e5f2a8c4d6b
+  Frameworks: fastapi, react
+  Services: postgresql, redis
+  Env vars: 8
+```
+
+### pruv verify
+
+Verify a chain file's integrity.
+
+```bash
+pruv verify CHAIN_FILE [OPTIONS]
+```
+
+| Option | Description |
+|--------|-------------|
+| `CHAIN_FILE` | Path to the chain JSON file |
+| `--json-output` | Output as JSON |
+
+**Examples:**
+
+```bash
+# Verify a chain
+pruv verify .pruv/a1b2c3d4e5f6.json
+
+# JSON output
+pruv verify .pruv/a1b2c3d4e5f6.json --json-output
+```
+
+**Output (success):**
+
+```
+Chain verified: 42 entries, all valid
+```
+
+**Output (failure):**
+
+```
+Chain BROKEN at entry 17
+```
+
+**JSON output:**
+
+```json
+{
+  "valid": true,
+  "length": 42
+}
+```
+
+### pruv export
+
+Export a chain to JSON or CSV format.
+
+```bash
+pruv export CHAIN_FILE [OPTIONS]
+```
+
+| Option | Description |
+|--------|-------------|
+| `CHAIN_FILE` | Path to the chain JSON file |
+| `--format, -f FORMAT` | Output format: `json` or `csv` (default: `json`) |
+| `--output, -o FILE` | Write output to a file |
+
+**Examples:**
+
+```bash
+# Export as JSON (default)
+pruv export .pruv/a1b2c3d4e5f6.json
+
+# Export as CSV
+pruv export .pruv/a1b2c3d4e5f6.json --format csv
+
+# Save to file
+pruv export .pruv/a1b2c3d4e5f6.json --format csv --output chain.csv
+```
+
+**CSV output:**
+
+```csv
+index,timestamp,operation,x,y,xy,status
+0,1706745600.0,initialize,GENESIS,a3f8c2e1...,xy_7e2f4a8c...,success
+1,1706745601.0,configure,a3f8c2e1...,b5d9e3f2...,xy_9c4e6b2d...,success
+```
+
+### pruv undo
+
+Restore a chain to a checkpoint state.
+
+```bash
+pruv undo [OPTIONS]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--chain CHAIN_ID` | Chain ID (required) |
+| `--last` | Undo to last checkpoint |
+| `--to CHECKPOINT_ID` | Restore to a specific checkpoint |
+| `--preview` | Preview only, do not restore |
+| `--storage-dir DIR` | Storage directory (default: `.pruv`) |
+
+**Examples:**
+
+```bash
+# Undo to last checkpoint
+pruv undo --chain a1b2c3d4e5f6 --last
+
+# Restore to specific checkpoint
+pruv undo --chain a1b2c3d4e5f6 --to cp_7e2f4a8c
+
+# Preview restore
+pruv undo --chain a1b2c3d4e5f6 --to cp_7e2f4a8c --preview
+```
+
+### pruv upload
+
+Upload a project scan to pruv cloud.
+
+```bash
+pruv upload [DIRECTORY] [OPTIONS]
+```
+
+| Option | Description |
+|--------|-------------|
+| `DIRECTORY` | Directory to scan and upload (default: `.`) |
+| `--api-key KEY` | pruv API key (or set `PRUV_API_KEY`) |
+
+**Examples:**
+
+```bash
+# Upload using env var
+export PRUV_API_KEY=pv_live_your_key_here
+pruv upload ./my-project
+
+# Upload with explicit key
+pruv upload ./my-project --api-key pv_live_your_key_here
+```
+
+**Output:**
+
+```
+Uploaded: chain abc123def456
+```
+
+## Environment Variables
+
+The CLI respects these environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `PRUV_API_KEY` | API key for cloud operations |
+| `PRUV_AUTO_REDACT` | Enable/disable auto-redaction |
+| `PRUV_AUTO_CHECKPOINT` | Enable/disable auto-checkpointing |
+
+## Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success |
+| `1` | Error (file not found, verification failed, etc.) |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Scanning Projects" icon="magnifying-glass" href="/guides/scanning-projects">
+    Deep dive into project scanning.
+  </Card>
+  <Card title="Cloud Sync" icon="cloud" href="/guides/cloud-sync">
+    Upload chains and scans to pruv cloud.
+  </Card>
+</CardGroup>

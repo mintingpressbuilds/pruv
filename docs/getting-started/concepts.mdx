@@ -1,0 +1,247 @@
+---
+title: "Key Concepts"
+description: "Understand the core building blocks of pruv: chains, entries, the XY primitive, verification, and receipts."
+---
+
+# Key Concepts
+
+pruv is built on a small set of composable primitives. Understanding these concepts will help you use the system effectively.
+
+## The XY Primitive
+
+At the heart of pruv is the **XY primitive**: a cryptographic proof that a state transition occurred.
+
+```
+X (before) --[operation]--> Y (after) = XY (proof)
+```
+
+- **X**: Hash of the state before the operation
+- **Y**: Hash of the state after the operation
+- **XY**: A proof hash computed from X, the operation, Y, and the timestamp
+
+The XY proof format is `xy_{sha256_hex}`, for example:
+
+```
+xy_7e2f4a8c1d3b5e9f2a6c8d4b7e1f3a5c9d2b8e4f6a1c7d3b9e5f2a8c4d6b
+```
+
+<Tip>
+  The XY primitive is implemented in `xycore` with zero dependencies. It uses only Python's standard library `hashlib` and `json` modules.
+</Tip>
+
+[Learn more about the XY primitive](/concepts/xy-primitive)
+
+## Chains
+
+A **chain** (`XYChain`) is an ordered sequence of entries linked by their hashes:
+
+```
+Entry[0].x = "GENESIS"
+Entry[0].y = hash(state_0)
+
+Entry[1].x = Entry[0].y     <-- linked!
+Entry[1].y = hash(state_1)
+
+Entry[2].x = Entry[1].y     <-- linked!
+Entry[2].y = hash(state_2)
+```
+
+**The chain rule:** `Entry[N].x == Entry[N-1].y`. The first entry always starts with `x = "GENESIS"`.
+
+If any entry is modified, inserted, or removed, the chain breaks and verification fails.
+
+[Learn more about chains](/concepts/chains)
+
+## Entries
+
+An **entry** (`XYEntry`) is a single link in the chain. It captures:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `index` | `int` | Position in the chain (0-based) |
+| `timestamp` | `float` | Unix timestamp when created |
+| `operation` | `str` | Name of the operation performed |
+| `x` | `str` | Hash of state before (or "GENESIS") |
+| `y` | `str` | Hash of state after |
+| `xy` | `str` | XY proof hash (`xy_{sha256}`) |
+| `x_state` | `dict \| None` | Optional: full state before |
+| `y_state` | `dict \| None` | Optional: full state after |
+| `status` | `str` | "success", "failed", or "pending" |
+| `metadata` | `dict` | Arbitrary metadata |
+| `signature` | `str \| None` | Optional Ed25519 signature |
+
+[Learn more about entries](/concepts/entries)
+
+## Verification
+
+**Verification** walks the chain and checks two things for every entry:
+
+1. **XY proof check**: The `xy` hash matches `compute_xy(x, operation, y, timestamp)`
+2. **Chain link check**: `Entry[N].x == Entry[N-1].y` (or `"GENESIS"` for index 0)
+
+```python
+valid, break_index = chain.verify()
+# valid=True, break_index=None  -- all good
+# valid=False, break_index=3    -- entry 3 is tampered
+```
+
+Verification is pure computation with no network calls. It works offline, instantly.
+
+[Learn more about verification](/concepts/verification)
+
+## Receipts
+
+A **receipt** (`XYReceipt`) summarizes a completed chain of operations. Think of it as a cryptographic certificate of work.
+
+```python
+receipt = XYReceipt(
+    id="abc123",
+    task="deploy-v1.2.3",
+    chain_id=chain.id,
+    entry_count=chain.length,
+    first_x=chain.entries[0].x,
+    final_y=chain.entries[-1].y,
+    root_xy=chain.root,
+    head_xy=chain.entries[-1].xy,
+    all_verified=True,
+    ...
+)
+```
+
+Receipts include a deterministic `hash` property that uniquely identifies the verified work.
+
+[Learn more about receipts](/concepts/receipts)
+
+## Signatures
+
+pruv supports **Ed25519 digital signatures** on individual entries. Signatures prove who created or approved each entry.
+
+```python
+from xycore import generate_keypair, sign_entry
+
+private_key, public_key = generate_keypair()
+
+chain.append(
+    operation="approve",
+    y_state={"approved": True},
+    private_key=private_key,
+    signer_id="alice@company.com",
+)
+```
+
+[Learn more about signatures](/concepts/signatures)
+
+## Redaction
+
+pruv automatically detects and redacts secrets in state dictionaries before they are stored. This includes API keys, passwords, tokens, and connection strings.
+
+```python
+chain.append(
+    operation="config",
+    y_state={
+        "api_key": "sk_live_abc123",      # --> "[REDACTED]"
+        "password": "super-secret",        # --> "[REDACTED]"
+        "database": "postgresql://...",     # safe, not a key pattern
+    }
+)
+```
+
+Redaction happens automatically when `auto_redact=True` (the default).
+
+[Learn more about redaction](/concepts/redaction)
+
+## Checkpoints
+
+**Checkpoints** are point-in-time snapshots of chain state. You can restore to any checkpoint, effectively undoing operations.
+
+```python
+from pruv import CheckpointManager
+
+manager = CheckpointManager(chain, project_dir="./my-project")
+cp = manager.create("before-migration")
+
+# ... operations happen ...
+
+# Preview what would change
+preview = manager.preview_restore(cp.id)
+print(f"Would roll back {preview.entries_to_rollback} entries")
+
+# Restore
+manager.restore(cp.id)
+```
+
+[Learn more about checkpoints](/concepts/checkpoints)
+
+## Scanning
+
+The **scanner** analyzes a project directory and produces a deterministic `Graph` containing:
+- All files with language detection
+- Import analysis
+- Environment variable detection
+- Framework detection (Next.js, FastAPI, Django, etc.)
+- Service detection (Stripe, AWS, PostgreSQL, etc.)
+
+```python
+from pruv import scan
+
+graph = scan("./my-project")
+print(graph.hash)  # Deterministic project fingerprint
+```
+
+[Learn more about scanning](/guides/scanning-projects)
+
+## Cloud Sync
+
+Optionally sync chains to **pruv cloud** at `api.pruv.dev` for:
+- Dashboard visualization
+- Team sharing
+- Verification certificates
+- Receipt badges
+
+```python
+from pruv import CloudClient
+
+client = CloudClient(api_key="pv_live_your_key")
+await client.upload_chain(chain)
+```
+
+[Learn more about cloud sync](/cloud/overview)
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────┐
+│                   pruv SDK                   │
+│  ┌─────────┐ ┌──────────┐ ┌──────────────┐ │
+│  │ Scanner │ │ xy_wrap  │ │ Checkpoints  │ │
+│  └─────────┘ └──────────┘ └──────────────┘ │
+│  ┌─────────┐ ┌──────────┐ ┌──────────────┐ │
+│  │  CLI    │ │ Approval │ │ Cloud Sync   │ │
+│  └─────────┘ └──────────┘ └──────────────┘ │
+├─────────────────────────────────────────────┤
+│             xycore (0 deps)                  │
+│  ┌─────────┐ ┌──────────┐ ┌──────────────┐ │
+│  │ XYChain │ │ XYEntry  │ │  XYReceipt   │ │
+│  └─────────┘ └──────────┘ └──────────────┘ │
+│  ┌─────────┐ ┌──────────┐ ┌──────────────┐ │
+│  │ Crypto  │ │ Signatures│ │ Redaction   │ │
+│  └─────────┘ └──────────┘ └──────────────┘ │
+│  ┌──────────────────────────────────────┐   │
+│  │           LocalStorage               │   │
+│  └──────────────────────────────────────┘   │
+└─────────────────────────────────────────────┘
+```
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="XY Primitive" icon="atom" href="/concepts/xy-primitive">
+    Deep dive into the cryptographic core
+  </Card>
+  <Card title="Chains" icon="link" href="/concepts/chains">
+    How chains link entries together
+  </Card>
+  <Card title="Wrap Agents" icon="robot" href="/guides/wrapping-agents">
+    Add proof to AI agents
+  </Card>
+</CardGroup>

@@ -1,0 +1,339 @@
+---
+title: "xycore API Reference"
+description: "Complete API reference for the xycore package. Zero-dependency cryptographic verification primitives."
+---
+
+# xycore API Reference
+
+`xycore` is the core package providing the XY primitive, chains, entries, receipts, signatures, redaction, and local storage. It has **zero external dependencies**.
+
+```bash
+pip install xycore
+```
+
+---
+
+## XYChain
+
+An ordered chain of XY entries with verification.
+
+```python
+from xycore import XYChain
+```
+
+### Constructor
+
+```python
+XYChain(
+    name: str = "default",
+    auto_redact: bool = True,
+    auto_checkpoint: bool = False,
+    checkpoint_interval: int = 20,
+)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `name` | `str` | `"default"` | Human-readable chain name |
+| `auto_redact` | `bool` | `True` | Auto-redact secrets in states |
+| `auto_checkpoint` | `bool` | `False` | Auto-checkpoint at intervals |
+| `checkpoint_interval` | `int` | `20` | Entries between auto-checkpoints |
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | `str` | Unique chain identifier (12-char hex) |
+| `name` | `str` | Chain name |
+| `length` | `int` | Number of entries |
+| `head` | `str` | Current Y value (or `"GENESIS"` if empty) |
+| `root` | `str \| None` | XY proof of the first entry |
+| `entries` | `list[XYEntry]` | All entries |
+
+### Methods
+
+#### `append(operation, y_state, ...)`
+
+```python
+def append(
+    self,
+    operation: str,
+    x_state: dict | None = None,
+    y_state: dict | None = None,
+    status: str = "success",
+    metadata: dict | None = None,
+    timestamp: float | None = None,
+    private_key: bytes | None = None,
+    signer_id: str | None = None,
+) -> XYEntry
+```
+
+Append a new entry. Returns the created `XYEntry`.
+
+#### `verify()`
+
+```python
+def verify(self) -> tuple[bool, int | None]
+```
+
+Verify the entire chain. Returns `(True, None)` if valid, `(False, break_index)` if broken.
+
+#### `verify_signatures()`
+
+```python
+def verify_signatures(self) -> tuple[bool, int | None]
+```
+
+Verify all signatures. Returns `(True, None)` if valid. Unsigned entries are skipped.
+
+#### `get_entry(index)`
+
+```python
+def get_entry(self, index: int) -> XYEntry | None
+```
+
+Get an entry by index. Returns `None` if out of range.
+
+#### `to_dict()`
+
+```python
+def to_dict(self) -> dict[str, Any]
+```
+
+Serialize the chain to a dictionary.
+
+#### `from_dict(data)` (classmethod)
+
+```python
+@classmethod
+def from_dict(cls, data: dict[str, Any]) -> XYChain
+```
+
+Deserialize a chain from a dictionary.
+
+---
+
+## XYEntry
+
+A single entry in an XY chain.
+
+```python
+from xycore import XYEntry
+```
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `index` | `int` | Position in chain (0-based) |
+| `timestamp` | `float` | Unix timestamp |
+| `operation` | `str` | Operation name |
+| `x` | `str` | State before hash (or `"GENESIS"`) |
+| `y` | `str` | State after hash |
+| `xy` | `str` | XY proof hash (`xy_{sha256}`) |
+| `x_state` | `dict \| None` | Full state before |
+| `y_state` | `dict \| None` | Full state after |
+| `status` | `str` | `"success"`, `"failed"`, or `"pending"` |
+| `verified` | `bool` | Whether verified |
+| `metadata` | `dict` | Arbitrary metadata |
+| `signature` | `str \| None` | Base64 Ed25519 signature |
+| `signer_id` | `str \| None` | Signer identifier |
+| `public_key` | `str \| None` | Base64 Ed25519 public key |
+
+### Methods
+
+#### `create(...)` (classmethod)
+
+```python
+@classmethod
+def create(
+    cls,
+    index: int,
+    operation: str,
+    x: str,
+    y: str,
+    x_state: dict | None = None,
+    y_state: dict | None = None,
+    status: str = "success",
+    metadata: dict | None = None,
+    timestamp: float | None = None,
+) -> XYEntry
+```
+
+Create a new entry, automatically computing the XY proof hash.
+
+#### `to_dict()` / `from_dict(data)`
+
+Serialize and deserialize entries.
+
+---
+
+## XYReceipt
+
+A receipt summarizing a completed chain.
+
+```python
+from xycore import XYReceipt
+```
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `str` | Unique receipt ID |
+| `task` | `str` | Task description |
+| `started` | `float` | Start timestamp |
+| `completed` | `float` | Completion timestamp |
+| `duration` | `float` | Duration in seconds |
+| `chain_id` | `str` | Source chain ID |
+| `entry_count` | `int` | Number of entries |
+| `first_x` | `str` | First entry's X value |
+| `final_y` | `str` | Last entry's Y value |
+| `root_xy` | `str` | First entry's XY proof |
+| `head_xy` | `str` | Last entry's XY proof |
+| `all_verified` | `bool` | Whether all entries verified |
+| `all_signatures_valid` | `bool` | Whether all signatures are valid |
+| `agent_type` | `str \| None` | Agent type (if AI) |
+| `thinking` | `ThinkingPhase \| None` | AI reasoning data |
+| `metadata` | `dict` | Arbitrary metadata |
+
+### Properties
+
+#### `hash`
+
+```python
+@property
+def hash(self) -> str
+```
+
+Deterministic SHA-256 hash of the receipt's core fields.
+
+---
+
+## ThinkingPhase
+
+AI agent reasoning data.
+
+```python
+from xycore import ThinkingPhase
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `prompt` | `str` | Original prompt |
+| `reasoning` | `str \| None` | Agent's reasoning |
+| `plan` | `list[str]` | Planned steps |
+| `duration` | `float` | Thinking duration (seconds) |
+
+---
+
+## Crypto Functions
+
+```python
+from xycore import hash_state, compute_xy, verify_entry, verify_chain
+```
+
+### `hash_state(state: dict) -> str`
+
+Hash a state dict using canonical JSON and SHA-256.
+
+### `compute_xy(x: str, operation: str, y: str, timestamp: float) -> str`
+
+Compute an XY proof hash. Returns `xy_{sha256_hex}`.
+
+### `verify_entry(entry: XYEntry) -> bool`
+
+Verify a single entry's XY proof.
+
+### `verify_chain(entries: list[XYEntry]) -> tuple[bool, int | None]`
+
+Verify an entire chain. Returns `(True, None)` or `(False, break_index)`.
+
+---
+
+## Signature Functions
+
+```python
+from xycore import generate_keypair, sign_entry, verify_signature
+```
+
+<Note>
+  Signatures require the optional `cryptography` package: `pip install xycore[signatures]`
+</Note>
+
+### `generate_keypair() -> tuple[bytes, bytes]`
+
+Generate an Ed25519 keypair. Returns `(private_key, public_key)` as raw bytes.
+
+### `sign_entry(entry: XYEntry, private_key: bytes, signer_id: str | None = None) -> XYEntry`
+
+Sign an entry with an Ed25519 private key. Modifies the entry in place.
+
+Signed message format: `{entry.x}:{entry.operation}:{entry.y}:{entry.xy}`
+
+### `verify_signature(entry: XYEntry) -> bool`
+
+Verify an entry's Ed25519 signature using the embedded public key.
+
+---
+
+## Redaction
+
+```python
+from xycore import redact_state
+```
+
+### `redact_state(state: Any) -> Any`
+
+Recursively redact secrets from a state object. Returns the redacted copy.
+
+Detects: API keys, passwords, tokens, credentials, and known patterns (Stripe, GitHub, AWS, pruv).
+
+---
+
+## LocalStorage
+
+```python
+from xycore import LocalStorage
+```
+
+### Constructor
+
+```python
+LocalStorage(directory: str | Path = ".pruv")
+```
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `save(chain)` | `Path` | Save chain to disk |
+| `load(chain_id)` | `XYChain` | Load chain from disk |
+| `list_chains()` | `list[dict]` | List all stored chains |
+| `delete(chain_id)` | `bool` | Delete a chain file |
+| `exists(chain_id)` | `bool` | Check if chain exists |
+
+---
+
+## Constants
+
+```python
+from xycore.chain import GENESIS
+# GENESIS = "GENESIS"
+```
+
+```python
+from xycore.redact import REDACTED
+# REDACTED = "[REDACTED]"
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="pruv SDK API" icon="book" href="/reference/pruv-sdk-api">
+    Full API reference for the pruv package.
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/getting-started/quickstart">
+    Get started with xycore in 5 minutes.
+  </Card>
+</CardGroup>

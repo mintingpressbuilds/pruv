@@ -1,0 +1,258 @@
+---
+title: "Entries API"
+description: "Append entries to chains, batch append multiple entries, and list entries via the pruv cloud API."
+---
+
+# Entries API
+
+The Entries API lets you append new entries to existing chains, batch-append multiple entries, and list entries with pagination.
+
+## Append an Entry
+
+Append a single entry to a chain. The server automatically computes the `x` value from the chain's current head and generates the XY proof.
+
+```bash
+curl -X POST https://api.pruv.dev/v1/chains/a1b2c3d4e5f6/entries \
+  -H "Authorization: Bearer pv_live_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "operation": "deploy",
+    "y_state": {
+      "environment": "production",
+      "version": "2.1.0",
+      "status": "live"
+    },
+    "status": "success",
+    "metadata": {
+      "deployer": "ci-bot",
+      "commit": "abc123f"
+    }
+  }'
+```
+
+### Request Body
+
+<ParamField body="operation" type="string" required>
+  Name of the operation (1-255 characters).
+</ParamField>
+
+<ParamField body="x_state" type="object">
+  State before the operation (for inspection).
+</ParamField>
+
+<ParamField body="y_state" type="object">
+  State after the operation (for inspection).
+</ParamField>
+
+<ParamField body="status" type="string" default="success">
+  Operation status: `"success"`, `"failed"`, or `"pending"`.
+</ParamField>
+
+<ParamField body="metadata" type="object" default={{}}>
+  Arbitrary metadata.
+</ParamField>
+
+<ParamField body="signature" type="string">
+  Base64-encoded Ed25519 signature (optional).
+</ParamField>
+
+<ParamField body="signer_id" type="string">
+  Human-readable signer identifier (optional).
+</ParamField>
+
+<ParamField body="public_key" type="string">
+  Base64-encoded Ed25519 public key (optional).
+</ParamField>
+
+### Response (201)
+
+```json
+{
+  "index": 5,
+  "timestamp": 1706745645.2,
+  "operation": "deploy",
+  "x": "b5d9e3f2a1c8d4b7...",
+  "y": "c7f1a4e6d3b9e5f2...",
+  "xy": "xy_2a8f5c1e7d4b9f3a...",
+  "x_state": null,
+  "y_state": {
+    "environment": "production",
+    "version": "2.1.0",
+    "status": "live"
+  },
+  "status": "success",
+  "verified": true,
+  "metadata": {
+    "deployer": "ci-bot",
+    "commit": "abc123f"
+  }
+}
+```
+
+**Python SDK:**
+
+```python
+from pruv import CloudClient
+
+client = CloudClient(api_key="pv_live_your_key")
+result = await client.append_entry("a1b2c3d4e5f6", entry)
+```
+
+## Batch Append
+
+Append up to 100 entries in a single request. Entries are appended in order.
+
+```bash
+curl -X POST https://api.pruv.dev/v1/chains/a1b2c3d4e5f6/entries/batch \
+  -H "Authorization: Bearer pv_live_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entries": [
+      {
+        "operation": "test",
+        "y_state": {"tests_passed": 142},
+        "status": "success"
+      },
+      {
+        "operation": "build",
+        "y_state": {"image": "app:v2.1.0"},
+        "status": "success"
+      },
+      {
+        "operation": "deploy",
+        "y_state": {"environment": "production"},
+        "status": "success"
+      }
+    ]
+  }'
+```
+
+### Request Body
+
+<ParamField body="entries" type="array" required>
+  Array of entry objects (1-100 entries). Each entry has the same fields as the single append endpoint.
+</ParamField>
+
+### Response (201)
+
+```json
+{
+  "entries": [
+    {
+      "index": 5,
+      "operation": "test",
+      "x": "...",
+      "y": "...",
+      "xy": "xy_...",
+      "status": "success"
+    },
+    {
+      "index": 6,
+      "operation": "build",
+      "x": "...",
+      "y": "...",
+      "xy": "xy_...",
+      "status": "success"
+    },
+    {
+      "index": 7,
+      "operation": "deploy",
+      "x": "...",
+      "y": "...",
+      "xy": "xy_...",
+      "status": "success"
+    }
+  ],
+  "total": 3
+}
+```
+
+## List Entries
+
+List entries in a chain with pagination.
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key" \
+  "https://api.pruv.dev/v1/chains/a1b2c3d4e5f6/entries?offset=0&limit=10"
+```
+
+### Query Parameters
+
+<ParamField query="offset" type="integer" default={0}>
+  Number of entries to skip.
+</ParamField>
+
+<ParamField query="limit" type="integer" default={100}>
+  Maximum entries to return (max: 100).
+</ParamField>
+
+### Response (200)
+
+```json
+{
+  "entries": [
+    {
+      "index": 0,
+      "timestamp": 1706745600.0,
+      "operation": "initialize",
+      "x": "GENESIS",
+      "y": "a3f8c2e1d4b7...",
+      "xy": "xy_7e2f4a8c1d3b...",
+      "status": "success",
+      "verified": true,
+      "metadata": {}
+    },
+    {
+      "index": 1,
+      "timestamp": 1706745601.0,
+      "operation": "configure",
+      "x": "a3f8c2e1d4b7...",
+      "y": "b5d9e3f2a1c8...",
+      "xy": "xy_9c4e6b2d8a1f...",
+      "status": "success",
+      "verified": true,
+      "metadata": {}
+    }
+  ],
+  "total": 2
+}
+```
+
+## Signed Entries
+
+Include signature data when appending entries:
+
+```bash
+curl -X POST https://api.pruv.dev/v1/chains/a1b2c3d4e5f6/entries \
+  -H "Authorization: Bearer pv_live_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "operation": "approve",
+    "y_state": {"approved": true},
+    "signature": "base64_encoded_ed25519_signature",
+    "signer_id": "alice@company.com",
+    "public_key": "base64_encoded_public_key"
+  }'
+```
+
+The API stores the signature data but does not validate it server-side. Signature verification is performed client-side using `verify_signature()`.
+
+## Error Responses
+
+| Code | Condition |
+|:----:|-----------|
+| `404` | Chain not found |
+| `400` | Invalid request body (missing required fields, too many entries in batch) |
+| `401` | Invalid API key |
+| `429` | Rate limit exceeded |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Checkpoints API" icon="clock-rotate-left" href="/cloud/checkpoints-api">
+    Create and manage chain checkpoints.
+  </Card>
+  <Card title="Chains API" icon="link" href="/cloud/chains-api">
+    Chain management endpoints.
+  </Card>
+</CardGroup>

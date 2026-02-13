@@ -1,0 +1,89 @@
+---
+title: "Industry Overview"
+description: "pruv provides cryptographic verification for any system. See how it applies to AI agents, DevOps, finance, healthcare, government, supply chain, and legal."
+---
+
+# Industries
+
+pruv's cryptographic verification works across any domain where you need to prove what happened. The XY primitive is domain-agnostic -- it captures state transitions regardless of what those states represent.
+
+## Why Industries Need Verification
+
+Every industry has processes where trust matters:
+- Did the AI agent actually run the right tests before deploying?
+- Was the financial transaction authorized by the right people?
+- Were patient records modified by an authorized clinician?
+- Did the supply chain maintain proper custody?
+
+Traditional solutions rely on logs, which can be edited or deleted. pruv creates **tamper-evident, cryptographically linked** records that cannot be altered without detection.
+
+## Industry Applications
+
+<CardGroup cols={2}>
+  <Card title="AI Agents" icon="robot" href="/industries/ai-agents">
+    Wrap AI agents with cryptographic proof of every action. Verify that agents followed instructions and did not hallucinate destructive operations.
+  </Card>
+  <Card title="DevOps & CI/CD" icon="server" href="/industries/devops">
+    Prove that builds, tests, and deployments happened in sequence. Create tamper-evident deployment pipelines.
+  </Card>
+  <Card title="Finance" icon="building-columns" href="/industries/finance">
+    Build audit trails for transactions, approvals, and compliance workflows. Meet SOX and PCI-DSS requirements.
+  </Card>
+  <Card title="Healthcare" icon="heart-pulse" href="/industries/healthcare">
+    Track modifications to patient records with HIPAA-compliant chains. Prove chain of custody for clinical data.
+  </Card>
+  <Card title="Government" icon="landmark" href="/industries/government">
+    Create verifiable records for procurement, policy changes, and inter-agency communications. Meet FedRAMP and NIST requirements.
+  </Card>
+  <Card title="Supply Chain" icon="truck" href="/industries/supply-chain">
+    Track product provenance from origin to delivery. Verify handoffs between supply chain participants.
+  </Card>
+  <Card title="Legal" icon="scale-balanced" href="/industries/legal">
+    Create tamper-evident records of document versions, contract negotiations, and legal proceedings.
+  </Card>
+</CardGroup>
+
+## Common Patterns Across Industries
+
+### 1. Audit Trail
+
+Every industry needs to answer "what happened and when?" pruv chains provide a complete, ordered, tamper-evident history.
+
+```python
+chain = XYChain(name="audit-trail")
+chain.append("action-1", y_state={...}, private_key=key, signer_id="user@org")
+chain.append("action-2", y_state={...}, private_key=key, signer_id="user@org")
+# ...
+valid, _ = chain.verify()
+```
+
+### 2. Multi-Party Verification
+
+When multiple parties need to trust each other, shared chains provide a common source of truth:
+
+```python
+# Party A signs their action
+chain.append("handoff", y_state={...}, private_key=party_a_key, signer_id="party-a")
+
+# Party B signs their acceptance
+chain.append("accept", y_state={...}, private_key=party_b_key, signer_id="party-b")
+
+# Both can verify the chain independently
+valid, _ = chain.verify()
+sigs_valid, _ = chain.verify_signatures()
+```
+
+### 3. Compliance Reporting
+
+Generate receipts for compliance officers and auditors:
+
+```python
+receipt = XYReceipt(...)
+print(f"Verified: {receipt.all_verified}")
+print(f"Receipt hash: {receipt.hash}")
+# Share the receipt hash as proof of verified work
+```
+
+## Next Steps
+
+Choose the industry that matches your use case to see specific examples and patterns.

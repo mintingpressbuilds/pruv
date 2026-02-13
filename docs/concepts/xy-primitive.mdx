@@ -1,0 +1,211 @@
+---
+title: "The XY Primitive"
+description: "The fundamental cryptographic building block of pruv. Understand how state transitions become tamper-evident proofs."
+---
+
+# The XY Primitive
+
+The XY primitive is the cryptographic foundation of pruv. It captures a **state transition** -- before (X) and after (Y) -- and produces a **proof hash (XY)** that binds them together with the operation and timestamp.
+
+## The Core Idea
+
+Every action in any system can be described as a state transition:
+
+```
+State Before --[operation]--> State After
+     X                             Y
+```
+
+The XY primitive captures this transition and produces a cryptographic proof:
+
+```
+XY = sha256(X : operation : Y : timestamp)
+```
+
+The resulting proof hash has the format `xy_{sha256_hex}`:
+
+```
+xy_7e2f4a8c1d3b5e9f2a6c8d4b7e1f3a5c9d2b8e4f6a1c7d3b9e5f2a8c4d6b
+```
+
+## How Hashing Works
+
+States are dictionaries that get hashed deterministically using **canonical JSON**: sorted keys with compact separators.
+
+```python
+from xycore import hash_state
+
+state = {"version": "1.0", "app": "my-service"}
+h = hash_state(state)
+# Always produces the same hash for the same input
+# Uses: json.dumps(state, sort_keys=True, separators=(",", ":"))
+# Then: hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+```
+
+The canonical form of `{"version": "1.0", "app": "my-service"}` is:
+
+```json
+{"app":"my-service","version":"1.0"}
+```
+
+This ensures that `{"a": 1, "b": 2}` and `{"b": 2, "a": 1}` produce identical hashes.
+
+## Computing the XY Proof
+
+The XY proof combines four values into a single hash:
+
+```python
+from xycore import compute_xy
+
+xy = compute_xy(
+    x="GENESIS",                        # State before hash
+    operation="initialize",             # Operation name
+    y="a3f8c2e1d4b75e9f...",           # State after hash
+    timestamp=1706745600.0,             # Unix timestamp
+)
+# xy = "xy_7e2f4a8c1d3b..."
+```
+
+Under the hood:
+
+```python
+def compute_xy(x: str, operation: str, y: str, timestamp: float) -> str:
+    data = f"{x}:{operation}:{y}:{timestamp}"
+    digest = hashlib.sha256(data.encode("utf-8")).hexdigest()
+    return f"xy_{digest}"
+```
+
+## Verification
+
+Verifying an entry means recomputing the XY proof and comparing:
+
+```python
+from xycore import verify_entry
+
+entry = chain.entries[0]
+is_valid = verify_entry(entry)
+# Recomputes: compute_xy(entry.x, entry.operation, entry.y, entry.timestamp)
+# Compares: recomputed == entry.xy
+```
+
+If anyone changes the operation name, the state hashes, or the timestamp, the recomputed XY will not match the stored one.
+
+## Why This Matters
+
+<Tabs>
+  <Tab title="Tamper Evidence">
+    The XY proof binds the before-state, operation, after-state, and timestamp into a single hash. Changing **any** of these values produces a different proof.
+
+    ```python
+    # Original
+    xy1 = compute_xy("GENESIS", "deploy", "abc123...", 1706745600.0)
+
+    # Change the operation name
+    xy2 = compute_xy("GENESIS", "rollback", "abc123...", 1706745600.0)
+
+    # Different proof -- tampering detected
+    assert xy1 != xy2
+    ```
+  </Tab>
+  <Tab title="Chaining">
+    When entries are linked (`Entry[N].x == Entry[N-1].y`), tampering with any entry breaks the chain from that point forward.
+
+    ```
+    Entry 0: x=GENESIS  y=H0  xy=XY0
+    Entry 1: x=H0       y=H1  xy=XY1  <-- tamper H1 here
+    Entry 2: x=H1       y=H2  xy=XY2  <-- x != tampered H1, BREAK
+    ```
+
+    You cannot fix Entry 2 without knowing its private timestamp, and fixing it would break Entry 3, and so on. The entire chain would need to be recomputed.
+  </Tab>
+  <Tab title="Zero Dependencies">
+    The XY primitive uses only Python's standard library:
+
+    - `hashlib.sha256` for hashing
+    - `json.dumps` for canonical serialization
+
+    No external packages. No network calls. No databases. It works anywhere Python runs.
+  </Tab>
+</Tabs>
+
+## The XY Proof Format
+
+All XY proof hashes follow a consistent format:
+
+```
+xy_{64 hex characters}
+```
+
+For example:
+
+```
+xy_7e2f4a8c1d3b5e9f2a6c8d4b7e1f3a5c9d2b8e4f6a1c7d3b9e5f2a8c4d6b
+```
+
+The `xy_` prefix makes proof hashes instantly recognizable in logs, databases, and API responses.
+
+## Comparison to Other Approaches
+
+| Approach | Tamper-Evident | Chained | Zero Deps | Deterministic |
+|----------|:---:|:---:|:---:|:---:|
+| **XY Primitive** | Yes | Yes | Yes | Yes |
+| Git commits | Yes | Yes | No | No |
+| Database audit logs | No | No | No | Yes |
+| Blockchain | Yes | Yes | No | Yes |
+| Plain log files | No | No | Yes | No |
+
+The XY primitive provides blockchain-grade tamper evidence without the complexity, cost, or external dependencies of a blockchain.
+
+## API Reference
+
+### `hash_state(state: dict) -> str`
+
+Hash a state dictionary using canonical JSON and SHA-256.
+
+```python
+from xycore import hash_state
+
+h = hash_state({"key": "value"})
+```
+
+### `compute_xy(x: str, operation: str, y: str, timestamp: float) -> str`
+
+Compute an XY proof hash from the four components.
+
+```python
+from xycore import compute_xy
+
+xy = compute_xy("GENESIS", "init", "abc123...", 1706745600.0)
+# "xy_..."
+```
+
+### `verify_entry(entry: XYEntry) -> bool`
+
+Verify a single entry's XY proof.
+
+```python
+from xycore import verify_entry
+
+valid = verify_entry(chain.entries[0])
+```
+
+### `verify_chain(entries: list[XYEntry]) -> tuple[bool, int | None]`
+
+Verify an entire chain of entries. Returns `(True, None)` if valid, or `(False, break_index)` if broken.
+
+```python
+from xycore import verify_chain
+
+valid, break_at = verify_chain(chain.entries)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Chains" icon="link" href="/concepts/chains">
+    How entries link together to form an unbreakable chain.
+  </Card>
+  <Card title="Entries" icon="cube" href="/concepts/entries">
+    The anatomy of an XY entry.
+  </Card>
+</CardGroup>

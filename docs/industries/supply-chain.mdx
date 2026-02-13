@@ -1,0 +1,168 @@
+---
+title: "Supply Chain"
+description: "Track product provenance from origin to delivery with cryptographic verification. Prove chain of custody across supply chain participants."
+---
+
+# Supply Chain
+
+Supply chain integrity requires proving that products, materials, and data moved correctly between parties. pruv creates cryptographic chains of custody that every participant can verify independently.
+
+## Chain of Custody
+
+Track a product from manufacturing to delivery:
+
+```python
+from xycore import XYChain, generate_keypair
+
+manufacturer_key, _ = generate_keypair()
+shipper_key, _ = generate_keypair()
+warehouse_key, _ = generate_keypair()
+retailer_key, _ = generate_keypair()
+
+chain = XYChain(name="product-LOT-2025-0042")
+
+chain.append(
+    operation="manufacture",
+    y_state={
+        "product": "Widget-X",
+        "lot": "LOT-2025-0042",
+        "quantity": 5000,
+        "facility": "Factory-A",
+        "quality_check": "passed",
+    },
+    private_key=manufacturer_key,
+    signer_id="quality@manufacturer.com",
+)
+
+chain.append(
+    operation="ship",
+    y_state={
+        "carrier": "FastShip Inc",
+        "tracking": "FS-123456789",
+        "temperature_range": "15-25C",
+        "departed": "2025-01-31T08:00:00Z",
+    },
+    private_key=shipper_key,
+    signer_id="dispatch@fastship.com",
+)
+
+chain.append(
+    operation="receive-warehouse",
+    y_state={
+        "warehouse": "Distribution Center B",
+        "condition": "good",
+        "quantity_received": 5000,
+        "temperature_on_arrival": "18C",
+    },
+    private_key=warehouse_key,
+    signer_id="receiving@warehouse-b.com",
+)
+
+chain.append(
+    operation="deliver",
+    y_state={
+        "destination": "Retail Store 42",
+        "quantity_delivered": 500,
+        "received_by": "store-manager",
+        "condition": "good",
+    },
+    private_key=retailer_key,
+    signer_id="manager@store42.com",
+)
+
+# Any participant can verify the full chain
+valid, _ = chain.verify()
+sigs_valid, _ = chain.verify_signatures()
+```
+
+## Multi-Party Verification
+
+Each supply chain participant can independently verify the chain:
+
+```python
+# The retailer loads the chain and verifies
+from xycore import LocalStorage
+
+storage = LocalStorage(".pruv")
+chain = storage.load("product-chain-id")
+
+valid, break_index = chain.verify()
+if valid:
+    print("Chain of custody verified from manufacturer to delivery")
+else:
+    print(f"Chain broken at step {break_index}")
+    print(f"  Operation: {chain[break_index].operation}")
+    print(f"  Signer: {chain[break_index].signer_id}")
+```
+
+## Quality Inspections
+
+Record quality checks at each stage:
+
+```python
+chain.append(
+    operation="quality-inspection",
+    y_state={
+        "inspector": "QA-042",
+        "tests_performed": ["visual", "weight", "dimensions", "contamination"],
+        "all_passed": True,
+        "report_id": "QA-RPT-2025-0183",
+    },
+    private_key=inspector_key,
+    signer_id="qa-team@manufacturer.com",
+)
+```
+
+## Temperature-Sensitive Goods
+
+For cold chain logistics, record temperature data at every handoff:
+
+```python
+chain.append(
+    operation="cold-chain-check",
+    y_state={
+        "min_temp": -20.0,
+        "max_temp": -18.2,
+        "avg_temp": -19.1,
+        "readings": 48,
+        "duration_hours": 24,
+        "within_spec": True,
+    },
+    metadata={"sensor_id": "TEMP-SENSOR-042"},
+)
+```
+
+## Recalls and Traceability
+
+When a recall is needed, trace the affected lot through the entire chain:
+
+```python
+# Find all chains for a specific lot
+for chain_info in storage.list_chains():
+    if "LOT-2025-0042" in chain_info["name"]:
+        chain = storage.load(chain_info["id"])
+        for entry in chain:
+            if entry.operation == "deliver":
+                print(f"Delivered to: {entry.y_state.get('destination')}")
+                print(f"Quantity: {entry.y_state.get('quantity_delivered')}")
+```
+
+## Compliance
+
+| Standard | pruv Capability |
+|----------|----------------|
+| **FDA 21 CFR Part 11** | Electronic records with signatures |
+| **GS1 Standards** | Product identification and traceability |
+| **ISO 22000** | Food safety management audit trails |
+| **EU FMD** | Pharmaceutical serialization tracking |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Digital Signatures" icon="key" href="/concepts/signatures">
+    Multi-party signing for supply chain handoffs.
+  </Card>
+  <Card title="Receipts" icon="receipt" href="/concepts/receipts">
+    Generate verifiable receipts for shipments.
+  </Card>
+</CardGroup>

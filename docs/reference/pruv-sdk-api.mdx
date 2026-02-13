@@ -1,0 +1,337 @@
+---
+title: "pruv SDK API Reference"
+description: "Complete API reference for the pruv package. Scanner, wrapper, checkpoints, approval gates, cloud client, and CLI."
+---
+
+# pruv SDK API Reference
+
+The `pruv` package extends `xycore` with scanning, wrapping, checkpoints, approval gates, cloud sync, and a CLI.
+
+```bash
+pip install pruv
+```
+
+The pruv package re-exports all xycore symbols (`XYChain`, `XYEntry`, `XYReceipt`, etc.) so you can import everything from `pruv`.
+
+---
+
+## scan()
+
+Scan a project directory for files, imports, env vars, frameworks, and services.
+
+```python
+from pruv import scan
+```
+
+```python
+def scan(
+    directory: str | Path = ".",
+    include_contents: bool = False,
+) -> Graph
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `directory` | `str \| Path` | `"."` | Directory to scan |
+| `include_contents` | `bool` | `False` | Include file contents in the graph |
+
+Returns a `Graph` object.
+
+---
+
+## Graph
+
+Deterministic state representation of a project.
+
+```python
+from pruv import Graph
+```
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `root` | `str` | Root directory path |
+| `hash` | `str` | Deterministic SHA-256 hash of the project |
+| `files` | `list[dict]` | File info (path, language, size, lines) |
+| `imports` | `list[dict]` | Import info (module, source_file, language) |
+| `env_vars` | `list[dict]` | Env var info (name, source_file, line) |
+| `frameworks` | `list[dict]` | Framework info (name, confidence, evidence) |
+| `services` | `list[dict]` | Service info (name, evidence, source_file) |
+| `file_contents` | `dict[str, str]` | File contents (if `include_contents=True`) |
+
+### Methods
+
+#### `diff(other: Graph) -> GraphDiff`
+
+Compute the difference between two graphs.
+
+#### `to_dict() -> dict`
+
+Serialize the graph.
+
+#### `to_state_dict() -> dict`
+
+Convert to a compact dict for use as XY state.
+
+#### `from_dict(data)` (classmethod)
+
+Deserialize a graph.
+
+---
+
+## GraphDiff
+
+Diff between two graphs.
+
+```python
+from pruv import GraphDiff
+```
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `added` | `list[FileChange]` | Files added |
+| `removed` | `list[FileChange]` | Files removed |
+| `modified` | `list[FileChange]` | Files modified |
+| `total_changes` | `int` | Total number of changes |
+| `summary` | `str` | Human-readable summary |
+
+---
+
+## xy_wrap()
+
+Universal wrapper for agents, functions, and workflows.
+
+```python
+from pruv import xy_wrap
+```
+
+```python
+def xy_wrap(
+    target: Any = None,
+    *,
+    chain_name: str | None = None,
+    api_key: str | None = None,
+    sign: bool = False,
+    private_key: bytes | None = None,
+    signer_id: str | None = None,
+    scan_dir: str | None = None,
+    approval_webhook: str | None = None,
+    approval_operations: list[str] | None = None,
+    approval_timeout: int = 300,
+    auto_redact: bool = True,
+) -> Any
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `target` | `Any` | `None` | Callable to wrap |
+| `chain_name` | `str \| None` | target name | Chain name |
+| `api_key` | `str \| None` | `None` | pruv API key for cloud sync |
+| `sign` | `bool` | `False` | Sign entries |
+| `private_key` | `bytes \| None` | `None` | Ed25519 private key |
+| `signer_id` | `str \| None` | `None` | Signer identifier |
+| `scan_dir` | `str \| None` | `None` | Directory to scan before/after |
+| `approval_webhook` | `str \| None` | `None` | Approval webhook URL |
+| `approval_operations` | `list[str] \| None` | `None` | Operations requiring approval |
+| `approval_timeout` | `int` | `300` | Approval timeout (seconds) |
+| `auto_redact` | `bool` | `True` | Auto-redact secrets |
+
+Can be used as:
+- `xy_wrap(my_func)` -- direct call
+- `@xy_wrap` -- simple decorator
+- `@xy_wrap(sign=True)` -- decorator with options
+
+---
+
+## WrappedResult
+
+Result from a wrapped operation.
+
+```python
+from pruv import WrappedResult
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `output` | `Any` | Original return value |
+| `chain` | `XYChain` | Verification chain |
+| `receipt` | `XYReceipt` | Summary receipt |
+| `graph_before` | `Graph \| None` | Project state before |
+| `graph_after` | `Graph \| None` | Project state after |
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `verified` | `bool` | Whether `chain.verify()` passes |
+| `diff` | `GraphDiff \| None` | File changes (if scan_dir set) |
+
+---
+
+## CheckpointManager
+
+Manage checkpoints for an XY chain.
+
+```python
+from pruv import CheckpointManager
+```
+
+```python
+CheckpointManager(
+    chain: XYChain,
+    project_dir: str | Path | None = None,
+    storage_dir: str | Path = ".pruv/checkpoints",
+    compress: bool = True,
+)
+```
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `create(name, include_files=False)` | `Checkpoint` | Create a checkpoint |
+| `preview_restore(checkpoint_id)` | `RestorePreview` | Preview restore |
+| `restore(checkpoint_id)` | `XYChain` | Restore to checkpoint |
+| `quick_undo()` | `XYChain \| None` | Restore to latest checkpoint |
+| `list_checkpoints()` | `list[dict]` | List all checkpoints |
+
+---
+
+## Checkpoint
+
+A point-in-time snapshot.
+
+```python
+from pruv import Checkpoint
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `str` | Unique identifier |
+| `name` | `str` | Checkpoint name |
+| `chain_id` | `str` | Associated chain ID |
+| `entry_index` | `int` | Chain entry index at snapshot |
+| `created_at` | `float` | Unix timestamp |
+| `chain_snapshot` | `dict` | Full chain state |
+| `graph_snapshot` | `dict \| None` | Project graph |
+| `file_snapshots` | `dict[str, str] \| None` | File contents |
+| `compressed` | `bool` | Whether compressed |
+
+---
+
+## ApprovalGate
+
+Human approval gate via webhook.
+
+```python
+from pruv import ApprovalGate
+```
+
+```python
+ApprovalGate(
+    webhook_url: str,
+    timeout: int = 300,
+    operations: set[str] | None = None,
+    on_timeout: str = "deny",
+)
+```
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `requires_approval(operation)` | `bool` | Check if approval needed |
+| `request_approval(request)` | `ApprovalResponse` | Send approval request |
+| `gate(chain_id, entry_index, operation, ...)` | `ApprovalResponse` | Full gate check |
+
+Default gated operations: `{"file.write", "deploy", "database.migrate"}`
+
+---
+
+## CloudClient
+
+Client for api.pruv.dev with offline queue.
+
+```python
+from pruv import CloudClient
+```
+
+```python
+CloudClient(
+    api_key: str,
+    base_url: str = "https://api.pruv.dev",
+    queue_dir: str | Path = ".pruv/queue",
+    max_retries: int = 3,
+)
+```
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `upload_chain(chain)` | `dict \| None` | Upload a chain |
+| `append_entry(chain_id, entry)` | `dict \| None` | Append entry to remote chain |
+| `get_chain(chain_id)` | `dict \| None` | Get a chain |
+| `list_chains()` | `dict \| None` | List all chains |
+| `verify_chain(chain_id)` | `dict \| None` | Verify remote chain |
+| `upload_receipt(receipt)` | `dict \| None` | Upload a receipt |
+| `flush_queue()` | `int` | Flush offline queue |
+
+All methods are `async`.
+
+---
+
+## CloudStorage
+
+High-level cloud storage wrapper.
+
+```python
+from pruv import CloudStorage
+```
+
+```python
+CloudStorage(api_key: str, base_url: str = "https://api.pruv.dev")
+```
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `save(chain)` | `dict \| None` | Upload chain |
+| `load(chain_id)` | `XYChain \| None` | Download and deserialize chain |
+| `verify(chain_id)` | `bool` | Verify remote chain |
+
+All methods are `async`.
+
+---
+
+## CLI
+
+```bash
+pruv [COMMAND] [OPTIONS]
+```
+
+| Command | Description |
+|---------|-------------|
+| `pruv scan [DIR]` | Scan a project directory |
+| `pruv verify FILE` | Verify a chain file |
+| `pruv export FILE` | Export chain to JSON/CSV |
+| `pruv undo` | Restore to a checkpoint |
+| `pruv upload [DIR]` | Upload a scan to cloud |
+| `pruv --version` | Show version |
+
+See [CLI Reference](/guides/cli-reference) for full details.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="xycore API" icon="atom" href="/reference/xycore-api">
+    Core package API reference.
+  </Card>
+  <Card title="Environment Variables" icon="gear" href="/reference/environment-variables">
+    All configuration options.
+  </Card>
+</CardGroup>

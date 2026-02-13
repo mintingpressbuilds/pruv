@@ -1,0 +1,156 @@
+---
+title: "Finance"
+description: "Build tamper-evident audit trails for financial transactions, approvals, and compliance workflows with pruv."
+---
+
+# Finance
+
+Financial systems require the highest levels of auditability. Regulations like SOX, PCI-DSS, and MiFID II mandate tamper-evident records of transactions and approvals. pruv provides cryptographic proof that financial records have not been altered.
+
+## Transaction Audit Trails
+
+Create an unbreakable chain of financial events:
+
+```python
+from xycore import XYChain, generate_keypair
+
+private_key, _ = generate_keypair()
+chain = XYChain(name="txn-2025-0131-001")
+
+chain.append(
+    operation="initiate",
+    y_state={
+        "type": "wire_transfer",
+        "amount": 50000.00,
+        "currency": "USD",
+        "from_account": "****4521",
+        "to_account": "****8734",
+        "reference": "INV-2025-0042",
+    },
+    private_key=private_key,
+    signer_id="treasury@company.com",
+)
+
+chain.append(
+    operation="compliance-check",
+    y_state={
+        "aml_status": "cleared",
+        "sanctions_check": "passed",
+        "risk_score": 12,
+    },
+    private_key=private_key,
+    signer_id="compliance-bot@company.com",
+)
+
+chain.append(
+    operation="approve",
+    y_state={"approved": True, "approver": "cfo@company.com"},
+    private_key=private_key,
+    signer_id="cfo@company.com",
+)
+
+chain.append(
+    operation="execute",
+    y_state={
+        "status": "settled",
+        "settlement_ref": "SWIFT-20250131-001",
+        "settled_at": "2025-01-31T15:30:00Z",
+    },
+    status="success",
+    private_key=private_key,
+    signer_id="settlement-engine@company.com",
+)
+```
+
+## Multi-Approval Workflows
+
+Require multiple signers for high-value transactions:
+
+```python
+cfo_key, _ = generate_keypair()
+treasurer_key, _ = generate_keypair()
+
+# First approval
+chain.append(
+    operation="first-approval",
+    y_state={"approved": True, "level": 1},
+    private_key=treasurer_key,
+    signer_id="treasurer@company.com",
+)
+
+# Second approval (different key)
+chain.append(
+    operation="second-approval",
+    y_state={"approved": True, "level": 2},
+    private_key=cfo_key,
+    signer_id="cfo@company.com",
+)
+
+# Verify both signatures
+sigs_valid, _ = chain.verify_signatures()
+```
+
+## Compliance Reporting
+
+Generate verifiable reports for auditors:
+
+```python
+from xycore import XYReceipt
+
+receipt = XYReceipt(
+    id="audit-q4-2025",
+    task="quarterly-transaction-audit",
+    chain_id=chain.id,
+    entry_count=chain.length,
+    first_x=chain.entries[0].x,
+    final_y=chain.entries[-1].y,
+    root_xy=chain.root,
+    head_xy=chain.entries[-1].xy,
+    all_verified=True,
+    all_signatures_valid=True,
+    started=chain.entries[0].timestamp,
+    completed=chain.entries[-1].timestamp,
+    duration=chain.entries[-1].timestamp - chain.entries[0].timestamp,
+)
+
+# Auditors can independently verify the receipt hash
+print(f"Audit receipt: {receipt.hash}")
+```
+
+## Regulatory Frameworks
+
+| Regulation | pruv Capability |
+|-----------|----------------|
+| **SOX** | Tamper-evident records of financial controls and approvals |
+| **PCI-DSS** | Cryptographic audit trail for payment data access |
+| **MiFID II** | Verifiable record of trade execution and best execution proof |
+| **GDPR** | Chain of custody for personal data processing |
+| **Basel III** | Risk calculation audit trails with verifiable inputs |
+
+## Auto-Redaction for Financial Data
+
+pruv automatically redacts sensitive financial data:
+
+```python
+chain.append(
+    operation="process-payment",
+    y_state={
+        "card_number": "4242424242424242",  # Safe -- not a key pattern
+        "api_key": "sk_live_abc123",         # Redacted automatically
+        "amount": 100.00,                    # Safe
+    },
+)
+```
+
+For additional protection, mask account numbers in your application layer before passing states to pruv.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Digital Signatures" icon="key" href="/guides/digital-signatures">
+    Key management for multi-party financial workflows.
+  </Card>
+  <Card title="Approval Gates" icon="shield-check" href="/guides/approval-gates">
+    Webhook-based approval for high-value transactions.
+  </Card>
+</CardGroup>

@@ -1,0 +1,199 @@
+---
+title: "AI Agents"
+description: "Wrap AI agents with cryptographic proof of every action. Verify agent behavior, detect hallucinations, and build trust in autonomous systems."
+---
+
+# AI Agents
+
+AI agents are increasingly performing critical tasks autonomously: writing code, deploying services, modifying databases, and interacting with external APIs. pruv provides cryptographic proof of what every agent did, enabling oversight, debugging, and accountability.
+
+## The Problem
+
+When an AI agent operates autonomously, you face several challenges:
+
+- **No verifiable record**: Agent logs can be modified or are incomplete
+- **Hallucinated actions**: Agents may claim to have done things they did not do
+- **Accountability gaps**: When an agent causes damage, there is no tamper-evident trail
+- **Compliance risk**: Regulators increasingly require proof of AI system behavior
+
+## The pruv Solution
+
+Wrap any AI agent with `xy_wrap` to automatically create a verified chain of every action:
+
+```python
+from pruv import xy_wrap
+
+@xy_wrap(
+    chain_name="code-agent",
+    scan_dir="./project",
+    sign=True,
+    private_key=agent_key,
+    signer_id="code-agent@company.com",
+)
+async def code_agent(task: str):
+    # Agent logic here -- LangChain, CrewAI, OpenAI, custom, etc.
+    return {"files_changed": 3, "tests_passed": True}
+
+result = await code_agent("refactor the authentication module")
+print(f"Verified: {result.verified}")
+print(f"Receipt: {result.receipt.hash}")
+```
+
+## Framework Integration
+
+### LangChain
+
+```python
+from langchain.agents import AgentExecutor
+from pruv import xy_wrap
+
+# Wrap a LangChain agent
+wrapped_agent = xy_wrap(
+    agent_executor,
+    chain_name="langchain-agent",
+    scan_dir="./workspace",
+    api_key="pv_live_your_key",
+)
+
+result = await wrapped_agent.run("analyze the sales data and generate a report")
+```
+
+### CrewAI
+
+```python
+from crewai import Crew
+from pruv import xy_wrap
+
+wrapped_crew = xy_wrap(
+    my_crew,
+    chain_name="crewai-workflow",
+    scan_dir="./outputs",
+)
+
+result = await wrapped_crew.run("research competitors and write a market analysis")
+```
+
+### OpenAI Functions
+
+```python
+import openai
+from pruv import xy_wrap
+
+@xy_wrap(chain_name="openai-tool-use")
+async def ai_tool_agent(task: str):
+    response = openai.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": task}],
+        tools=[...],
+    )
+    # Process tool calls...
+    return response
+
+result = await ai_tool_agent("update the user dashboard")
+```
+
+## What Gets Captured
+
+When you wrap an agent with `xy_wrap`, the following is automatically recorded:
+
+| Phase | What is Captured |
+|-------|-----------------|
+| **Before** | Project graph hash, task description, timestamp |
+| **Start Entry** | Initial state with `x="GENESIS"` |
+| **Execution** | Agent output or error message |
+| **After** | Updated project graph hash, status, duration |
+| **Complete Entry** | Final state with verification |
+
+The before/after project scans detect exactly which files were added, modified, or deleted:
+
+```python
+if result.diff:
+    print(f"Changes: {result.diff.summary}")
+    for change in result.diff.added:
+        print(f"  + {change.path}")
+    for change in result.diff.modified:
+        print(f"  ~ {change.path}")
+```
+
+## Approval Gates for Agents
+
+Add human approval for high-risk operations:
+
+```python
+from pruv import xy_wrap
+
+@xy_wrap(
+    chain_name="gated-agent",
+    approval_webhook="https://slack.mycompany.com/approve",
+    approval_operations=["file.write", "deploy", "database.migrate"],
+    approval_timeout=300,
+)
+async def sensitive_agent(task: str):
+    # If the agent tries file.write, deploy, or database.migrate,
+    # a webhook request is sent and the agent waits for approval
+    pass
+```
+
+## Receipts for Agent Work
+
+Every wrapped agent run produces a receipt:
+
+```python
+receipt = result.receipt
+
+print(f"Task: {receipt.task}")
+print(f"Duration: {receipt.duration:.1f}s")
+print(f"Entries: {receipt.entry_count}")
+print(f"Verified: {receipt.all_verified}")
+print(f"Signatures: {receipt.all_signatures_valid}")
+print(f"Receipt hash: {receipt.hash}")
+```
+
+Share the receipt hash with stakeholders as proof that the agent's work was verified.
+
+## Detecting Misbehavior
+
+If an agent's chain does not verify, something went wrong:
+
+```python
+result = await code_agent("refactor auth")
+
+if not result.verified:
+    print("WARNING: Agent produced an invalid chain")
+    valid, break_index = result.chain.verify()
+    print(f"Chain broke at entry {break_index}")
+
+    # Roll back using checkpoints
+    manager.quick_undo()
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Always scan before and after">
+    Use `scan_dir` with `xy_wrap` to capture the project state before and after agent execution. This creates a verifiable diff of what changed.
+  </Accordion>
+  <Accordion title="Sign agent entries">
+    Each agent should have its own signing key. This proves which agent made which changes and prevents agent impersonation.
+  </Accordion>
+  <Accordion title="Use approval gates for destructive operations">
+    Configure approval webhooks for operations that modify production data, deploy services, or make irreversible changes.
+  </Accordion>
+  <Accordion title="Enable auto-checkpoints">
+    For long-running agents, enable auto-checkpoints so you can roll back to any point in the agent's work.
+  </Accordion>
+  <Accordion title="Sync to cloud for team visibility">
+    Upload chains to pruv cloud so your team can monitor agent activity in real time through the dashboard.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Wrapping Agents Guide" icon="robot" href="/guides/wrapping-agents">
+    Detailed guide for wrapping different agent types.
+  </Card>
+  <Card title="Approval Gates" icon="shield-check" href="/guides/approval-gates">
+    Set up human-in-the-loop approval for agent operations.
+  </Card>
+</CardGroup>

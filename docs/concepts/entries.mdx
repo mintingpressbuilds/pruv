@@ -1,0 +1,228 @@
+---
+title: "Entries"
+description: "XYEntry is the fundamental unit of an XY chain. Each entry captures a state transition with cryptographic proof."
+---
+
+# Entries
+
+An `XYEntry` represents a single state transition in an XY chain. It records what happened (the operation), the state before (X) and after (Y), and a cryptographic proof (XY) binding them together.
+
+## Entry Structure
+
+```python
+@dataclass
+class XYEntry:
+    # Identity
+    index: int              # Position in the chain (0-based)
+    timestamp: float        # Unix timestamp when created
+    operation: str          # Name of the operation
+
+    # The XY Core
+    x: str                  # Hash of state before (or "GENESIS")
+    y: str                  # Hash of state after
+    xy: str                 # XY proof hash (xy_{sha256})
+
+    # Optional State Data
+    x_state: dict | None    # Full state before (for inspection)
+    y_state: dict | None    # Full state after (for inspection)
+
+    # Metadata
+    status: str             # "success", "failed", or "pending"
+    verified: bool          # Whether this entry has been verified
+    metadata: dict          # Arbitrary metadata
+
+    # Digital Signature (optional)
+    signature: str | None   # Base64-encoded Ed25519 signature
+    signer_id: str | None   # Identifier of the signer
+    public_key: str | None  # Base64-encoded public key
+```
+
+## Creating Entries
+
+Entries are typically created via `XYChain.append()`, which handles linking automatically. But you can also create them directly:
+
+```python
+from xycore import XYEntry
+
+entry = XYEntry.create(
+    index=0,
+    operation="initialize",
+    x="GENESIS",
+    y="a3f8c2e1d4b75e9f2a6c8d4b7e1f3a5c9d2b8e4f6a1c7d3b9e5f2a8c4d6b",
+    x_state=None,
+    y_state={"version": "1.0"},
+    status="success",
+    metadata={"author": "alice"},
+    timestamp=1706745600.0,
+)
+
+print(f"XY proof: {entry.xy}")
+# xy_7e2f4a8c1d3b...
+```
+
+The `create()` classmethod automatically computes the XY proof hash from the provided values.
+
+## The X and Y Values
+
+### X (State Before)
+
+The `x` field contains either:
+- `"GENESIS"` for the first entry in a chain
+- The `y` value of the previous entry (a SHA-256 hash)
+
+You never set `x` manually when using `XYChain.append()`. The chain computes it automatically.
+
+### Y (State After)
+
+The `y` field is a SHA-256 hash of the `y_state` dictionary:
+
+```python
+from xycore import hash_state
+
+state = {"version": "1.0", "status": "deployed"}
+y_hash = hash_state(state)
+# "a3f8c2e1d4b7..."
+```
+
+The hash is computed using canonical JSON for determinism.
+
+### XY (Proof Hash)
+
+The `xy` field is the cryptographic proof that binds X, the operation, Y, and the timestamp:
+
+```python
+from xycore import compute_xy
+
+xy = compute_xy(
+    x="GENESIS",
+    operation="initialize",
+    y="a3f8c2e1d4b7...",
+    timestamp=1706745600.0,
+)
+# "xy_7e2f4a8c1d3b..."
+```
+
+## States vs Hashes
+
+The `x` and `y` fields contain **hashes** (compact, fixed-length). The `x_state` and `y_state` fields contain the **full state dictionaries** (optional, for inspection).
+
+```python
+entry = chain.entries[0]
+
+# Hashes (always present)
+entry.x   # "GENESIS" or SHA-256 hash
+entry.y   # SHA-256 hash
+
+# Full states (optional)
+entry.x_state  # None or {"key": "value", ...}
+entry.y_state  # None or {"key": "value", ...}
+```
+
+The hashes are what verification checks. The states are there for humans to inspect what actually changed.
+
+<Warning>
+  Modifying `x_state` or `y_state` after creation does **not** change the `x` or `y` hashes. The hashes are computed at creation time and are immutable.
+</Warning>
+
+## Status Values
+
+Each entry has a `status` field:
+
+| Status | Meaning |
+|--------|---------|
+| `"success"` | The operation completed successfully (default) |
+| `"failed"` | The operation failed |
+| `"pending"` | The operation is in progress |
+
+```python
+chain.append(
+    operation="deploy",
+    y_state={"error": "connection timeout"},
+    status="failed",
+)
+```
+
+Failed entries are still part of the chain and still verified. A failed operation is a legitimate state transition.
+
+## Metadata
+
+Arbitrary metadata can be attached to any entry:
+
+```python
+chain.append(
+    operation="deploy",
+    y_state={"status": "live"},
+    metadata={
+        "environment": "production",
+        "deployer": "alice@company.com",
+        "commit": "abc123f",
+        "duration": 45.2,
+        "kubernetes_namespace": "prod",
+    },
+)
+```
+
+Metadata is stored but not included in the XY proof hash computation.
+
+## Serialization
+
+Entries serialize to clean dictionaries:
+
+```python
+data = entry.to_dict()
+```
+
+```json
+{
+  "index": 0,
+  "timestamp": 1706745600.0,
+  "operation": "initialize",
+  "x": "GENESIS",
+  "y": "a3f8c2e1d4b75e9f...",
+  "xy": "xy_7e2f4a8c1d3b5e9f...",
+  "x_state": null,
+  "y_state": {"version": "1.0"},
+  "status": "success",
+  "verified": true,
+  "metadata": {}
+}
+```
+
+Deserialize with:
+
+```python
+restored = XYEntry.from_dict(data)
+```
+
+## Signed Entries
+
+When an entry is signed, additional fields are populated:
+
+```json
+{
+  "index": 0,
+  "operation": "approve",
+  "x": "GENESIS",
+  "y": "a3f8c2e1...",
+  "xy": "xy_7e2f4a8c...",
+  "signature": "base64_encoded_ed25519_signature",
+  "signer_id": "alice@company.com",
+  "public_key": "base64_encoded_public_key",
+  "status": "success",
+  "verified": true,
+  "metadata": {}
+}
+```
+
+See [Digital Signatures](/concepts/signatures) for details on signing and verification.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Receipts" icon="receipt" href="/concepts/receipts">
+    How entries combine into verifiable receipts.
+  </Card>
+  <Card title="Verification" icon="shield-check" href="/concepts/verification">
+    How chain verification detects tampering.
+  </Card>
+</CardGroup>

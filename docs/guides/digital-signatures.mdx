@@ -1,0 +1,226 @@
+---
+title: "Digital Signatures"
+description: "Production patterns for Ed25519 key management, multi-signer workflows, and signature verification."
+---
+
+# Digital Signatures Guide
+
+This guide covers production patterns for using Ed25519 digital signatures with pruv: key management, multi-signer workflows, rotation, and storage.
+
+## Key Generation
+
+```python
+from xycore import generate_keypair
+import base64
+
+private_key, public_key = generate_keypair()
+
+# Encode for storage (e.g., env vars, secrets manager)
+private_key_b64 = base64.b64encode(private_key).decode("ascii")
+public_key_b64 = base64.b64encode(public_key).decode("ascii")
+
+print(f"Private: {private_key_b64}")
+print(f"Public: {public_key_b64}")
+```
+
+## Key Storage Patterns
+
+### Environment Variables
+
+```bash
+export PRUV_SIGNING_KEY="base64_encoded_private_key"
+export PRUV_SIGNER_ID="ci-bot@company.com"
+```
+
+```python
+import os
+import base64
+
+private_key = base64.b64decode(os.environ["PRUV_SIGNING_KEY"])
+signer_id = os.environ["PRUV_SIGNER_ID"]
+```
+
+### Secrets Manager
+
+```python
+import boto3
+import base64
+
+def get_signing_key():
+    client = boto3.client("secretsmanager")
+    response = client.get_secret_value(SecretId="pruv/signing-key")
+    return base64.b64decode(response["SecretString"])
+```
+
+### Per-Service Keys
+
+Each service or agent should have its own keypair:
+
+```python
+# CI/CD pipeline key
+ci_private = base64.b64decode(os.environ["CI_SIGNING_KEY"])
+ci_signer = "ci-pipeline@company.com"
+
+# AI agent key
+agent_private = base64.b64decode(os.environ["AGENT_SIGNING_KEY"])
+agent_signer = "code-agent@company.com"
+
+# Human approval key
+approver_private = base64.b64decode(os.environ["APPROVER_SIGNING_KEY"])
+approver_signer = "alice@company.com"
+```
+
+## Signing Entries
+
+### During Append
+
+```python
+from xycore import XYChain
+
+chain = XYChain(name="signed-workflow")
+
+chain.append(
+    operation="build",
+    y_state={"artifact": "app:v2.0"},
+    private_key=ci_private,
+    signer_id=ci_signer,
+)
+```
+
+### After Creation
+
+```python
+from xycore import sign_entry
+
+entry = chain.entries[0]
+sign_entry(entry, private_key, signer_id="alice@company.com")
+```
+
+## Multi-Signer Workflow
+
+A common pattern is having different signers for different stages:
+
+```python
+from xycore import XYChain, generate_keypair
+
+# Generate keys for each party
+dev_key, dev_pub = generate_keypair()
+qa_key, qa_pub = generate_keypair()
+ops_key, ops_pub = generate_keypair()
+
+chain = XYChain(name="release-v3.0")
+
+# Developer signs the code review
+chain.append(
+    operation="code-review",
+    y_state={"branch": "feature/auth", "approved": True},
+    private_key=dev_key,
+    signer_id="dev@company.com",
+)
+
+# QA signs the test results
+chain.append(
+    operation="qa-test",
+    y_state={"tests_passed": 342, "tests_failed": 0},
+    private_key=qa_key,
+    signer_id="qa@company.com",
+)
+
+# Ops signs the deployment
+chain.append(
+    operation="deploy",
+    y_state={"environment": "production", "status": "live"},
+    private_key=ops_key,
+    signer_id="ops@company.com",
+)
+
+# Verify everything
+valid, _ = chain.verify()
+sigs_valid, _ = chain.verify_signatures()
+
+# Check individual signers
+for entry in chain:
+    if entry.signer_id:
+        print(f"  [{entry.index}] {entry.operation} signed by {entry.signer_id}")
+```
+
+## Verification
+
+### Verify All Signatures
+
+```python
+sigs_valid, sig_break = chain.verify_signatures()
+if not sigs_valid:
+    entry = chain.entries[sig_break]
+    print(f"Invalid signature at entry {sig_break}")
+    print(f"  Claimed signer: {entry.signer_id}")
+```
+
+### Verify Single Signature
+
+```python
+from xycore import verify_signature
+
+entry = chain.entries[0]
+is_valid = verify_signature(entry)
+```
+
+### Check Signer Identity
+
+```python
+def verify_signer(entry, expected_signer):
+    """Verify signature and check signer identity."""
+    if not verify_signature(entry):
+        return False, "invalid signature"
+    if entry.signer_id != expected_signer:
+        return False, f"unexpected signer: {entry.signer_id}"
+    return True, "verified"
+```
+
+## Key Rotation
+
+When rotating keys, old entries remain verifiable because each entry stores its own public key:
+
+```python
+# Old key was used for entries 0-99
+# Generate new key
+new_private, new_public = generate_keypair()
+
+# New entries use the new key
+chain.append(
+    operation="key-rotation",
+    y_state={"rotated": True, "reason": "quarterly rotation"},
+    private_key=new_private,
+    signer_id="ci-bot@company.com",
+)
+
+# Old entries still verify against their stored public keys
+sigs_valid, _ = chain.verify_signatures()
+```
+
+## Signature Message Format
+
+The signed message is constructed as:
+
+```
+{entry.x}:{entry.operation}:{entry.y}:{entry.xy}
+```
+
+This binds the signature to:
+- The before-state hash (x)
+- The operation name
+- The after-state hash (y)
+- The XY proof hash
+
+Changing any of these values invalidates the signature, even if the underlying key is correct.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Signatures Concept" icon="brain" href="/concepts/signatures">
+    Technical details of Ed25519 implementation.
+  </Card>
+  <Card title="Approval Gates" icon="shield-check" href="/guides/approval-gates">
+    Combine signatures with human approval workflows.
+  </Card>
+</CardGroup>

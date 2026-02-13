@@ -1,0 +1,255 @@
+---
+title: "Chains API"
+description: "Create, list, verify, and share chains via the pruv cloud API."
+---
+
+# Chains API
+
+The Chains API lets you create, retrieve, verify, and share XY chains stored in pruv cloud.
+
+## Create a Chain
+
+<ParamField body="name" type="string" required>
+  Chain name (1-255 characters).
+</ParamField>
+
+<ParamField body="auto_redact" type="boolean" default={true}>
+  Automatically redact secrets in entry states.
+</ParamField>
+
+```bash
+curl -X POST https://api.pruv.dev/v1/chains \
+  -H "Authorization: Bearer pv_live_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "deploy-pipeline",
+    "auto_redact": true
+  }'
+```
+
+**Response (201):**
+
+```json
+{
+  "id": "a1b2c3d4e5f6",
+  "name": "deploy-pipeline",
+  "length": 0,
+  "root_xy": null,
+  "head_xy": null,
+  "head_y": null,
+  "auto_redact": true,
+  "share_id": null,
+  "created_at": "2025-01-31T15:30:00Z",
+  "updated_at": "2025-01-31T15:30:00Z"
+}
+```
+
+**Python SDK:**
+
+```python
+from pruv import CloudClient
+
+client = CloudClient(api_key="pv_live_your_key")
+result = await client.upload_chain(chain)
+```
+
+## List Chains
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key" \
+  https://api.pruv.dev/v1/chains
+```
+
+**Response (200):**
+
+```json
+{
+  "chains": [
+    {
+      "id": "a1b2c3d4e5f6",
+      "name": "deploy-pipeline",
+      "length": 42,
+      "root_xy": "xy_7e2f4a8c1d3b...",
+      "head_xy": "xy_9c4e6b2d8a1f...",
+      "auto_redact": true,
+      "created_at": "2025-01-31T15:30:00Z",
+      "updated_at": "2025-01-31T16:45:00Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+**Python SDK:**
+
+```python
+chains = await client.list_chains()
+```
+
+## Get a Chain
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key" \
+  https://api.pruv.dev/v1/chains/a1b2c3d4e5f6
+```
+
+**Response (200):**
+
+```json
+{
+  "id": "a1b2c3d4e5f6",
+  "name": "deploy-pipeline",
+  "length": 42,
+  "root_xy": "xy_7e2f4a8c1d3b...",
+  "head_xy": "xy_9c4e6b2d8a1f...",
+  "head_y": "c7f1a4e6d3b9...",
+  "auto_redact": true,
+  "share_id": null,
+  "created_at": "2025-01-31T15:30:00Z",
+  "updated_at": "2025-01-31T16:45:00Z"
+}
+```
+
+**Python SDK:**
+
+```python
+chain_data = await client.get_chain("a1b2c3d4e5f6")
+```
+
+## Verify a Chain
+
+Verify the integrity of a chain stored in the cloud.
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key" \
+  https://api.pruv.dev/v1/chains/a1b2c3d4e5f6/verify
+```
+
+**Response (200) -- Valid:**
+
+```json
+{
+  "chain_id": "a1b2c3d4e5f6",
+  "valid": true,
+  "length": 42,
+  "break_index": null
+}
+```
+
+**Response (200) -- Broken:**
+
+```json
+{
+  "chain_id": "a1b2c3d4e5f6",
+  "valid": false,
+  "length": 42,
+  "break_index": 17
+}
+```
+
+**Python SDK:**
+
+```python
+result = await client.verify_chain("a1b2c3d4e5f6")
+print(f"Valid: {result['valid']}")
+```
+
+## Share a Chain
+
+Generate a shareable link for a chain. Anyone with the link can verify the chain without an API key.
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key" \
+  https://api.pruv.dev/v1/chains/a1b2c3d4e5f6/share
+```
+
+**Response (200):**
+
+```json
+{
+  "chain_id": "a1b2c3d4e5f6",
+  "share_id": "sh_7g8h9i0j",
+  "share_url": "https://app.pruv.dev/shared/sh_7g8h9i0j"
+}
+```
+
+## Verification Certificate
+
+Get a formal verification certificate for compliance purposes.
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key" \
+  https://api.pruv.dev/v1/certificate/a1b2c3d4e5f6
+```
+
+**Response (200):**
+
+```json
+{
+  "chain_id": "a1b2c3d4e5f6",
+  "chain_name": "deploy-pipeline",
+  "valid": true,
+  "length": 42,
+  "root_xy": "xy_7e2f4a8c1d3b...",
+  "head_xy": "xy_9c4e6b2d8a1f...",
+  "verified_at": "2025-01-31T16:45:00Z",
+  "break_index": null
+}
+```
+
+## Shared Chains
+
+View a publicly shared chain (no authentication required).
+
+```bash
+curl https://api.pruv.dev/v1/shared/sh_7g8h9i0j
+```
+
+**Response (200):**
+
+```json
+{
+  "chain": {
+    "id": "a1b2c3d4e5f6",
+    "name": "deploy-pipeline",
+    "length": 42
+  },
+  "entries": [
+    {
+      "index": 0,
+      "timestamp": 1706745600.0,
+      "operation": "initialize",
+      "x": "GENESIS",
+      "y": "a3f8c2e1d4b7...",
+      "xy": "xy_7e2f4a8c1d3b...",
+      "status": "success"
+    }
+  ],
+  "verified": true
+}
+```
+
+## Error Responses
+
+```json
+{
+  "detail": "Chain not found"
+}
+```
+
+| Code | Condition |
+|:----:|-----------|
+| `404` | Chain does not exist or does not belong to the authenticated user |
+| `401` | Missing or invalid API key |
+| `429` | Rate limit exceeded |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Entries API" icon="cube" href="/cloud/entries-api">
+    Append and list entries within a chain.
+  </Card>
+  <Card title="Receipts API" icon="receipt" href="/cloud/receipts-api">
+    Retrieve receipts and badges.
+  </Card>
+</CardGroup>

@@ -1,0 +1,161 @@
+---
+title: "Cloud API Overview"
+description: "The pruv cloud API at api.pruv.dev provides chain storage, verification, sharing, receipts, and team dashboards."
+---
+
+# Cloud API Overview
+
+The pruv cloud API at `https://api.pruv.dev` provides persistent storage, verification, sharing, and team access for your XY chains. All cloud features are optional -- pruv works fully offline.
+
+## Base URL
+
+```
+https://api.pruv.dev
+```
+
+All API paths are prefixed with `/v1/`.
+
+## Authentication
+
+All API requests require a Bearer token:
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_api_key_here" \
+  https://api.pruv.dev/v1/chains
+```
+
+API keys use the prefix `pv_live_` for production and `pv_test_` for development. Get your key from the [pruv dashboard](https://app.pruv.dev).
+
+See [Authentication](/cloud/authentication) for details.
+
+## API Endpoints
+
+### Chains
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/v1/chains` | [Create a chain](/cloud/chains-api#create-a-chain) |
+| `GET` | `/v1/chains` | [List all chains](/cloud/chains-api#list-chains) |
+| `GET` | `/v1/chains/{chain_id}` | [Get a chain](/cloud/chains-api#get-a-chain) |
+| `GET` | `/v1/chains/{chain_id}/verify` | [Verify a chain](/cloud/chains-api#verify-a-chain) |
+| `GET` | `/v1/chains/{chain_id}/share` | [Get share link](/cloud/chains-api#share-a-chain) |
+
+### Entries
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/v1/chains/{chain_id}/entries` | [Append entry](/cloud/entries-api#append-an-entry) |
+| `POST` | `/v1/chains/{chain_id}/entries/batch` | [Batch append](/cloud/entries-api#batch-append) |
+| `GET` | `/v1/chains/{chain_id}/entries` | [List entries](/cloud/entries-api#list-entries) |
+
+### Checkpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/v1/chains/{chain_id}/checkpoints` | [Create checkpoint](/cloud/checkpoints-api#create-a-checkpoint) |
+| `GET` | `/v1/chains/{chain_id}/checkpoints` | [List checkpoints](/cloud/checkpoints-api#list-checkpoints) |
+| `GET` | `/v1/chains/{chain_id}/checkpoints/{id}/preview` | [Preview restore](/cloud/checkpoints-api#preview-restore) |
+| `POST` | `/v1/chains/{chain_id}/checkpoints/{id}/restore` | [Restore](/cloud/checkpoints-api#restore-a-checkpoint) |
+
+### Receipts
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/v1/receipts/{receipt_id}` | [Get receipt](/cloud/receipts-api#get-a-receipt) |
+| `GET` | `/v1/receipts/{receipt_id}/pdf` | [Get receipt PDF](/cloud/receipts-api#export-receipt-pdf) |
+| `GET` | `/v1/receipts/{receipt_id}/badge` | [Get SVG badge](/cloud/receipts-api#get-receipt-badge) |
+
+### Verification
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/v1/certificate/{chain_id}` | [Get certificate](/cloud/chains-api#verification-certificate) |
+| `GET` | `/v1/shared/{share_id}` | [View shared chain](/cloud/chains-api#shared-chains) |
+
+## Response Format
+
+All responses are JSON:
+
+```json
+{
+  "id": "a1b2c3d4e5f6",
+  "name": "my-chain",
+  "length": 42,
+  "root_xy": "xy_7e2f4a8c1d3b...",
+  "head_xy": "xy_9c4e6b2d8a1f...",
+  "created_at": "2025-01-31T15:30:00Z"
+}
+```
+
+## Error Responses
+
+Errors follow a consistent format:
+
+```json
+{
+  "detail": "Chain not found"
+}
+```
+
+| Status Code | Meaning |
+|:-----------:|---------|
+| `400` | Bad request -- invalid parameters |
+| `401` | Unauthorized -- missing or invalid API key |
+| `404` | Not found -- resource does not exist |
+| `429` | Rate limited -- too many requests |
+| `500` | Server error |
+
+## Rate Limiting
+
+Responses include rate limit headers:
+
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 58
+X-RateLimit-Reset: 1706745660
+```
+
+See [Rate Limits](/cloud/rate-limits) for details by plan.
+
+## SDK Usage
+
+Use the Python SDK instead of raw HTTP:
+
+```python
+from pruv import CloudClient
+
+client = CloudClient(api_key="pv_live_your_key")
+
+# Upload a chain
+await client.upload_chain(chain)
+
+# Verify remotely
+result = await client.verify_chain("chain-id")
+
+# List chains
+chains = await client.list_chains()
+```
+
+## Health Check
+
+```bash
+curl https://api.pruv.dev/health
+```
+
+```json
+{
+  "status": "ok",
+  "version": "1.0.0"
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/cloud/authentication">
+    API key management and scopes.
+  </Card>
+  <Card title="Chains API" icon="link" href="/cloud/chains-api">
+    Create, list, and verify chains.
+  </Card>
+</CardGroup>

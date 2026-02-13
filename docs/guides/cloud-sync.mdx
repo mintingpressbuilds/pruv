@@ -1,0 +1,198 @@
+---
+title: "Cloud Sync"
+description: "Sync chains to pruv cloud for dashboards, team sharing, verification certificates, and receipt badges."
+---
+
+# Cloud Sync
+
+pruv cloud at `api.pruv.dev` provides persistent storage, team dashboards, shareable verification links, and receipt badges. Cloud sync is optional -- everything works offline.
+
+## Setup
+
+Get your API key from the [pruv dashboard](https://app.pruv.dev):
+
+```bash
+export PRUV_API_KEY=pv_live_your_api_key_here
+```
+
+Keys use the prefix `pv_live_` for production and `pv_test_` for development.
+
+## CloudClient
+
+The `CloudClient` handles API communication with retry and offline queuing:
+
+```python
+from pruv import CloudClient
+
+client = CloudClient(
+    api_key="pv_live_your_key",
+    base_url="https://api.pruv.dev",   # Default
+    max_retries=3,                      # Default
+)
+```
+
+## Uploading Chains
+
+```python
+from xycore import XYChain
+
+chain = XYChain(name="my-chain")
+chain.append("step-1", y_state={"data": "value"})
+chain.append("step-2", y_state={"more": "data"})
+
+result = await client.upload_chain(chain)
+print(f"Uploaded chain: {result}")
+```
+
+## Appending Remote Entries
+
+Add entries to a chain that already exists in the cloud:
+
+```python
+from xycore import XYEntry
+
+entry = chain.entries[-1]
+result = await client.append_entry(chain.id, entry)
+```
+
+## Retrieving Chains
+
+```python
+# Get a single chain
+chain_data = await client.get_chain("chain-id-here")
+
+# List all chains
+chains = await client.list_chains()
+```
+
+## Remote Verification
+
+Verify a chain stored in the cloud:
+
+```python
+result = await client.verify_chain("chain-id-here")
+print(f"Valid: {result['valid']}")
+print(f"Length: {result['length']}")
+```
+
+## Uploading Receipts
+
+```python
+from xycore import XYReceipt
+
+receipt = XYReceipt(...)
+result = await client.upload_receipt(receipt)
+```
+
+## CloudStorage (High-Level)
+
+For simpler workflows, use `CloudStorage` which wraps `CloudClient`:
+
+```python
+from pruv import CloudStorage
+
+storage = CloudStorage(api_key="pv_live_your_key")
+
+# Save
+await storage.save(chain)
+
+# Load
+loaded_chain = await storage.load("chain-id")
+
+# Verify
+is_valid = await storage.verify("chain-id")
+```
+
+## Offline Queue
+
+When the network is unavailable, requests are automatically queued to disk:
+
+```python
+# Requests are queued to .pruv/queue/ when offline
+client = CloudClient(api_key="pv_live_your_key")
+
+# This will queue if network is down
+await client.upload_chain(chain)
+
+# Later, flush the queue when back online
+sent = await client.flush_queue()
+print(f"Flushed {sent} queued requests")
+```
+
+Queue files are stored in `.pruv/queue/` as JSON files named by timestamp.
+
+## Automatic Cloud Sync with xy_wrap
+
+Set `api_key` in `xy_wrap` for automatic uploads:
+
+```python
+from pruv import xy_wrap
+
+@xy_wrap(
+    chain_name="auto-sync-agent",
+    api_key="pv_live_your_key",
+)
+async def my_agent(task: str):
+    return {"result": "done"}
+
+# Chain is automatically uploaded after execution
+result = await my_agent("do the thing")
+```
+
+## CLI Upload
+
+```bash
+# Upload a project scan
+pruv upload ./my-project --api-key pv_live_your_key
+
+# Or use the env var
+export PRUV_API_KEY=pv_live_your_key
+pruv upload ./my-project
+```
+
+## Authentication Headers
+
+All API requests include:
+
+```
+Authorization: Bearer pv_live_your_key
+Content-Type: application/json
+User-Agent: pruv-sdk/1.0.0
+```
+
+## Rate Limits
+
+Cloud API requests are rate-limited by plan:
+
+| Plan | Requests/min | Entries/month |
+|------|:---:|:---:|
+| Free | 60 | 1,000 |
+| Pro | 300 | 50,000 |
+| Team | 1,000 | 500,000 |
+| Enterprise | 10,000 | Unlimited |
+
+See [Rate Limits](/cloud/rate-limits) for details.
+
+## Error Handling
+
+```python
+result = await client.upload_chain(chain)
+
+if result is None:
+    print("Upload failed -- chain was queued for retry")
+else:
+    print(f"Upload successful: {result}")
+```
+
+The client handles HTTP 429 (rate limit) with exponential backoff and queues requests that fail after all retries.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Cloud API Reference" icon="book" href="/cloud/overview">
+    Full API documentation with request/response examples.
+  </Card>
+  <Card title="Authentication" icon="key" href="/cloud/authentication">
+    API key management and scopes.
+  </Card>
+</CardGroup>
