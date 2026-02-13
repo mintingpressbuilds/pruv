@@ -68,8 +68,9 @@ class WrappedAgent:
         self.approval_timeout = approval_timeout
         self.auto_redact = auto_redact
 
-    async def run(self, task: str, **kwargs: Any) -> WrappedResult:
-        """Execute the wrapped target and produce an XY chain."""
+    def run_sync(self, args: tuple, kwargs: dict) -> WrappedResult:
+        """Execute the wrapped target synchronously and produce an XY chain."""
+        task = str(args[0]) if args else "unknown"
         chain = XYChain(
             name=self.chain_name,
             auto_redact=self.auto_redact,
@@ -81,11 +82,10 @@ class WrappedAgent:
         if self.scan_dir_path:
             graph_before = scan_dir(self.scan_dir_path)
 
-        before_state = {"task": task, "timestamp": started}
+        before_state: dict[str, Any] = {"task": task, "timestamp": started}
         if graph_before:
             before_state["graph_hash"] = graph_before.hash
 
-        # Record start
         chain.append(
             operation="start",
             x_state=None,
@@ -93,26 +93,12 @@ class WrappedAgent:
             metadata={"task": task},
         )
 
-        # Execute
         output = None
         status = "success"
         error_msg = None
 
         try:
-            if inspect.iscoroutinefunction(self.target):
-                output = await self.target(task, **kwargs)
-            elif callable(self.target):
-                # Check if target has a run method
-                if hasattr(self.target, "run"):
-                    run_method = self.target.run
-                    if inspect.iscoroutinefunction(run_method):
-                        output = await run_method(task, **kwargs)
-                    else:
-                        output = run_method(task, **kwargs)
-                else:
-                    output = self.target(task, **kwargs)
-            else:
-                raise TypeError(f"Cannot wrap {type(self.target)}: not callable")
+            output = self.target(*args, **kwargs)
         except Exception as e:
             status = "failed"
             error_msg = str(e)
@@ -120,7 +106,6 @@ class WrappedAgent:
 
         completed = time.time()
 
-        # Capture after state
         graph_after = None
         if self.scan_dir_path:
             graph_after = scan_dir(self.scan_dir_path)
@@ -135,7 +120,6 @@ class WrappedAgent:
         if error_msg:
             after_state["error"] = error_msg
 
-        # Record completion
         chain.append(
             operation="complete",
             y_state=after_state,
@@ -145,10 +129,8 @@ class WrappedAgent:
             signer_id=self.signer_id,
         )
 
-        # Verify chain
         valid, _ = chain.verify()
 
-        # Create receipt
         receipt = XYReceipt(
             id=uuid.uuid4().hex[:12],
             task=task,
@@ -164,14 +146,95 @@ class WrappedAgent:
             all_verified=valid,
         )
 
-        # Cloud sync
-        if self.api_key:
-            try:
-                from ..cloud import CloudClient
-                client = CloudClient(api_key=self.api_key)
-                await client.upload_chain(chain)
-            except Exception:
-                pass  # Fail silently — offline queue handles this
+        return WrappedResult(
+            output=output,
+            chain=chain,
+            receipt=receipt,
+            graph_before=graph_before,
+            graph_after=graph_after,
+        )
+
+    async def run(self, args: tuple, kwargs: dict) -> WrappedResult:
+        """Execute the wrapped target asynchronously and produce an XY chain."""
+        task = str(args[0]) if args else "unknown"
+        chain = XYChain(
+            name=self.chain_name,
+            auto_redact=self.auto_redact,
+        )
+        started = time.time()
+
+        graph_before = None
+        if self.scan_dir_path:
+            graph_before = scan_dir(self.scan_dir_path)
+
+        before_state: dict[str, Any] = {"task": task, "timestamp": started}
+        if graph_before:
+            before_state["graph_hash"] = graph_before.hash
+
+        chain.append(
+            operation="start",
+            x_state=None,
+            y_state=before_state,
+            metadata={"task": task},
+        )
+
+        output = None
+        status = "success"
+        error_msg = None
+
+        try:
+            if inspect.iscoroutinefunction(self.target):
+                output = await self.target(*args, **kwargs)
+            elif callable(self.target):
+                output = self.target(*args, **kwargs)
+            else:
+                raise TypeError(f"Cannot wrap {type(self.target)}: not callable")
+        except Exception as e:
+            status = "failed"
+            error_msg = str(e)
+            output = None
+
+        completed = time.time()
+
+        graph_after = None
+        if self.scan_dir_path:
+            graph_after = scan_dir(self.scan_dir_path)
+
+        after_state: dict[str, Any] = {
+            "task": task,
+            "status": status,
+            "timestamp": completed,
+        }
+        if graph_after:
+            after_state["graph_hash"] = graph_after.hash
+        if error_msg:
+            after_state["error"] = error_msg
+
+        chain.append(
+            operation="complete",
+            y_state=after_state,
+            status=status,
+            metadata={"duration": completed - started},
+            private_key=self.private_key if self.sign else None,
+            signer_id=self.signer_id,
+        )
+
+        valid, _ = chain.verify()
+
+        receipt = XYReceipt(
+            id=uuid.uuid4().hex[:12],
+            task=task,
+            started=started,
+            completed=completed,
+            duration=completed - started,
+            chain_id=chain.id,
+            entry_count=chain.length,
+            first_x=chain.entries[0].x,
+            final_y=chain.entries[-1].y,
+            root_xy=chain.root or "",
+            head_xy=chain.entries[-1].xy,
+            all_verified=valid,
+        )
 
         return WrappedResult(
             output=output,
@@ -218,36 +281,33 @@ def xy_wrap(
             auto_redact=auto_redact,
         )
 
+    def _wrap_callable(t: Any) -> Any:
+        agent = _make_wrapper(t)
+
+        if inspect.iscoroutinefunction(t):
+            @functools.wraps(t)
+            async def async_decorated(*args: Any, **kwargs: Any) -> WrappedResult:
+                return await agent.run(args, kwargs)
+            async_decorated._agent = agent  # type: ignore[attr-defined]
+            return async_decorated
+        else:
+            @functools.wraps(t)
+            def sync_decorated(*args: Any, **kwargs: Any) -> WrappedResult:
+                return agent.run_sync(args, kwargs)
+            sync_decorated._agent = agent  # type: ignore[attr-defined]
+            return sync_decorated
+
     if target is not None:
         # Direct call: xy_wrap(my_agent) or @xy_wrap
         if callable(target) and not isinstance(target, type):
-            # Wrap as a decorated function
-            agent = _make_wrapper(target)
-
-            @functools.wraps(target)
-            async def decorated(*args: Any, **kwargs: Any) -> WrappedResult:
-                task = args[0] if args else kwargs.get("task", "unknown")
-                return await agent.run(str(task), **kwargs)
-
-            decorated._agent = agent  # type: ignore[attr-defined]
-            decorated.run = agent.run  # type: ignore[attr-defined]
-            return decorated
+            return _wrap_callable(target)
         else:
             return _make_wrapper(target)
 
     # Called with arguments: @xy_wrap(sign=True)
     def decorator(t: Any) -> Any:
         if callable(t) and not isinstance(t, type):
-            agent = _make_wrapper(t)
-
-            @functools.wraps(t)
-            async def decorated(*args: Any, **kwargs: Any) -> WrappedResult:
-                task = args[0] if args else kwargs.get("task", "unknown")
-                return await agent.run(str(task), **kwargs)
-
-            decorated._agent = agent  # type: ignore[attr-defined]
-            decorated.run = agent.run  # type: ignore[attr-defined]
-            return decorated
+            return _wrap_callable(t)
         else:
             return _make_wrapper(t)
 

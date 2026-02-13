@@ -105,7 +105,7 @@ class TestXYWrap:
             return f"done: {task}"
 
         wrapped = xy_wrap(my_func)
-        result = asyncio.run(wrapped.run("test task"))
+        result = wrapped("test task")
         assert isinstance(result, WrappedResult)
         assert result.output == "done: test task"
         assert result.verified
@@ -116,7 +116,7 @@ class TestXYWrap:
             return f"async done: {task}"
 
         wrapped = xy_wrap(my_func)
-        result = asyncio.run(wrapped.run("test task"))
+        result = asyncio.run(wrapped("test task"))
         assert result.output == "async done: test task"
         assert result.verified
 
@@ -125,7 +125,7 @@ class TestXYWrap:
             raise ValueError("something broke")
 
         wrapped = xy_wrap(bad_func)
-        result = asyncio.run(wrapped.run("fail"))
+        result = wrapped("fail")
         assert result.output is None
         assert result.receipt.entry_count == 2  # start + complete(failed)
 
@@ -143,7 +143,7 @@ class TestXYWrap:
             return task
 
         wrapped = xy_wrap(noop)
-        result = asyncio.run(wrapped.run("receipt test"))
+        result = wrapped("receipt test")
         receipt = result.receipt
         assert receipt.task == "receipt test"
         assert receipt.entry_count > 0
