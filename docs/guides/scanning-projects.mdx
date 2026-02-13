@@ -1,0 +1,254 @@
+---
+title: "Scanning Projects"
+description: "Use the pruv scanner to create deterministic fingerprints of project directories. Detect files, imports, env vars, frameworks, and services."
+---
+
+# Scanning Projects
+
+The pruv scanner analyzes a project directory and produces a deterministic `Graph` -- a complete fingerprint of the project's files, imports, environment variables, frameworks, and services.
+
+## Basic Usage
+
+```python
+from pruv import scan
+
+graph = scan("./my-project")
+
+print(f"Root: {graph.root}")
+print(f"Files: {len(graph.files)}")
+print(f"Hash: {graph.hash}")
+```
+
+## What Gets Detected
+
+### Files
+
+Every file is catalogued with language detection:
+
+```python
+for f in graph.files[:5]:
+    print(f"  {f['path']} ({f['language']}, {f['lines']} lines, {f['size']} bytes)")
+```
+
+Supported languages:
+
+| Extension | Language |
+|-----------|----------|
+| `.py` | python |
+| `.js` | javascript |
+| `.ts`, `.tsx` | typescript |
+| `.go` | go |
+| `.rs` | rust |
+| `.java` | java |
+| `.rb` | ruby |
+| `.swift` | swift |
+| `.kt` | kotlin |
+| `.cs` | csharp |
+| `.cpp`, `.hpp` | cpp |
+| `.c`, `.h` | c |
+| `.php` | php |
+| `.sql` | sql |
+| `.yml`, `.yaml` | yaml |
+| `.json` | json |
+| `.toml` | toml |
+| `.html` | html |
+| `.css`, `.scss` | css/scss |
+| `.md` | markdown |
+
+### Imports
+
+Imports are extracted from Python, JavaScript, and TypeScript files:
+
+```python
+for imp in graph.imports[:5]:
+    print(f"  {imp['module']} (from {imp['source_file']}, {imp['language']})")
+```
+
+### Environment Variables
+
+Environment variable references are detected across files:
+
+```python
+for env in graph.env_vars:
+    print(f"  {env['name']} (in {env['source_file']}:{env['line']})")
+```
+
+Detected patterns:
+- `os.environ["VAR_NAME"]`
+- `os.getenv("VAR_NAME")`
+- `process.env.VAR_NAME`
+- `ENV["VAR_NAME"]`
+
+### Frameworks
+
+Frameworks are detected by file presence and import analysis:
+
+```python
+for fw in graph.frameworks:
+    print(f"  {fw['name']} (confidence: {fw['confidence']}, evidence: {fw['evidence']})")
+```
+
+Detected frameworks:
+
+| Framework | Detection Method |
+|-----------|-----------------|
+| Next.js | `next.config.js/ts/mjs` file or `next` import |
+| React | `react` or `react-dom` import |
+| Django | `manage.py` file or `django` import |
+| Flask | `flask` import |
+| FastAPI | `fastapi` import |
+| Express | `express` import |
+| LangChain | `langchain` import |
+| CrewAI | `crewai` import |
+| AutoGen | `autogen` or `pyautogen` import |
+| OpenAI | `openai` import |
+
+### Services
+
+External services are detected by API key patterns and connection strings:
+
+```python
+for svc in graph.services:
+    print(f"  {svc['name']} (in {svc['source_file']})")
+```
+
+Detected services: Stripe, Supabase, OpenAI, AWS, GitHub, Redis, PostgreSQL.
+
+## The Graph Hash
+
+The `graph.hash` is a deterministic SHA-256 fingerprint of the entire project:
+
+```python
+graph = scan("./my-project")
+print(graph.hash)
+# "a3f8c2e1d4b75e9f2a6c8d4b7e1f3a5c9d2b8e4f6a1c7d3b9e5f2a8c4d6b"
+```
+
+Two scans of the same unmodified project produce the identical hash. The hash is computed from:
+- Sorted file list (path, language, size, lines)
+- Sorted import modules
+- Sorted environment variable names
+- Sorted framework names
+- Sorted service names
+
+## Graph Diffing
+
+Compare two graphs to see what changed:
+
+```python
+from pruv import scan
+
+before = scan("./my-project")
+# ... agent makes changes ...
+after = scan("./my-project")
+
+diff = before.diff(after)
+print(f"Summary: {diff.summary}")
+print(f"Total changes: {diff.total_changes}")
+
+for change in diff.added:
+    print(f"  + {change.path}")
+for change in diff.removed:
+    print(f"  - {change.path}")
+for change in diff.modified:
+    print(f"  ~ {change.path}")
+```
+
+## Ignored Directories
+
+The scanner automatically skips these directories:
+
+```
+node_modules, .git, __pycache__, .venv, venv, .env, dist, build,
+.next, .nuxt, target, .pytest_cache, .mypy_cache, eggs, *.egg-info,
+.tox, .cache, coverage, .coverage
+```
+
+And these files:
+
+```
+.DS_Store, Thumbs.db, .gitkeep
+```
+
+## Including File Contents
+
+For full project snapshots (used in checkpoints), include file contents:
+
+```python
+graph = scan("./my-project", include_contents=True)
+print(f"File contents captured: {len(graph.file_contents)}")
+```
+
+<Warning>
+  Including file contents significantly increases memory usage and storage size. Only use this when creating checkpoints that need full restore capability.
+</Warning>
+
+## CLI Usage
+
+```bash
+# Basic scan
+pruv scan ./my-project
+
+# JSON output
+pruv scan ./my-project --json-output
+
+# Save to file
+pruv scan ./my-project --output scan.json
+
+# Include file contents
+pruv scan ./my-project --include-contents --output full-scan.json
+```
+
+Example output:
+
+```
+pruv scan: ./my-project
+  Files: 42
+  Lines: 3847
+  Hash:  a3f8c2e1d4b75e9f2a6c8d4b7e1f3a5c9d2b8e4f6a1c7d3b9e5f2a8c4d6b
+  Frameworks: fastapi, react
+  Services: postgresql, redis, stripe
+  Env vars: 8
+```
+
+## Using Scans in Chains
+
+Record a scan as a chain entry:
+
+```python
+from xycore import XYChain
+from pruv import scan
+
+chain = XYChain(name="project-audit")
+graph = scan("./my-project")
+
+chain.append(
+    operation="scan",
+    y_state=graph.to_state_dict(),
+    metadata={"root": graph.root},
+)
+```
+
+The `to_state_dict()` method produces a compact representation suitable for hashing:
+
+```python
+state = graph.to_state_dict()
+# {
+#   "graph_hash": "a3f8c2e1...",
+#   "file_count": 42,
+#   "files": ["app.py", "config.py", ...],
+#   "frameworks": ["fastapi"],
+#   "services": ["postgresql", "redis"],
+# }
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Checkpoint/Restore" icon="clock-rotate-left" href="/guides/checkpoint-restore">
+    Use scans to create restorable checkpoints.
+  </Card>
+  <Card title="Wrapping Agents" icon="robot" href="/guides/wrapping-agents">
+    Combine scanning with agent wrapping.
+  </Card>
+</CardGroup>

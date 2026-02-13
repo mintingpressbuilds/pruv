@@ -1,0 +1,210 @@
+---
+title: "DevOps & CI/CD"
+description: "Create tamper-evident build, test, and deployment pipelines with pruv. Prove that every step in your CI/CD pipeline executed correctly."
+---
+
+# DevOps & CI/CD
+
+pruv creates tamper-evident records of your entire deployment pipeline. From source code scanning through testing, building, and deploying, every step is cryptographically linked and verifiable.
+
+## The Problem
+
+Modern CI/CD pipelines have trust gaps:
+- Build artifacts can be swapped after testing
+- Deployment logs can be edited
+- It is hard to prove that tests actually ran before a release
+- Supply chain attacks can inject malicious code between build steps
+
+## Pipeline Verification
+
+Create a chain that tracks every step of your deployment:
+
+```python
+from xycore import XYChain, generate_keypair
+from pruv import scan
+
+private_key, public_key = generate_keypair()
+chain = XYChain(name="deploy-v2.1.0", auto_redact=True)
+
+# Step 1: Scan source code
+graph = scan("./src")
+chain.append(
+    operation="source-scan",
+    y_state=graph.to_state_dict(),
+    metadata={"commit": "abc123f", "branch": "main"},
+    private_key=private_key,
+    signer_id="ci-pipeline@company.com",
+)
+
+# Step 2: Run tests
+chain.append(
+    operation="test",
+    y_state={
+        "framework": "pytest",
+        "total": 342,
+        "passed": 342,
+        "failed": 0,
+        "coverage": 91.2,
+    },
+    status="success",
+    private_key=private_key,
+    signer_id="ci-pipeline@company.com",
+)
+
+# Step 3: Build artifact
+chain.append(
+    operation="build",
+    y_state={
+        "image": "registry.company.com/app:v2.1.0",
+        "digest": "sha256:a1b2c3d4e5f6...",
+        "size_mb": 142,
+    },
+    private_key=private_key,
+    signer_id="ci-pipeline@company.com",
+)
+
+# Step 4: Deploy
+chain.append(
+    operation="deploy",
+    y_state={
+        "environment": "production",
+        "replicas": 3,
+        "url": "https://app.company.com",
+        "health_check": "passing",
+    },
+    status="success",
+    metadata={"approved_by": "alice@company.com"},
+    private_key=private_key,
+    signer_id="ci-pipeline@company.com",
+)
+
+# Verify
+valid, _ = chain.verify()
+sigs_valid, _ = chain.verify_signatures()
+print(f"Pipeline verified: {valid}, signatures: {sigs_valid}")
+```
+
+## GitHub Actions Integration
+
+```yaml
+name: Verified Deploy
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pruv
+        run: pip install pruv
+
+      - name: Scan project
+        run: pruv scan . --json-output > scan.json
+
+      - name: Run tests
+        run: pytest --tb=short
+
+      - name: Build and deploy
+        run: |
+          docker build -t app:${{ github.sha }} .
+          docker push app:${{ github.sha }}
+
+      - name: Upload verification chain
+        env:
+          PRUV_API_KEY: ${{ secrets.PRUV_API_KEY }}
+        run: pruv upload .
+```
+
+## Infrastructure as Code
+
+Track infrastructure changes with verified chains:
+
+```python
+chain = XYChain(name="infra-changes")
+
+# Before Terraform apply
+chain.append(
+    operation="plan",
+    y_state={
+        "resources_to_add": 3,
+        "resources_to_change": 1,
+        "resources_to_destroy": 0,
+        "plan_hash": "sha256:...",
+    },
+)
+
+# After Terraform apply
+chain.append(
+    operation="apply",
+    y_state={
+        "resources_created": 3,
+        "resources_updated": 1,
+        "state_hash": "sha256:...",
+    },
+    status="success",
+)
+```
+
+## Incident Response
+
+When investigating incidents, verified chains provide irrefutable evidence:
+
+```python
+# Load the deployment chain
+from xycore import LocalStorage
+
+storage = LocalStorage(".pruv")
+chain = storage.load("deploy-chain-id")
+
+# Verify it has not been tampered with
+valid, break_index = chain.verify()
+if not valid:
+    print(f"WARNING: Chain tampered at entry {break_index}")
+
+# Walk through what happened
+for entry in chain:
+    print(f"[{entry.index}] {entry.operation} ({entry.status})")
+    print(f"    Time: {entry.timestamp}")
+    if entry.y_state:
+        print(f"    State: {entry.y_state}")
+```
+
+## Deployment Receipts
+
+Generate receipts for deployment sign-off:
+
+```python
+from xycore import XYReceipt
+
+receipt = XYReceipt(
+    id="deploy-2025-01-31",
+    task="deploy-app-v2.1.0-to-production",
+    started=chain.entries[0].timestamp,
+    completed=chain.entries[-1].timestamp,
+    duration=chain.entries[-1].timestamp - chain.entries[0].timestamp,
+    chain_id=chain.id,
+    entry_count=chain.length,
+    first_x=chain.entries[0].x,
+    final_y=chain.entries[-1].y,
+    root_xy=chain.root,
+    head_xy=chain.entries[-1].xy,
+    all_verified=valid,
+)
+
+# Share receipt hash in Slack, Jira, or your deployment tracker
+print(f"Deployment receipt: {receipt.hash}")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Scanning Projects" icon="magnifying-glass" href="/guides/scanning-projects">
+    Deep dive into project scanning for CI/CD.
+  </Card>
+  <Card title="Cloud Sync" icon="cloud" href="/guides/cloud-sync">
+    Sync deployment chains to pruv cloud.
+  </Card>
+</CardGroup>

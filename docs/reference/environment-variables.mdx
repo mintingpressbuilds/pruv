@@ -1,0 +1,155 @@
+---
+title: "Environment Variables"
+description: "Complete reference for all pruv environment variables. Configure API keys, auto-redaction, checkpointing, and more."
+---
+
+# Environment Variables
+
+pruv behavior can be configured through environment variables. All variables are optional -- pruv works with sensible defaults.
+
+## SDK Variables
+
+### PRUV_API_KEY
+
+API key for pruv cloud sync and CLI operations.
+
+```bash
+export PRUV_API_KEY=pv_live_your_api_key_here
+```
+
+| Detail | Value |
+|--------|-------|
+| **Required** | No |
+| **Default** | None (cloud sync disabled) |
+| **Format** | `pv_live_*` (production) or `pv_test_*` (development) |
+| **Used by** | `CloudClient`, `CloudStorage`, `pruv upload`, `xy_wrap(api_key=...)` |
+
+Get your API key from the [pruv dashboard](https://app.pruv.dev).
+
+### PRUV_AUTO_REDACT
+
+Enable or disable automatic secret redaction in chain states.
+
+```bash
+export PRUV_AUTO_REDACT=true
+```
+
+| Detail | Value |
+|--------|-------|
+| **Required** | No |
+| **Default** | `true` |
+| **Values** | `true`, `false` |
+| **Used by** | `XYChain(auto_redact=...)` |
+
+When enabled, pruv automatically detects and replaces secrets (API keys, passwords, tokens) with `[REDACTED]` before storing them in chain entries.
+
+### PRUV_AUTO_CHECKPOINT
+
+Enable or disable automatic checkpointing at regular intervals.
+
+```bash
+export PRUV_AUTO_CHECKPOINT=false
+```
+
+| Detail | Value |
+|--------|-------|
+| **Required** | No |
+| **Default** | `false` |
+| **Values** | `true`, `false` |
+| **Used by** | `XYChain(auto_checkpoint=...)` |
+
+When enabled and a `CheckpointManager` is attached, a checkpoint is automatically created every `checkpoint_interval` entries (default: 20).
+
+## Server Variables (api.pruv.dev)
+
+These variables are used by the pruv cloud API server:
+
+### DATABASE_URL
+
+PostgreSQL connection string.
+
+```bash
+export DATABASE_URL=postgresql://localhost:5432/pruv
+```
+
+### REDIS_URL
+
+Redis connection string for caching and rate limiting.
+
+```bash
+export REDIS_URL=redis://localhost:6379
+```
+
+### JWT_SECRET
+
+Secret key for JWT token generation.
+
+```bash
+export JWT_SECRET=your-secret-key-here
+```
+
+### OAuth Providers
+
+```bash
+export GITHUB_CLIENT_ID=your_github_client_id
+export GITHUB_CLIENT_SECRET=your_github_client_secret
+export GOOGLE_CLIENT_ID=your_google_client_id
+export GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
+
+### Stripe
+
+```bash
+export STRIPE_SECRET_KEY=sk_live_your_stripe_key
+export STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+```
+
+### Cloudflare R2 Storage
+
+```bash
+export R2_BUCKET=pruv-chains
+export R2_ACCESS_KEY=your_access_key
+export R2_SECRET_KEY=your_secret_key
+export R2_ENDPOINT=https://your-account.r2.cloudflarestorage.com
+```
+
+### Application Settings
+
+```bash
+export DEBUG=false
+export DATABASE_POOL_SIZE=10
+```
+
+## Complete .env Example
+
+```bash
+# pruv SDK
+PRUV_API_KEY=pv_live_your_api_key_here
+PRUV_AUTO_REDACT=true
+PRUV_AUTO_CHECKPOINT=false
+
+# Server (only needed if self-hosting api.pruv.dev)
+DATABASE_URL=postgresql://localhost:5432/pruv
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=change-this-in-production
+DEBUG=false
+```
+
+## Priority Order
+
+Configuration values are resolved in this order (highest priority first):
+
+1. **Function arguments**: `XYChain(auto_redact=False)` overrides env var
+2. **Environment variables**: `PRUV_AUTO_REDACT=false`
+3. **Defaults**: Sensible defaults built into the code
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/getting-started/installation">
+    Set up pruv with environment variables.
+  </Card>
+  <Card title="Cloud Sync" icon="cloud" href="/guides/cloud-sync">
+    Configure cloud sync with PRUV_API_KEY.
+  </Card>
+</CardGroup>

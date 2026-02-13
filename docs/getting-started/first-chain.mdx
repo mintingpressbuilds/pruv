@@ -1,0 +1,234 @@
+---
+title: "Your First Chain"
+description: "Build a complete XY chain with signatures, scanning, cloud sync, and verification."
+---
+
+# Your First Chain
+
+This tutorial builds on the [Quickstart](/getting-started/quickstart) by adding digital signatures, project scanning, cloud sync, and approval gates. By the end, you will have a production-ready verification workflow.
+
+## The Scenario
+
+You are building a CI/CD pipeline that needs to prove:
+1. What the project looked like before deployment
+2. What tests were run
+3. What was deployed
+4. Who authorized the deployment
+
+## Step 1: Scan the Project
+
+Start by capturing a deterministic snapshot of your project:
+
+```python
+from pruv import scan
+
+# Scan your project directory
+graph = scan("./my-project")
+
+print(f"Files: {len(graph.files)}")
+print(f"Hash: {graph.hash}")
+print(f"Frameworks: {[f['name'] for f in graph.frameworks]}")
+print(f"Services: {[s['name'] for s in graph.services]}")
+print(f"Env vars: {[e['name'] for e in graph.env_vars]}")
+```
+
+The `Graph` object contains a deterministic hash of every file, import, environment variable, framework, and service detected in the project. Two scans of the same project produce the same hash.
+
+## Step 2: Create a Signed Chain
+
+Generate a keypair and create a chain with digital signatures:
+
+```python
+from xycore import XYChain, generate_keypair
+
+# Generate an Ed25519 keypair
+private_key, public_key = generate_keypair()
+
+# Create the chain
+chain = XYChain(name="deploy-pipeline", auto_redact=True)
+
+# Record the scan as the first entry (signed)
+chain.append(
+    operation="scan",
+    y_state=graph.to_state_dict(),
+    metadata={"project": "my-project", "branch": "main"},
+    private_key=private_key,
+    signer_id="ci-bot@mycompany.com",
+)
+```
+
+## Step 3: Record Test Results
+
+```python
+chain.append(
+    operation="test",
+    y_state={
+        "tests_run": 142,
+        "tests_passed": 142,
+        "tests_failed": 0,
+        "coverage": 87.3,
+    },
+    status="success",
+    metadata={"runner": "pytest", "duration": 23.4},
+    private_key=private_key,
+    signer_id="ci-bot@mycompany.com",
+)
+```
+
+## Step 4: Record the Deployment
+
+```python
+chain.append(
+    operation="deploy",
+    y_state={
+        "environment": "production",
+        "image": "my-project:v1.2.3",
+        "replicas": 3,
+        "url": "https://my-project.example.com",
+    },
+    status="success",
+    metadata={
+        "deployer": "ci-bot",
+        "approved_by": "alice@mycompany.com",
+        "commit": "abc123f",
+    },
+    private_key=private_key,
+    signer_id="ci-bot@mycompany.com",
+)
+```
+
+## Step 5: Verify Everything
+
+```python
+# Verify chain integrity
+valid, break_index = chain.verify()
+print(f"Chain valid: {valid}")  # True
+
+# Verify all signatures
+sigs_valid, sig_break = chain.verify_signatures()
+print(f"Signatures valid: {sigs_valid}")  # True
+
+# Inspect the chain
+print(f"Root XY: {chain.root}")
+print(f"Head: {chain.head}")
+print(f"Entries: {chain.length}")
+```
+
+## Step 6: Generate a Receipt
+
+A receipt is a compact summary of a completed chain, suitable for sharing with auditors:
+
+```python
+import time
+import uuid
+from xycore import XYReceipt
+
+receipt = XYReceipt(
+    id=uuid.uuid4().hex[:12],
+    task="deploy-my-project-v1.2.3",
+    started=chain.entries[0].timestamp,
+    completed=chain.entries[-1].timestamp,
+    duration=chain.entries[-1].timestamp - chain.entries[0].timestamp,
+    chain_id=chain.id,
+    entry_count=chain.length,
+    first_x=chain.entries[0].x,
+    final_y=chain.entries[-1].y,
+    root_xy=chain.root,
+    head_xy=chain.entries[-1].xy,
+    all_verified=valid,
+    all_signatures_valid=sigs_valid,
+)
+
+print(f"Receipt ID: {receipt.id}")
+print(f"Receipt hash: {receipt.hash}")
+```
+
+## Step 7: Save Locally
+
+```python
+from xycore import LocalStorage
+
+storage = LocalStorage(".pruv")
+path = storage.save(chain)
+print(f"Chain saved to: {path}")
+```
+
+## Step 8: Sync to Cloud (Optional)
+
+If you have a pruv API key, sync the chain for dashboard access and team sharing:
+
+```python
+import asyncio
+from pruv import CloudClient
+
+async def sync_to_cloud():
+    client = CloudClient(api_key="pv_live_your_key_here")
+    result = await client.upload_chain(chain)
+    print(f"Uploaded: {result}")
+
+asyncio.run(sync_to_cloud())
+```
+
+Or set the `PRUV_API_KEY` environment variable and use the CLI:
+
+```bash
+export PRUV_API_KEY=pv_live_your_key_here
+pruv upload ./my-project
+```
+
+## Step 9: Share a Verified Chain
+
+Once synced, you can generate a shareable verification link:
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key_here" \
+  https://api.pruv.dev/v1/chains/{chain_id}/share
+```
+
+Response:
+
+```json
+{
+  "chain_id": "a1b2c3d4e5f6",
+  "share_id": "sh_7g8h9i0j",
+  "share_url": "https://app.pruv.dev/shared/sh_7g8h9i0j"
+}
+```
+
+Anyone with the share link can verify the chain's integrity without needing an API key.
+
+## The All-in-One Approach: xy_wrap
+
+For the simplest workflow, use `xy_wrap` to automatically create chains, scan projects, sign entries, and sync to cloud:
+
+```python
+from pruv import xy_wrap
+
+@xy_wrap(
+    chain_name="deploy-pipeline",
+    scan_dir="./my-project",
+    sign=True,
+    private_key=private_key,
+    signer_id="ci-bot@mycompany.com",
+    api_key="pv_live_your_key_here",
+)
+async def deploy(task: str):
+    # Your deployment logic here
+    return {"status": "deployed", "version": "1.2.3"}
+
+# Run it
+result = await deploy("deploy my-project to production")
+print(f"Verified: {result.verified}")
+print(f"Receipt: {result.receipt.hash}")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="XY Primitive Deep Dive" icon="atom" href="/concepts/xy-primitive">
+    Understand exactly how the XY proof system works.
+  </Card>
+  <Card title="Wrapping Agents" icon="robot" href="/guides/wrapping-agents">
+    Use xy_wrap with AI agents like LangChain, CrewAI, and OpenAI.
+  </Card>
+</CardGroup>

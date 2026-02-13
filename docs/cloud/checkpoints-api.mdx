@@ -1,0 +1,166 @@
+---
+title: "Checkpoints API"
+description: "Create, list, preview, and restore chain checkpoints via the pruv cloud API."
+---
+
+# Checkpoints API
+
+The Checkpoints API lets you create point-in-time snapshots of chains, preview what would change if restored, and restore chains to previous states.
+
+## Create a Checkpoint
+
+Create a checkpoint at the chain's current state.
+
+```bash
+curl -X POST https://api.pruv.dev/v1/chains/a1b2c3d4e5f6/checkpoints \
+  -H "Authorization: Bearer pv_live_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "before-migration"
+  }'
+```
+
+### Request Body
+
+<ParamField body="name" type="string" required>
+  Checkpoint name (1-255 characters).
+</ParamField>
+
+### Response (201)
+
+```json
+{
+  "id": "cp_8f3a2e1c",
+  "chain_id": "a1b2c3d4e5f6",
+  "name": "before-migration",
+  "entry_index": 41,
+  "created_at": "2025-01-31T16:00:00Z"
+}
+```
+
+## List Checkpoints
+
+List all checkpoints for a chain.
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key" \
+  https://api.pruv.dev/v1/chains/a1b2c3d4e5f6/checkpoints
+```
+
+### Response (200)
+
+```json
+{
+  "checkpoints": [
+    {
+      "id": "cp_8f3a2e1c",
+      "chain_id": "a1b2c3d4e5f6",
+      "name": "before-migration",
+      "entry_index": 41,
+      "created_at": "2025-01-31T16:00:00Z"
+    },
+    {
+      "id": "cp_2d5b7c9e",
+      "chain_id": "a1b2c3d4e5f6",
+      "name": "before-refactor",
+      "entry_index": 25,
+      "created_at": "2025-01-31T14:00:00Z"
+    }
+  ]
+}
+```
+
+## Preview Restore
+
+Preview what would change if restoring to a checkpoint, without actually restoring.
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key" \
+  https://api.pruv.dev/v1/chains/a1b2c3d4e5f6/checkpoints/cp_8f3a2e1c/preview
+```
+
+### Response (200)
+
+```json
+{
+  "checkpoint_id": "cp_8f3a2e1c",
+  "checkpoint_name": "before-migration",
+  "current_entry_index": 55,
+  "target_entry_index": 41,
+  "entries_to_rollback": 14
+}
+```
+
+The `entries_to_rollback` field tells you how many entries would be removed by restoring to this checkpoint.
+
+## Restore a Checkpoint
+
+Restore a chain to a checkpoint state. This replaces the chain's entries with the checkpoint's snapshot.
+
+```bash
+curl -X POST https://api.pruv.dev/v1/chains/a1b2c3d4e5f6/checkpoints/cp_8f3a2e1c/restore \
+  -H "Authorization: Bearer pv_live_your_key"
+```
+
+### Response (200)
+
+```json
+{
+  "restored": true,
+  "checkpoint_id": "cp_8f3a2e1c",
+  "new_length": 42
+}
+```
+
+<Warning>
+  Restoring a checkpoint is a destructive operation. Entries after the checkpoint are removed from the chain. Consider creating a new checkpoint before restoring.
+</Warning>
+
+## Error Responses
+
+| Code | Condition |
+|:----:|-----------|
+| `404` | Chain or checkpoint not found |
+| `401` | Invalid API key |
+| `429` | Rate limit exceeded |
+
+## Python SDK
+
+```python
+from pruv import CloudClient
+
+client = CloudClient(api_key="pv_live_your_key")
+
+# The CloudClient does not have direct checkpoint methods --
+# use the CheckpointManager for local operations or the API directly.
+```
+
+For local checkpoint management, use the `CheckpointManager`:
+
+```python
+from pruv import CheckpointManager
+from xycore import XYChain
+
+chain = XYChain(name="my-chain")
+manager = CheckpointManager(chain, project_dir="./my-project")
+
+# Create
+cp = manager.create("before-migration")
+
+# Preview
+preview = manager.preview_restore(cp.id)
+
+# Restore
+manager.restore(cp.id)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Receipts API" icon="receipt" href="/cloud/receipts-api">
+    Retrieve receipts and export badges.
+  </Card>
+  <Card title="Checkpoint Guide" icon="clock-rotate-left" href="/guides/checkpoint-restore">
+    Production patterns for checkpoints.
+  </Card>
+</CardGroup>

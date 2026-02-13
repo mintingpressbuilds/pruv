@@ -1,0 +1,187 @@
+---
+title: "Auto-Redaction"
+description: "pruv automatically detects and redacts secrets, API keys, passwords, and tokens from chain state data before storage."
+---
+
+# Auto-Redaction
+
+pruv automatically detects and redacts secrets in state dictionaries before they are hashed and stored. This prevents sensitive data from leaking into chain files, cloud storage, or shared receipts.
+
+## How It Works
+
+When `auto_redact=True` (the default), pruv runs `redact_state()` on every `x_state` and `y_state` before appending an entry:
+
+```python
+chain = XYChain(name="example", auto_redact=True)
+
+chain.append(
+    operation="configure",
+    y_state={
+        "database": "postgres://user:password@host/db",
+        "api_key": "sk_live_abc123def456",
+        "app_name": "my-service",
+    },
+)
+
+# The stored y_state will be:
+# {
+#   "database": "postgres://user:password@host/db",  -- connection string kept
+#   "api_key": "[REDACTED]",                          -- key name matched
+#   "app_name": "my-service",                         -- safe
+# }
+```
+
+Redaction uses two detection strategies:
+
+### 1. Key Name Patterns
+
+Dictionary keys matching these patterns have their values replaced with `"[REDACTED]"`:
+
+| Pattern | Matches |
+|---------|---------|
+| `password` | `password`, `db_password`, `user_password` |
+| `secret` | `secret`, `client_secret`, `stripe_secret` |
+| `api[_-]?key` | `api_key`, `apikey`, `api-key` |
+| `token` | `token`, `access_token`, `auth_token` |
+| `private[_-]?key` | `private_key`, `privatekey` |
+| `auth` | `auth`, `authorization`, `auth_header` |
+| `credential` | `credential`, `credentials` |
+| `access[_-]?key` | `access_key`, `accesskey` |
+
+All patterns are case-insensitive.
+
+### 2. Value Patterns
+
+String values matching known secret formats are redacted inline:
+
+| Pattern | Example |
+|---------|---------|
+| `sk_live_*` | Stripe live keys |
+| `sk_test_*` | Stripe test keys |
+| `pv_live_*` | pruv live API keys |
+| `pv_test_*` | pruv test API keys |
+| `ghp_*` | GitHub personal access tokens |
+| `gho_*` | GitHub OAuth tokens |
+| `ghs_*` | GitHub server tokens |
+| `ghr_*` | GitHub refresh tokens |
+| `AKIA*` | AWS access key IDs |
+
+```python
+from xycore import redact_state
+
+state = {
+    "config": "token=ghp_abc123def456 and key=sk_live_xyz789",
+    "safe": "this is fine",
+}
+
+redacted = redact_state(state)
+# {
+#   "config": "token=[REDACTED] and key=[REDACTED]",
+#   "safe": "this is fine",
+# }
+```
+
+## Recursive Redaction
+
+Redaction works recursively through nested dictionaries and lists:
+
+```python
+state = {
+    "services": [
+        {"name": "stripe", "secret_key": "sk_live_abc123"},
+        {"name": "database", "password": "super-secret"},
+    ],
+    "nested": {
+        "deep": {
+            "api_key": "should-be-redacted"
+        }
+    }
+}
+
+redacted = redact_state(state)
+# {
+#   "services": [
+#     {"name": "stripe", "secret_key": "[REDACTED]"},
+#     {"name": "database", "password": "[REDACTED]"},
+#   ],
+#   "nested": {
+#     "deep": {
+#       "api_key": "[REDACTED]"
+#     }
+#   }
+# }
+```
+
+The maximum recursion depth is 50 levels to prevent infinite recursion on circular references.
+
+## Disabling Redaction
+
+To disable auto-redaction for a chain:
+
+```python
+chain = XYChain(name="no-redaction", auto_redact=False)
+```
+
+Or control it via environment variable:
+
+```bash
+export PRUV_AUTO_REDACT=false
+```
+
+<Warning>
+  Disabling redaction means secrets will be stored in plain text in chain files and potentially synced to the cloud. Only disable redaction in controlled environments where you are certain no secrets will appear in state data.
+</Warning>
+
+## Manual Redaction
+
+Use `redact_state()` directly for manual control:
+
+```python
+from xycore import redact_state
+
+# Redact before storing
+clean_state = redact_state(raw_state)
+```
+
+## Redaction and Hashing
+
+Redaction happens **before** hashing. This means:
+
+1. The `y_state` stored in the entry is redacted
+2. The `y` hash is computed from the **redacted** state
+3. The XY proof is computed using the redacted hash
+
+This ensures that verification works correctly even with redacted data. The chain is verifiable without needing the original secrets.
+
+```python
+# With auto_redact=True:
+# 1. y_state = redact_state({"api_key": "sk_live_abc123"})
+#    --> {"api_key": "[REDACTED]"}
+# 2. y = hash_state({"api_key": "[REDACTED]"})
+# 3. xy = compute_xy(x, operation, y, timestamp)
+```
+
+## What Is NOT Redacted
+
+Redaction targets keys and values that look like secrets. It does not redact:
+
+- Email addresses
+- URLs (unless they contain embedded tokens)
+- IP addresses
+- File paths
+- Normal configuration values
+- The `operation` name
+- `metadata` fields (metadata is not auto-redacted)
+
+If you need to redact additional patterns, use `redact_state()` manually with your own preprocessing.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Checkpoints" icon="clock-rotate-left" href="/concepts/checkpoints">
+    Create point-in-time snapshots for undo/restore.
+  </Card>
+  <Card title="Environment Variables" icon="gear" href="/reference/environment-variables">
+    Configure redaction behavior via environment variables.
+  </Card>
+</CardGroup>

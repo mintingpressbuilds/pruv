@@ -1,0 +1,123 @@
+---
+title: "Introduction"
+description: "pruv is a cryptographic verification layer that proves what happened in any system. Built on the XY primitive with zero dependencies."
+---
+
+# Welcome to pruv
+
+**pruv** creates tamper-evident, cryptographically verifiable records of everything that happens in your systems. Whether you are wrapping AI agents, tracking deployments, or building audit trails for regulated industries, pruv gives you mathematical proof that nothing was altered.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/getting-started/quickstart">
+    Get pruv running in under 5 minutes with your first verified chain.
+  </Card>
+  <Card title="Core Concepts" icon="brain" href="/concepts/xy-primitive">
+    Understand the XY primitive and how cryptographic chaining works.
+  </Card>
+  <Card title="Wrap an Agent" icon="robot" href="/guides/wrapping-agents">
+    Add verifiable proof to any AI agent with a single function call.
+  </Card>
+  <Card title="Cloud API" icon="cloud" href="/cloud/overview">
+    Sync chains to pruv cloud for dashboards, sharing, and team access.
+  </Card>
+</CardGroup>
+
+## Why pruv?
+
+Modern systems -- especially AI agents -- make hundreds of decisions without leaving a trace. When something goes wrong, you have logs at best and nothing at worst. pruv solves this by creating an **immutable, cryptographically linked chain** of every state transition.
+
+<Tabs>
+  <Tab title="The Problem">
+    - AI agents modify files, call APIs, and deploy code with no proof of what happened
+    - Logs can be edited, deleted, or forged after the fact
+    - Compliance frameworks require tamper-evident audit trails
+    - "Trust me, the agent did the right thing" is not acceptable in production
+  </Tab>
+  <Tab title="The pruv Solution">
+    - Every action produces a cryptographic proof hash (`xy_{sha256}`)
+    - Each proof links to the previous one, forming an unbreakable chain
+    - Tampering with any entry breaks the chain and is immediately detectable
+    - Receipts summarize verified work for auditors and stakeholders
+    - Zero dependencies in the core -- works anywhere Python runs
+  </Tab>
+</Tabs>
+
+## Two Packages, One System
+
+pruv is split into two packages with distinct responsibilities:
+
+<CardGroup cols={2}>
+  <Card title="xycore" icon="atom">
+    **The XY primitive.** Zero dependencies. Pure cryptographic verification. Chains, entries, receipts, signatures, and local storage.
+
+    ```bash
+    pip install xycore
+    ```
+  </Card>
+  <Card title="pruv" icon="shield-check">
+    **The full SDK.** Built on xycore. Adds scanning, wrapping, checkpoints, approval gates, CLI, and cloud sync.
+
+    ```bash
+    pip install pruv
+    ```
+  </Card>
+</CardGroup>
+
+## How It Works
+
+Every state transition in pruv follows the **XY pattern**: capture the state before (X), perform the operation, capture the state after (Y), and compute a cryptographic proof linking them.
+
+```
+Entry[0]:  x = GENESIS           y = hash(state_0)    xy = xy_{proof_0}
+Entry[1]:  x = hash(state_0)     y = hash(state_1)    xy = xy_{proof_1}
+Entry[2]:  x = hash(state_1)     y = hash(state_2)    xy = xy_{proof_2}
+```
+
+**The chain rule:** `Entry[N].x == Entry[N-1].y`. The first entry's x is always `"GENESIS"`.
+
+If anyone tampers with any entry, the chain breaks and verification fails immediately.
+
+## Quick Example
+
+```python
+from xycore import XYChain
+
+# Create a chain
+chain = XYChain(name="my-first-chain")
+
+# Append entries -- x links automatically
+chain.append("initialize", y_state={"version": "1.0"})
+chain.append("configure", y_state={"database": "postgres", "cache": "redis"})
+chain.append("deploy", y_state={"status": "live", "url": "https://app.example.com"})
+
+# Verify the entire chain
+valid, break_index = chain.verify()
+print(f"Chain valid: {valid}")  # True
+print(f"Entries: {chain.length}")  # 3
+print(f"Head: {chain.head}")  # sha256 hash of last state
+```
+
+## What Can You Verify?
+
+| Use Case | What pruv Proves |
+|----------|-----------------|
+| **AI Agent Actions** | Every file edit, API call, and decision the agent made |
+| **CI/CD Pipelines** | Build artifacts match source, deployments are authorized |
+| **Financial Transactions** | Complete audit trail from initiation to settlement |
+| **Healthcare Records** | Chain of custody for patient data modifications |
+| **Legal Documents** | Document versions are authentic and unaltered |
+| **Supply Chain** | Product provenance from origin to delivery |
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Install" icon="download" href="/getting-started/installation">
+    Install xycore and pruv
+  </Card>
+  <Card title="Tutorial" icon="graduation-cap" href="/getting-started/quickstart">
+    Build your first chain
+  </Card>
+  <Card title="XY Primitive" icon="link" href="/concepts/xy-primitive">
+    Deep dive into the core
+  </Card>
+</CardGroup>

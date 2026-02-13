@@ -1,0 +1,195 @@
+---
+title: "Checkpoint & Restore"
+description: "Create checkpoints before risky operations, preview changes, and restore to known-good states."
+---
+
+# Checkpoint & Restore
+
+Checkpoints let you snapshot chain state and project files at any point, preview what changed since a checkpoint, and restore to a known-good state. This is especially valuable when AI agents or automated systems make changes that might need to be rolled back.
+
+## Setup
+
+```python
+from xycore import XYChain
+from pruv import CheckpointManager
+
+chain = XYChain(name="my-project")
+
+manager = CheckpointManager(
+    chain=chain,
+    project_dir="./my-project",        # Directory to snapshot (optional)
+    storage_dir=".pruv/checkpoints",    # Where to store checkpoints
+    compress=True,                       # Use zstd compression
+)
+```
+
+## Creating Checkpoints
+
+### Manual Checkpoints
+
+Create a checkpoint before a risky operation:
+
+```python
+# Snapshot current state
+cp = manager.create("before-migration")
+print(f"Checkpoint {cp.id} created at entry {cp.entry_index}")
+```
+
+### With File Contents
+
+For full restore capability, include file contents:
+
+```python
+cp = manager.create("before-refactor", include_files=True)
+```
+
+### Auto-Checkpoints
+
+Enable automatic checkpointing at regular intervals:
+
+```python
+chain = XYChain(
+    name="long-running",
+    auto_checkpoint=True,
+    checkpoint_interval=20,
+)
+
+manager = CheckpointManager(chain, project_dir="./my-project")
+
+# Checkpoints are created automatically every 20 entries
+for i in range(100):
+    chain.append(f"step-{i}", y_state={"step": i})
+```
+
+Or via environment variable:
+
+```bash
+export PRUV_AUTO_CHECKPOINT=true
+```
+
+## Listing Checkpoints
+
+```python
+for cp_info in manager.list_checkpoints():
+    print(f"  {cp_info['id']}: {cp_info['name']}")
+    print(f"    Entry index: {cp_info['entry_index']}")
+    print(f"    Created: {cp_info['created_at']}")
+```
+
+## Previewing a Restore
+
+Before restoring, see exactly what would change:
+
+```python
+preview = manager.preview_restore(cp.id)
+
+print(f"Checkpoint: {preview.checkpoint_name}")
+print(f"Current entry: {preview.current_entry_index}")
+print(f"Target entry: {preview.target_entry_index}")
+print(f"Entries to rollback: {preview.entries_to_rollback}")
+
+if preview.diff:
+    print(f"\nFile changes since checkpoint:")
+    print(f"  {preview.diff.summary}")
+    for change in preview.diff.added:
+        print(f"  + {change.path}")
+    for change in preview.diff.removed:
+        print(f"  - {change.path}")
+    for change in preview.diff.modified:
+        print(f"  ~ {change.path}")
+```
+
+## Restoring
+
+### Restore to a Specific Checkpoint
+
+```python
+restored_chain = manager.restore(cp.id)
+print(f"Restored to entry {cp.entry_index}")
+print(f"Chain length: {restored_chain.length}")
+
+# The chain's entries are now replaced with the checkpoint's snapshot
+valid, _ = restored_chain.verify()
+assert valid, "Restored chain should be valid"
+```
+
+### Quick Undo
+
+Restore to the most recent checkpoint:
+
+```python
+restored = manager.quick_undo()
+if restored:
+    print("Restored to last checkpoint")
+else:
+    print("No checkpoints available")
+```
+
+## CLI Usage
+
+```bash
+# Undo to last checkpoint
+pruv undo --chain a1b2c3d4e5f6 --last
+
+# Restore to a specific checkpoint
+pruv undo --chain a1b2c3d4e5f6 --to checkpoint-id-here
+
+# Preview without restoring
+pruv undo --chain a1b2c3d4e5f6 --to checkpoint-id-here --preview
+```
+
+## Workflow Example: AI Agent with Rollback
+
+```python
+from xycore import XYChain
+from pruv import CheckpointManager, xy_wrap
+
+# Setup
+chain = XYChain(name="agent-work")
+manager = CheckpointManager(chain, project_dir="./codebase")
+
+# Create checkpoint before agent runs
+manager.create("before-agent")
+
+# Run the agent
+@xy_wrap(chain_name="agent-work", scan_dir="./codebase")
+async def code_agent(task: str):
+    # Agent modifies files...
+    return {"files_changed": 5}
+
+result = await code_agent("refactor the payment module")
+
+# Check results
+if not result.verified:
+    print("Agent produced invalid chain -- rolling back")
+    manager.quick_undo()
+elif result.diff and result.diff.total_changes > 20:
+    print("Agent made too many changes -- rolling back")
+    manager.quick_undo()
+else:
+    print(f"Agent work verified: {result.diff.summary if result.diff else 'ok'}")
+```
+
+## Storage Details
+
+Checkpoints are stored in the `.pruv/checkpoints/` directory:
+
+```
+.pruv/
+  checkpoints/
+    a1b2c3d4e5f6.json.zst   # Compressed (zstd)
+    b2c3d4e5f6a1.json       # Uncompressed fallback
+```
+
+When `zstandard` is available and `compress=True`, checkpoints use zstd level 3 compression, typically reducing size by 60-80%.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Approval Gates" icon="shield-check" href="/guides/approval-gates">
+    Add human approval before risky operations.
+  </Card>
+  <Card title="Checkpoints Concept" icon="brain" href="/concepts/checkpoints">
+    Deep dive into checkpoint internals.
+  </Card>
+</CardGroup>

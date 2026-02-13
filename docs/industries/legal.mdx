@@ -1,0 +1,206 @@
+---
+title: "Legal"
+description: "Create tamper-evident records of document versions, contract negotiations, and legal proceedings with pruv."
+---
+
+# Legal
+
+Legal processes require demonstrable proof that documents have not been altered, negotiations occurred in sequence, and records maintain integrity. pruv provides cryptographic evidence admissible as tamper-evident records.
+
+## Document Version Tracking
+
+Create an immutable record of every document revision:
+
+```python
+from xycore import XYChain, generate_keypair, hash_state
+
+attorney_key, _ = generate_keypair()
+chain = XYChain(name="contract-NDA-2025-001")
+
+# Draft
+chain.append(
+    operation="draft",
+    y_state={
+        "document": "NDA-2025-001",
+        "version": "1.0",
+        "pages": 8,
+        "document_hash": "sha256:a1b2c3d4...",  # Hash of the actual file
+        "author": "associate@lawfirm.com",
+    },
+    private_key=attorney_key,
+    signer_id="associate@lawfirm.com",
+)
+
+# Internal review
+chain.append(
+    operation="review",
+    y_state={
+        "version": "1.1",
+        "changes": 3,
+        "document_hash": "sha256:e5f6a7b8...",
+        "reviewer": "partner@lawfirm.com",
+    },
+    private_key=attorney_key,
+    signer_id="partner@lawfirm.com",
+)
+
+# Client review
+chain.append(
+    operation="client-review",
+    y_state={
+        "version": "1.2",
+        "client_comments": 5,
+        "document_hash": "sha256:c9d0e1f2...",
+    },
+    private_key=attorney_key,
+    signer_id="legal@clientcorp.com",
+)
+
+# Final execution
+chain.append(
+    operation="execute",
+    y_state={
+        "version": "final",
+        "document_hash": "sha256:g3h4i5j6...",
+        "signed_by": ["party-a", "party-b"],
+        "effective_date": "2025-02-01",
+    },
+    private_key=attorney_key,
+    signer_id="partner@lawfirm.com",
+)
+```
+
+## Contract Negotiation Trail
+
+Track every proposal and counter-proposal:
+
+```python
+party_a_key, _ = generate_keypair()
+party_b_key, _ = generate_keypair()
+
+chain = XYChain(name="negotiation-MSA-2025-010")
+
+chain.append(
+    operation="initial-proposal",
+    y_state={
+        "terms": {"payment_net_days": 30, "liability_cap": "$1M", "term_years": 3},
+        "document_hash": "sha256:...",
+    },
+    private_key=party_a_key,
+    signer_id="legal@company-a.com",
+)
+
+chain.append(
+    operation="counter-proposal",
+    y_state={
+        "terms": {"payment_net_days": 45, "liability_cap": "$500K", "term_years": 2},
+        "changes": ["payment_net_days: 30->45", "liability_cap: $1M->$500K", "term: 3yr->2yr"],
+        "document_hash": "sha256:...",
+    },
+    private_key=party_b_key,
+    signer_id="legal@company-b.com",
+)
+
+chain.append(
+    operation="final-agreement",
+    y_state={
+        "terms": {"payment_net_days": 30, "liability_cap": "$750K", "term_years": 3},
+        "agreed": True,
+        "document_hash": "sha256:...",
+    },
+    private_key=party_a_key,
+    signer_id="legal@company-a.com",
+)
+```
+
+## Evidence Preservation
+
+For litigation, create verified chains of evidence custody:
+
+```python
+chain = XYChain(name="evidence-CASE-2025-1234")
+
+chain.append(
+    operation="collect",
+    y_state={
+        "evidence_type": "email_archive",
+        "custodian": "john.doe@company.com",
+        "date_range": "2024-01-01 to 2025-01-31",
+        "file_count": 12847,
+        "total_hash": "sha256:...",
+    },
+    private_key=forensics_key,
+    signer_id="forensics@lawfirm.com",
+)
+
+chain.append(
+    operation="process",
+    y_state={
+        "deduplicated": True,
+        "remaining_count": 8234,
+        "processed_hash": "sha256:...",
+    },
+    private_key=forensics_key,
+    signer_id="forensics@lawfirm.com",
+)
+
+chain.append(
+    operation="produce",
+    y_state={
+        "production_number": "PROD-001",
+        "documents_produced": 2341,
+        "bates_range": "COMP00001-COMP02341",
+        "production_hash": "sha256:...",
+    },
+    private_key=attorney_key,
+    signer_id="partner@lawfirm.com",
+)
+```
+
+## Verification for Opposing Counsel
+
+Share a verifiable chain with opposing counsel:
+
+```python
+# Generate verification receipt
+receipt = XYReceipt(
+    id="evidence-cert-001",
+    task="evidence-production-CASE-2025-1234",
+    chain_id=chain.id,
+    entry_count=chain.length,
+    first_x=chain.entries[0].x,
+    final_y=chain.entries[-1].y,
+    root_xy=chain.root,
+    head_xy=chain.entries[-1].xy,
+    all_verified=True,
+    all_signatures_valid=True,
+    started=chain.entries[0].timestamp,
+    completed=chain.entries[-1].timestamp,
+    duration=chain.entries[-1].timestamp - chain.entries[0].timestamp,
+)
+
+# Share receipt hash -- opposing counsel can verify independently
+print(f"Evidence receipt: {receipt.hash}")
+```
+
+## Regulatory Filing Tracking
+
+```python
+chain = XYChain(name="sec-filing-10K-2025")
+
+chain.append("draft", y_state={"filing": "10-K", "fiscal_year": "2024", "pages": 142})
+chain.append("internal-review", y_state={"reviewed_by": "controller", "approved": True})
+chain.append("audit-sign-off", y_state={"auditor": "big4@audit.com", "opinion": "unqualified"})
+chain.append("file", y_state={"filed_with": "SEC", "accession": "0001234-25-000042"})
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Digital Signatures" icon="key" href="/concepts/signatures">
+    Multi-party signing for legal documents.
+  </Card>
+  <Card title="Verification" icon="shield-check" href="/concepts/verification">
+    How chain verification provides admissible evidence.
+  </Card>
+</CardGroup>

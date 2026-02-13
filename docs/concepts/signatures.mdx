@@ -1,0 +1,252 @@
+---
+title: "Digital Signatures"
+description: "Sign XY entries with Ed25519 keys to prove who created or approved each entry in the chain."
+---
+
+# Digital Signatures
+
+pruv supports **Ed25519 digital signatures** on individual chain entries. Signatures prove who created each entry and prevent impersonation.
+
+## Overview
+
+Digital signatures add an identity layer to chain verification:
+
+- **Chain verification** proves entries are unmodified and properly linked
+- **Signature verification** proves entries were created by a specific key holder
+
+Together, they answer two questions: "Was the data tampered with?" and "Who created it?"
+
+## Setup
+
+Signatures require the `cryptography` package. Install it as an optional dependency:
+
+```bash
+pip install xycore[signatures]
+```
+
+Or install `pruv`, which includes it:
+
+```bash
+pip install pruv
+```
+
+## Generating Keys
+
+Generate an Ed25519 keypair:
+
+```python
+from xycore import generate_keypair
+
+private_key, public_key = generate_keypair()
+
+# Both are raw bytes (32 bytes each)
+print(f"Private key: {len(private_key)} bytes")  # 32
+print(f"Public key: {len(public_key)} bytes")     # 32
+```
+
+<Warning>
+  Store private keys securely. Never commit them to version control or log them. The private key is 32 raw bytes -- you may want to base64-encode it for storage.
+</Warning>
+
+```python
+import base64
+
+# Encode for storage
+private_key_b64 = base64.b64encode(private_key).decode("ascii")
+public_key_b64 = base64.b64encode(public_key).decode("ascii")
+
+# Decode for use
+private_key = base64.b64decode(private_key_b64)
+```
+
+## Signing Entries
+
+### Via XYChain.append()
+
+The easiest way to sign entries is to pass the private key to `append()`:
+
+```python
+from xycore import XYChain, generate_keypair
+
+private_key, public_key = generate_keypair()
+chain = XYChain(name="signed-chain")
+
+chain.append(
+    operation="deploy",
+    y_state={"version": "2.0", "status": "live"},
+    private_key=private_key,
+    signer_id="ci-bot@mycompany.com",
+)
+```
+
+### Via sign_entry()
+
+Sign an existing entry directly:
+
+```python
+from xycore import sign_entry
+
+entry = chain.entries[0]
+sign_entry(entry, private_key, signer_id="alice@company.com")
+```
+
+This modifies the entry in place, setting:
+- `entry.signature`: Base64-encoded Ed25519 signature
+- `entry.public_key`: Base64-encoded public key
+- `entry.signer_id`: Human-readable signer identifier
+
+## What Gets Signed
+
+The signature covers a message composed of:
+
+```python
+message = f"{entry.x}:{entry.operation}:{entry.y}:{entry.xy}"
+```
+
+This binds the signature to:
+- The state before (`x`)
+- The operation name
+- The state after (`y`)
+- The XY proof hash
+
+Changing any of these values invalidates the signature.
+
+## Verifying Signatures
+
+### Single Entry
+
+```python
+from xycore import verify_signature
+
+entry = chain.entries[0]
+is_valid = verify_signature(entry)
+print(f"Signature valid: {is_valid}")
+```
+
+### Entire Chain
+
+```python
+sigs_valid, sig_break = chain.verify_signatures()
+
+if sigs_valid:
+    print("All signatures verified")
+else:
+    print(f"Invalid signature at entry {sig_break}")
+    broken = chain.entries[sig_break]
+    print(f"  Signer: {broken.signer_id}")
+    print(f"  Public key: {broken.public_key}")
+```
+
+Unsigned entries are skipped during chain-wide signature verification. Only entries with a non-null `signature` field are checked.
+
+## Selective Signing
+
+You do not need to sign every entry. Common patterns:
+
+### Sign Only Critical Operations
+
+```python
+chain.append("read-config", y_state={...})     # Not signed
+chain.append("run-tests", y_state={...})        # Not signed
+chain.append(
+    "deploy",
+    y_state={...},
+    private_key=private_key,                     # Signed
+    signer_id="ci-bot@mycompany.com",
+)
+```
+
+### Multiple Signers
+
+Different entries can be signed by different keys:
+
+```python
+dev_private, dev_public = generate_keypair()
+ops_private, ops_public = generate_keypair()
+
+chain.append(
+    "code-review",
+    y_state={"approved": True},
+    private_key=dev_private,
+    signer_id="dev@company.com",
+)
+
+chain.append(
+    "deploy-approval",
+    y_state={"approved": True},
+    private_key=ops_private,
+    signer_id="ops@company.com",
+)
+```
+
+## Signed Entry Format
+
+A signed entry serializes with the signature fields:
+
+```json
+{
+  "index": 0,
+  "timestamp": 1706745600.0,
+  "operation": "deploy",
+  "x": "GENESIS",
+  "y": "a3f8c2e1d4b7...",
+  "xy": "xy_7e2f4a8c1d3b...",
+  "status": "success",
+  "verified": true,
+  "metadata": {},
+  "signature": "SGVsbG8gV29ybGQ=...",
+  "signer_id": "ci-bot@mycompany.com",
+  "public_key": "dGhpcyBpcyBhIHB1YmxpYyBrZXk=..."
+}
+```
+
+## Using Signatures with xy_wrap
+
+```python
+from pruv import xy_wrap
+
+private_key, public_key = generate_keypair()
+
+@xy_wrap(
+    sign=True,
+    private_key=private_key,
+    signer_id="my-agent@company.com",
+)
+async def my_agent(task: str):
+    return {"result": "done"}
+
+result = await my_agent("do the thing")
+print(result.receipt.all_signatures_valid)  # True
+```
+
+## Security Considerations
+
+<AccordionGroup>
+  <Accordion title="Key Storage">
+    Store private keys in a secrets manager (AWS Secrets Manager, Vault, etc.) or as environment variables. Never hardcode them in source code.
+
+    ```python
+    import os
+    import base64
+
+    private_key = base64.b64decode(os.environ["PRUV_SIGNING_KEY"])
+    ```
+  </Accordion>
+  <Accordion title="Key Rotation">
+    When rotating keys, the old entries remain verifiable because each entry stores its own public key. New entries use the new key.
+  </Accordion>
+  <Accordion title="Ed25519 Properties">
+    Ed25519 provides 128-bit security, is resistant to timing attacks, and produces compact 64-byte signatures. It is the same algorithm used by SSH, GPG, and many blockchain systems.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Redaction" icon="eye-slash" href="/concepts/redaction">
+    How pruv automatically redacts secrets from chain states.
+  </Card>
+  <Card title="Signatures Guide" icon="pen-nib" href="/guides/digital-signatures">
+    Production patterns for key management and signing workflows.
+  </Card>
+</CardGroup>

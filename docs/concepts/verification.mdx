@@ -1,0 +1,248 @@
+---
+title: "Verification"
+description: "How pruv verifies chain integrity by walking entries and detecting tampering at any point in the chain."
+---
+
+# Verification
+
+Verification is the process of walking an XY chain from start to finish, checking that every entry's proof is valid and every link is intact. It is the core security guarantee of pruv.
+
+## How Verification Works
+
+The `verify_chain` function checks two properties for every entry:
+
+### 1. XY Proof Integrity
+
+For each entry, recompute the XY proof and compare it to the stored value:
+
+```python
+expected = compute_xy(entry.x, entry.operation, entry.y, entry.timestamp)
+if entry.xy != expected:
+    return False, entry.index  # Proof mismatch
+```
+
+This catches any modification to:
+- The `x` value (state before hash)
+- The `operation` name
+- The `y` value (state after hash)
+- The `timestamp`
+
+### 2. Chain Link Integrity
+
+For each entry, check that it properly links to the previous one:
+
+```python
+if i == 0:
+    if entry.x != "GENESIS":
+        return False, 0  # First entry must start with GENESIS
+else:
+    if entry.x != entries[i - 1].y:
+        return False, i  # Link broken
+```
+
+This catches:
+- Entry insertion (new entries break the link)
+- Entry deletion (gaps break the link)
+- Entry reordering (wrong x values)
+
+## Using Verification
+
+### Basic Chain Verification
+
+```python
+from xycore import XYChain
+
+chain = XYChain(name="example")
+chain.append("step-1", y_state={"count": 1})
+chain.append("step-2", y_state={"count": 2})
+chain.append("step-3", y_state={"count": 3})
+
+valid, break_index = chain.verify()
+# valid = True, break_index = None
+```
+
+### Detecting Tampering
+
+```python
+# Tamper with an entry's y hash
+chain.entries[1].y = "tampered_hash_value"
+
+valid, break_index = chain.verify()
+# valid = False, break_index = 1
+# Entry 1's XY proof no longer matches
+```
+
+### Detecting Chain Breaks
+
+```python
+# Even if we fix the XY proof for entry 1,
+# entry 2's x won't match entry 1's new y
+chain.entries[2].x = "some_other_value"
+
+valid, break_index = chain.verify()
+# valid = False, break_index = 2
+```
+
+## Single Entry Verification
+
+Verify a single entry's XY proof without checking the chain:
+
+```python
+from xycore import verify_entry
+
+entry = chain.entries[0]
+is_valid = verify_entry(entry)
+# True if entry.xy == compute_xy(entry.x, entry.operation, entry.y, entry.timestamp)
+```
+
+This is useful when you want to verify an entry in isolation, such as when receiving entries over a network.
+
+## Signature Verification
+
+If entries are signed with Ed25519, verify signatures separately:
+
+```python
+sigs_valid, sig_break = chain.verify_signatures()
+
+if sigs_valid:
+    print("All signatures are valid")
+else:
+    print(f"Invalid signature at entry {sig_break}")
+    entry = chain.entries[sig_break]
+    print(f"  Signer: {entry.signer_id}")
+```
+
+Unsigned entries are skipped during signature verification. Only entries with a `signature` field are checked.
+
+## What Verification Catches
+
+<Tabs>
+  <Tab title="Data Modification">
+    Any change to an entry's `x`, `y`, `operation`, or `timestamp` will cause its XY proof to fail.
+
+    ```python
+    # Change operation name
+    chain.entries[1].operation = "malicious-op"
+    valid, break_at = chain.verify()
+    # False, 1 -- XY proof mismatch
+    ```
+  </Tab>
+  <Tab title="Entry Insertion">
+    Inserting a new entry between existing entries breaks the chain link.
+
+    ```python
+    # Insert a fake entry between index 1 and 2
+    fake = XYEntry.create(index=2, operation="fake", x="wrong", y="wrong")
+    chain.entries.insert(2, fake)
+    valid, break_at = chain.verify()
+    # False, 2 -- x doesn't match previous y
+    ```
+  </Tab>
+  <Tab title="Entry Deletion">
+    Removing an entry creates a gap in the chain.
+
+    ```python
+    # Delete entry 1
+    del chain.entries[1]
+    valid, break_at = chain.verify()
+    # False, 1 -- entry at index 1 now has wrong x
+    ```
+  </Tab>
+  <Tab title="Reordering">
+    Swapping entries breaks their chain links.
+
+    ```python
+    # Swap entries 1 and 2
+    chain.entries[1], chain.entries[2] = chain.entries[2], chain.entries[1]
+    valid, break_at = chain.verify()
+    # False -- x values don't match
+    ```
+  </Tab>
+</Tabs>
+
+## Verification Performance
+
+Verification is O(n) where n is the number of entries. Each entry requires:
+- One SHA-256 hash computation (recomputing the XY proof)
+- One string comparison (checking the chain link)
+
+Both operations are extremely fast. Chains with thousands of entries verify in milliseconds.
+
+```python
+import time
+
+# Create a long chain
+chain = XYChain(name="perf-test")
+for i in range(10000):
+    chain.append(f"op-{i}", y_state={"i": i})
+
+# Verify
+start = time.time()
+valid, _ = chain.verify()
+elapsed = time.time() - start
+
+print(f"Verified {chain.length} entries in {elapsed:.3f}s")
+# Typically: Verified 10000 entries in 0.150s
+```
+
+## Verification in the Cloud
+
+Verify chains stored in pruv cloud:
+
+```python
+from pruv import CloudClient
+
+client = CloudClient(api_key="pv_live_your_key")
+result = await client.verify_chain("chain_id_here")
+print(f"Valid: {result['valid']}")
+print(f"Length: {result['length']}")
+```
+
+Or via the API:
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key" \
+  https://api.pruv.dev/v1/chains/{chain_id}/verify
+```
+
+```json
+{
+  "chain_id": "a1b2c3d4e5f6",
+  "valid": true,
+  "length": 42,
+  "break_index": null
+}
+```
+
+## Verification Certificates
+
+Request a formal verification certificate for compliance:
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key" \
+  https://api.pruv.dev/v1/certificate/{chain_id}
+```
+
+```json
+{
+  "chain_id": "a1b2c3d4e5f6",
+  "chain_name": "deploy-pipeline",
+  "valid": true,
+  "length": 42,
+  "root_xy": "xy_7e2f4a8c1d3b...",
+  "head_xy": "xy_9c4e6b2d8a1f...",
+  "verified_at": "2025-01-31T15:30:00Z",
+  "break_index": null
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Signatures" icon="key" href="/concepts/signatures">
+    Add cryptographic identity with Ed25519 signatures.
+  </Card>
+  <Card title="Redaction" icon="eye-slash" href="/concepts/redaction">
+    How pruv protects secrets in chain states.
+  </Card>
+</CardGroup>

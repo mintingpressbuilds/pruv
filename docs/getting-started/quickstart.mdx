@@ -1,0 +1,210 @@
+---
+title: "Quickstart"
+description: "Create your first cryptographically verified chain in under 5 minutes."
+---
+
+# Quickstart
+
+This guide walks you through the core pruv workflow: create a chain, append entries, verify integrity, and generate a receipt.
+
+## Prerequisites
+
+Make sure you have pruv installed:
+
+```bash
+pip install pruv
+```
+
+## Step 1: Create a Chain
+
+A chain is an ordered sequence of entries where each entry links cryptographically to the previous one.
+
+```python
+from xycore import XYChain
+
+chain = XYChain(name="quickstart-demo")
+print(f"Chain ID: {chain.id}")
+print(f"Head: {chain.head}")  # "GENESIS" -- no entries yet
+```
+
+## Step 2: Append Entries
+
+Each entry captures a state transition. The `x` value (state before) is automatically computed from the previous entry's `y` value (state after).
+
+```python
+# First entry: x = "GENESIS" (automatic)
+chain.append(
+    operation="initialize",
+    y_state={"app": "my-service", "version": "1.0.0"}
+)
+
+# Second entry: x = previous y (automatic)
+chain.append(
+    operation="configure",
+    y_state={"database": "postgresql://localhost/mydb", "cache": "redis"}
+)
+
+# Third entry
+chain.append(
+    operation="deploy",
+    y_state={"status": "deployed", "url": "https://my-service.example.com"},
+    metadata={"environment": "production", "deployer": "ci-pipeline"}
+)
+
+print(f"Chain length: {chain.length}")  # 3
+```
+
+<Note>
+  Notice that the database connection string was automatically redacted. pruv detects and redacts secrets by default. See [Auto-Redaction](/concepts/redaction) for details.
+</Note>
+
+## Step 3: Inspect Entries
+
+Each entry contains the XY proof hash and linked state hashes:
+
+```python
+for entry in chain:
+    print(f"[{entry.index}] {entry.operation}")
+    print(f"    x:  {entry.x[:16]}...")
+    print(f"    y:  {entry.y[:16]}...")
+    print(f"    xy: {entry.xy[:20]}...")
+    print()
+```
+
+Output:
+
+```
+[0] initialize
+    x:  GENESIS
+    y:  a3f8c2e1d4b7...
+    xy: xy_7e2f4a8c1d3b...
+
+[1] configure
+    x:  a3f8c2e1d4b7...
+    y:  b5d9e3f2a1c8...
+    xy: xy_9c4e6b2d8a1f...
+
+[2] deploy
+    x:  b5d9e3f2a1c8...
+    y:  c7f1a4e6d3b9...
+    xy: xy_2a8f5c1e7d4b...
+```
+
+Notice how each entry's `x` matches the previous entry's `y`. This is the chain rule.
+
+## Step 4: Verify the Chain
+
+Verification walks every entry and checks two things:
+1. Each entry's XY proof hash is correctly computed
+2. Each entry's `x` matches the previous entry's `y`
+
+```python
+valid, break_index = chain.verify()
+
+if valid:
+    print("Chain integrity verified -- all entries are authentic")
+else:
+    print(f"Chain broken at entry {break_index}")
+```
+
+## Step 5: Detect Tampering
+
+Try modifying an entry and see verification catch it:
+
+```python
+# Tamper with an entry
+chain.entries[1].y_state["database"] = "hacked-db"
+
+# Verification still passes because y_state is metadata --
+# the y hash was computed at append time and is immutable.
+# But if someone changes the actual hash values:
+original_y = chain.entries[1].y
+chain.entries[1].y = "tampered_value"
+
+valid, break_index = chain.verify()
+print(f"Valid: {valid}")         # False
+print(f"Break at: {break_index}")  # 1
+
+# Restore it
+chain.entries[1].y = original_y
+```
+
+## Step 6: Save and Load
+
+Persist chains to disk with `LocalStorage`:
+
+```python
+from xycore import LocalStorage
+
+storage = LocalStorage(".pruv")
+
+# Save
+path = storage.save(chain)
+print(f"Saved to: {path}")
+
+# Load
+loaded = storage.load(chain.id)
+valid, _ = loaded.verify()
+print(f"Loaded chain valid: {valid}")  # True
+
+# List all stored chains
+for info in storage.list_chains():
+    print(f"  {info['id']}: {info['name']} ({info['length']} entries)")
+```
+
+## Step 7: Use the CLI
+
+pruv includes a command-line interface for common operations:
+
+```bash
+# Scan a project
+pruv scan ./my-project
+
+# Verify a saved chain
+pruv verify .pruv/a1b2c3d4e5f6.json
+
+# Export as CSV
+pruv export .pruv/a1b2c3d4e5f6.json --format csv --output chain.csv
+```
+
+## Complete Example
+
+Here is the full quickstart in one script:
+
+```python
+from xycore import XYChain, LocalStorage
+
+# Create
+chain = XYChain(name="quickstart")
+
+# Build
+chain.append("init", y_state={"version": "1.0"})
+chain.append("config", y_state={"db": "postgres"})
+chain.append("deploy", y_state={"status": "live"})
+
+# Verify
+valid, _ = chain.verify()
+assert valid, "Chain should be valid"
+
+# Save
+storage = LocalStorage()
+storage.save(chain)
+
+# Load and re-verify
+loaded = storage.load(chain.id)
+valid, _ = loaded.verify()
+assert valid, "Loaded chain should be valid"
+
+print(f"Chain '{chain.name}' with {chain.length} entries -- verified")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="First Chain Deep Dive" icon="link-simple" href="/getting-started/first-chain">
+    Build a more complex chain with signatures and cloud sync.
+  </Card>
+  <Card title="Wrap an AI Agent" icon="robot" href="/guides/wrapping-agents">
+    Add cryptographic proof to any AI agent with xy_wrap.
+  </Card>
+</CardGroup>

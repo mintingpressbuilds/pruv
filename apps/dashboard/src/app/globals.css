@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+@theme {
+  --color-pruv-50: #eef2ff;
+  --color-pruv-100: #e0e7ff;
+  --color-pruv-200: #c7d2fe;
+  --color-pruv-300: #a5b4fc;
+  --color-pruv-400: #818cf8;
+  --color-pruv-500: #6366f1;
+  --color-pruv-600: #4f46e5;
+  --color-pruv-700: #4338ca;
+  --color-pruv-800: #3730a3;
+  --color-pruv-900: #312e81;
+  --color-pruv-950: #1e1b4b;
+}
+
+:root {
+  --surface: #ffffff;
+  --surface-secondary: #f9fafb;
+  --surface-tertiary: #f3f4f6;
+  --border: #e5e7eb;
+  --border-secondary: #d1d5db;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+}
+
+.dark {
+  --surface: #0f1117;
+  --surface-secondary: #1a1d27;
+  --surface-tertiary: #242836;
+  --border: #2a2e3a;
+  --border-secondary: #3a3f4f;
+  --text-primary: #f3f4f6;
+  --text-secondary: #9ca3af;
+  --text-tertiary: #6b7280;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--surface);
+  color: var(--text-primary);
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Timeline line */
+.timeline-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    var(--color-pruv-600),
+    var(--color-pruv-400),
+    var(--color-pruv-600)
+  );
+  transform: translateX(-50%);
+}
+
+.timeline-line-left {
+  left: 20px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* Diff view styling */
+.diff-added {
+  background-color: rgba(34, 197, 94, 0.15);
+  border-left: 3px solid rgb(34, 197, 94);
+}
+
+.diff-removed {
+  background-color: rgba(239, 68, 68, 0.15);
+  border-left: 3px solid rgb(239, 68, 68);
+}
+
+.diff-changed {
+  background-color: rgba(234, 179, 8, 0.15);
+  border-left: 3px solid rgb(234, 179, 8);
+}
+
+/* Pulse glow for verification */
+@keyframes verifyPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(99, 102, 241, 0);
+  }
+}
+
+.verify-pulse {
+  animation: verifyPulse 2s ease-in-out infinite;
+}

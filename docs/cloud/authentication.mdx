@@ -1,0 +1,187 @@
+---
+title: "Authentication"
+description: "Authenticate with the pruv cloud API using API keys. Manage keys, scopes, and security best practices."
+---
+
+# Authentication
+
+The pruv cloud API uses API keys for authentication. All requests must include a valid API key in the `Authorization` header.
+
+## API Key Format
+
+pruv API keys follow a consistent format:
+
+| Prefix | Environment | Example |
+|--------|-------------|---------|
+| `pv_live_` | Production | `pv_live_a1b2c3d4e5f6g7h8i9j0k1l2m3n4` |
+| `pv_test_` | Development | `pv_test_x9y8z7w6v5u4t3s2r1q0p9o8n7m6` |
+
+Test keys work identically to live keys but operate in a sandboxed environment. Data created with test keys is isolated from production.
+
+## Using API Keys
+
+### HTTP Header
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key_here" \
+  https://api.pruv.dev/v1/chains
+```
+
+### Python SDK
+
+```python
+from pruv import CloudClient
+
+client = CloudClient(api_key="pv_live_your_key_here")
+```
+
+### Environment Variable
+
+```bash
+export PRUV_API_KEY=pv_live_your_key_here
+```
+
+```python
+import os
+from pruv import CloudClient
+
+client = CloudClient(api_key=os.environ["PRUV_API_KEY"])
+```
+
+The CLI automatically reads `PRUV_API_KEY`:
+
+```bash
+export PRUV_API_KEY=pv_live_your_key_here
+pruv upload ./my-project
+```
+
+## Creating API Keys
+
+Create API keys through the dashboard or API:
+
+### Via Dashboard
+
+1. Go to [app.pruv.dev](https://app.pruv.dev)
+2. Navigate to Settings > API Keys
+3. Click "Create API Key"
+4. Choose a name and scopes
+5. Copy the key immediately -- it is only shown once
+
+### Via API
+
+```bash
+curl -X POST https://api.pruv.dev/v1/api-keys \
+  -H "Authorization: Bearer pv_live_your_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "CI Pipeline",
+    "scopes": ["read", "write"]
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "key_a1b2c3d4",
+  "name": "CI Pipeline",
+  "key": "pv_live_new_key_shown_only_once",
+  "key_prefix": "pv_live_new_",
+  "scopes": ["read", "write"]
+}
+```
+
+<Warning>
+  The full API key is only returned when created. Store it securely immediately. If you lose it, create a new key.
+</Warning>
+
+## Scopes
+
+API keys can have restricted scopes:
+
+| Scope | Permissions |
+|-------|-------------|
+| `read` | List and get chains, entries, checkpoints, receipts |
+| `write` | Create chains, append entries, create checkpoints |
+
+Default scopes are `["read", "write"]`.
+
+## Key Management
+
+### List Keys
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key_here" \
+  https://api.pruv.dev/v1/api-keys
+```
+
+```json
+[
+  {
+    "id": "key_a1b2c3d4",
+    "name": "CI Pipeline",
+    "key_prefix": "pv_live_a1b2",
+    "scopes": ["read", "write"],
+    "created_at": "2025-01-31T10:00:00Z",
+    "last_used_at": "2025-01-31T15:30:00Z"
+  }
+]
+```
+
+### Revoke a Key
+
+```bash
+curl -X DELETE https://api.pruv.dev/v1/api-keys/key_a1b2c3d4 \
+  -H "Authorization: Bearer pv_live_your_key_here"
+```
+
+## Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use separate keys for each service">
+    Create distinct API keys for CI/CD, agents, and human users. This limits blast radius if a key is compromised.
+  </Accordion>
+  <Accordion title="Store keys in secrets managers">
+    Use AWS Secrets Manager, HashiCorp Vault, or GitHub Actions secrets. Never hardcode keys in source code.
+  </Accordion>
+  <Accordion title="Use test keys for development">
+    Use `pv_test_` keys during development. Test data is isolated from production.
+  </Accordion>
+  <Accordion title="Rotate keys regularly">
+    Create new keys and revoke old ones on a regular schedule (e.g., quarterly).
+  </Accordion>
+  <Accordion title="Monitor key usage">
+    Check `last_used_at` for each key. Revoke keys that have not been used recently.
+  </Accordion>
+</AccordionGroup>
+
+## Auto-Redaction of API Keys
+
+pruv automatically redacts `pv_live_` and `pv_test_` keys from chain state data:
+
+```python
+chain.append(
+    operation="config",
+    y_state={"pruv_key": "pv_live_abc123def456"},
+)
+# Stored as: {"pruv_key": "[REDACTED]"}
+```
+
+## OAuth (Dashboard)
+
+The pruv dashboard supports OAuth login with:
+- GitHub
+- Google
+
+OAuth is only for dashboard access. API access always uses API keys.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Chains API" icon="link" href="/cloud/chains-api">
+    Start creating and managing chains.
+  </Card>
+  <Card title="Rate Limits" icon="gauge" href="/cloud/rate-limits">
+    Understand rate limits by plan.
+  </Card>
+</CardGroup>

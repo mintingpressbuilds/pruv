@@ -1,0 +1,217 @@
+---
+title: "Wrapping Agents"
+description: "Use xy_wrap to add cryptographic verification to any AI agent, function, or workflow with a single function call."
+---
+
+# Wrapping Agents
+
+`xy_wrap` is pruv's universal wrapper. It takes any callable -- an AI agent, a function, a class with a `run()` method -- and automatically creates a verified XY chain of its execution.
+
+## Basic Usage
+
+### As a Decorator
+
+```python
+from pruv import xy_wrap
+
+@xy_wrap
+async def my_agent(task: str):
+    # Your agent logic here
+    return {"result": "done"}
+
+result = await my_agent("do the thing")
+print(result.output)      # {"result": "done"}
+print(result.verified)    # True
+print(result.receipt.hash)
+```
+
+### As a Decorator with Options
+
+```python
+@xy_wrap(
+    chain_name="my-agent",
+    sign=True,
+    private_key=my_key,
+    signer_id="agent@company.com",
+    api_key="pv_live_your_key",
+)
+async def my_agent(task: str):
+    return {"result": "done"}
+```
+
+### As a Function Call
+
+```python
+from pruv import xy_wrap
+
+async def my_agent(task: str):
+    return {"result": "done"}
+
+wrapped = xy_wrap(my_agent, chain_name="wrapped-agent")
+result = await wrapped.run("do the thing")
+```
+
+### Wrapping a Class
+
+```python
+class MyAgent:
+    async def run(self, task: str):
+        return {"result": "done"}
+
+agent = MyAgent()
+wrapped = xy_wrap(agent, chain_name="class-agent")
+result = await wrapped.run("do the thing")
+```
+
+## The WrappedResult
+
+Every wrapped execution returns a `WrappedResult`:
+
+```python
+@dataclass
+class WrappedResult:
+    output: Any                    # The original return value
+    chain: XYChain                 # The verification chain
+    receipt: XYReceipt             # Summary receipt
+    graph_before: Graph | None     # Project state before (if scan_dir set)
+    graph_after: Graph | None      # Project state after (if scan_dir set)
+```
+
+Key properties:
+
+```python
+result.output         # Whatever your agent/function returned
+result.verified       # True if chain.verify() passes
+result.chain          # The full XYChain with all entries
+result.receipt        # XYReceipt summarizing the work
+result.diff           # GraphDiff if scan_dir was set
+```
+
+## Configuration Options
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `chain_name` | `str \| None` | Function name | Name for the chain |
+| `api_key` | `str \| None` | `None` | pruv API key for cloud sync |
+| `sign` | `bool` | `False` | Sign entries with Ed25519 |
+| `private_key` | `bytes \| None` | `None` | Ed25519 private key for signing |
+| `signer_id` | `str \| None` | `None` | Human-readable signer identifier |
+| `scan_dir` | `str \| None` | `None` | Directory to scan before/after execution |
+| `approval_webhook` | `str \| None` | `None` | Webhook URL for approval gates |
+| `approval_operations` | `list[str] \| None` | `None` | Operations requiring approval |
+| `approval_timeout` | `int` | `300` | Approval timeout in seconds |
+| `auto_redact` | `bool` | `True` | Auto-redact secrets in states |
+
+## Project Scanning
+
+Set `scan_dir` to automatically capture the project state before and after execution:
+
+```python
+@xy_wrap(chain_name="code-agent", scan_dir="./my-project")
+async def code_agent(task: str):
+    # Agent modifies files in ./my-project
+    return {"files_changed": 3}
+
+result = await code_agent("refactor the auth module")
+
+# See what changed
+if result.diff:
+    print(f"Changes: {result.diff.summary}")
+    # "+2 added, ~3 modified, -1 removed"
+
+    for change in result.diff.added:
+        print(f"  Added: {change.path}")
+    for change in result.diff.modified:
+        print(f"  Modified: {change.path}")
+    for change in result.diff.removed:
+        print(f"  Removed: {change.path}")
+```
+
+## Cloud Sync
+
+Set `api_key` to automatically upload chains to pruv cloud after execution:
+
+```python
+@xy_wrap(
+    chain_name="cloud-agent",
+    api_key="pv_live_your_key",  # or use PRUV_API_KEY env var
+)
+async def my_agent(task: str):
+    return {"result": "done"}
+```
+
+If the upload fails (network error, timeout), the chain is queued for later retry.
+
+## Error Handling
+
+If the wrapped function raises an exception, it is captured in the chain:
+
+```python
+@xy_wrap(chain_name="failing-agent")
+async def unstable_agent(task: str):
+    raise RuntimeError("something went wrong")
+
+result = await unstable_agent("try this")
+print(result.output)  # None
+print(result.chain.entries[-1].status)  # "failed"
+print(result.chain.entries[-1].y_state["error"])  # "something went wrong"
+print(result.verified)  # True -- the chain is still valid
+```
+
+The chain records the failure as a legitimate state transition. A failed operation is still verified.
+
+## Execution Flow
+
+Here is what happens when you call a wrapped function:
+
+1. **Create chain**: A new `XYChain` is created with the specified name
+2. **Scan before** (if `scan_dir` set): Capture project state as a `Graph`
+3. **Append start entry**: Record the task and before-state
+4. **Execute target**: Run your function/agent
+5. **Scan after** (if `scan_dir` set): Capture updated project state
+6. **Append complete entry**: Record output, status, and after-state
+7. **Verify chain**: Run `chain.verify()`
+8. **Create receipt**: Generate an `XYReceipt` summarizing the work
+9. **Cloud sync** (if `api_key` set): Upload chain to pruv cloud
+10. **Return WrappedResult**: Return the complete result
+
+## Sync vs Async
+
+`xy_wrap` handles both sync and async targets:
+
+```python
+# Async function
+@xy_wrap
+async def async_agent(task: str):
+    return await some_async_operation()
+
+# Sync function
+@xy_wrap
+async def sync_agent(task: str):
+    return some_sync_operation()
+
+# Class with async run
+class AsyncAgent:
+    async def run(self, task: str):
+        return await some_async_operation()
+
+# Class with sync run
+class SyncAgent:
+    def run(self, task: str):
+        return some_sync_operation()
+```
+
+<Note>
+  The wrapped result is always returned via an async call (`await wrapped.run(task)`), even if the underlying target is synchronous.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Scanning Projects" icon="magnifying-glass" href="/guides/scanning-projects">
+    Deep dive into project scanning with xy_wrap.
+  </Card>
+  <Card title="Approval Gates" icon="shield-check" href="/guides/approval-gates">
+    Add human approval for high-risk agent operations.
+  </Card>
+</CardGroup>

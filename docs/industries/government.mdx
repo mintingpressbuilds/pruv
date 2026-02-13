@@ -1,0 +1,163 @@
+---
+title: "Government"
+description: "Create verifiable records for procurement, policy changes, and inter-agency operations. Meet FedRAMP and NIST requirements with pruv."
+---
+
+# Government
+
+Government agencies need tamper-evident records for procurement, policy decisions, inter-agency communications, and public records. pruv provides cryptographic verification that meets federal security standards.
+
+## Procurement Tracking
+
+Create a verifiable chain of the procurement lifecycle:
+
+```python
+from xycore import XYChain, generate_keypair
+
+officer_key, _ = generate_keypair()
+chain = XYChain(name="procurement-RFP-2025-0042")
+
+chain.append(
+    operation="rfp-publish",
+    y_state={
+        "rfp_number": "RFP-2025-0042",
+        "title": "Cloud Infrastructure Services",
+        "value_estimate": "$2.5M",
+        "closing_date": "2025-03-15",
+    },
+    private_key=officer_key,
+    signer_id="contracting.officer@agency.gov",
+)
+
+chain.append(
+    operation="proposals-received",
+    y_state={
+        "proposals_count": 7,
+        "proposal_ids": ["P001", "P002", "P003", "P004", "P005", "P006", "P007"],
+        "received_by": "2025-03-15T17:00:00Z",
+    },
+    private_key=officer_key,
+    signer_id="contracting.officer@agency.gov",
+)
+
+chain.append(
+    operation="evaluation-complete",
+    y_state={
+        "evaluated_by": ["panel-member-1", "panel-member-2", "panel-member-3"],
+        "recommended": "P003",
+        "score": 92.5,
+    },
+    private_key=officer_key,
+    signer_id="eval.panel@agency.gov",
+)
+
+chain.append(
+    operation="award",
+    y_state={
+        "awarded_to": "P003",
+        "vendor": "Cloud Corp",
+        "contract_value": "$2.3M",
+        "period": "3 years",
+    },
+    private_key=officer_key,
+    signer_id="contracting.officer@agency.gov",
+)
+```
+
+## Compliance Frameworks
+
+| Framework | pruv Capability |
+|-----------|----------------|
+| **FedRAMP** | Cryptographic audit trails for cloud system access |
+| **NIST 800-53** | Tamper-evident logging (AU-9, AU-10) |
+| **FISMA** | Verifiable security control implementation |
+| **FOIA** | Provable chain of custody for public records |
+| **Section 508** | Audit trail for accessibility compliance changes |
+
+## Policy Change Tracking
+
+```python
+chain = XYChain(name="policy-update-2025-01")
+
+chain.append(
+    operation="draft",
+    y_state={"policy": "IT-SEC-001", "version": "2.0-draft", "changes": 14},
+    private_key=drafter_key,
+    signer_id="policy.analyst@agency.gov",
+)
+
+chain.append(
+    operation="review",
+    y_state={"reviewed_by": "general.counsel@agency.gov", "approved": True},
+    private_key=counsel_key,
+    signer_id="general.counsel@agency.gov",
+)
+
+chain.append(
+    operation="publish",
+    y_state={"policy": "IT-SEC-001", "version": "2.0", "effective_date": "2025-04-01"},
+    private_key=director_key,
+    signer_id="director@agency.gov",
+)
+```
+
+## Inter-Agency Data Sharing
+
+When agencies share data, multi-signer chains provide mutual verification:
+
+```python
+agency_a_key, _ = generate_keypair()
+agency_b_key, _ = generate_keypair()
+
+chain = XYChain(name="data-sharing-agreement-001")
+
+chain.append(
+    operation="share-request",
+    y_state={"dataset": "demographics-2024", "purpose": "statistical analysis"},
+    private_key=agency_a_key,
+    signer_id="data.officer@agency-a.gov",
+)
+
+chain.append(
+    operation="share-approve",
+    y_state={"approved": True, "restrictions": ["aggregate-only", "no-pii"]},
+    private_key=agency_b_key,
+    signer_id="data.officer@agency-b.gov",
+)
+
+# Both agencies can independently verify
+valid, _ = chain.verify()
+sigs_valid, _ = chain.verify_signatures()
+```
+
+## AI in Government
+
+When government agencies deploy AI systems, pruv provides the accountability trail required by executive orders on AI:
+
+```python
+from pruv import xy_wrap
+
+@xy_wrap(
+    chain_name="ai-adjudication",
+    sign=True,
+    private_key=ai_system_key,
+    signer_id="benefits-ai@agency.gov",
+)
+async def benefits_ai(task: str):
+    # AI-assisted benefits determination
+    return {"determination": "eligible", "confidence": 0.94}
+
+result = await benefits_ai("evaluate application APP-2025-12345")
+# Verifiable proof of AI-assisted decision
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Verification" icon="shield-check" href="/concepts/verification">
+    How chain verification provides tamper-evidence.
+  </Card>
+  <Card title="Cloud API" icon="cloud" href="/cloud/overview">
+    Centralized chain storage for agency-wide access.
+  </Card>
+</CardGroup>

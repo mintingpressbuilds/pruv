@@ -1,0 +1,194 @@
+---
+title: "Approval Gates"
+description: "Add human-in-the-loop approval for high-risk operations. Block agent actions until a human approves via webhook."
+---
+
+# Approval Gates
+
+Approval gates add a human-in-the-loop step to your verification chains. When an agent or automated system attempts a high-risk operation, the gate sends a webhook to your approval system and waits for a response.
+
+## Overview
+
+```python
+from pruv import ApprovalGate
+
+gate = ApprovalGate(
+    webhook_url="https://slack.mycompany.com/approve",
+    timeout=300,
+    operations={"file.write", "deploy", "database.migrate"},
+    on_timeout="deny",
+)
+```
+
+## How It Works
+
+1. An operation is about to execute
+2. The gate checks if the operation requires approval
+3. If yes, a webhook request is sent with the proposed action details
+4. The gate waits for the webhook response (up to timeout)
+5. If approved, the operation proceeds; if denied, it is blocked
+
+## Configuration
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `webhook_url` | `str` | required | URL to receive approval requests |
+| `timeout` | `int` | `300` | Seconds to wait for response |
+| `operations` | `set[str]` | `{"file.write", "deploy", "database.migrate"}` | Operations requiring approval |
+| `on_timeout` | `str` | `"deny"` | What to do on timeout: `"deny"` or `"approve"` |
+
+## Checking Operations
+
+```python
+# Check if an operation needs approval
+needs_approval = gate.requires_approval("deploy")      # True
+needs_approval = gate.requires_approval("read-config")  # False
+```
+
+## Sending Approval Requests
+
+```python
+from pruv.approval import ApprovalRequest
+
+response = await gate.gate(
+    chain_id=chain.id,
+    entry_index=chain.length,
+    operation="deploy",
+    x_state={"current_version": "1.0"},
+    proposed_y_state={"new_version": "2.0"},
+)
+
+if response.is_approved:
+    print(f"Approved by {response.approved_by}")
+    chain.append("deploy", y_state={"new_version": "2.0"})
+else:
+    print(f"Denied: {response.reason}")
+```
+
+## Webhook Format
+
+### Request (POST to your webhook_url)
+
+```json
+{
+  "chain_id": "a1b2c3d4e5f6",
+  "entry_index": 5,
+  "operation": "deploy",
+  "x_state": {"current_version": "1.0"},
+  "proposed_y_state": {"new_version": "2.0"},
+  "timestamp": 1706745600.0
+}
+```
+
+### Expected Response (HTTP 200)
+
+```json
+{
+  "status": "approved",
+  "approved_by": "alice@company.com",
+  "reason": "Changes look good"
+}
+```
+
+Or to deny:
+
+```json
+{
+  "status": "denied",
+  "reason": "Version bump needs more testing"
+}
+```
+
+## Response Status Values
+
+| Status | Meaning |
+|--------|---------|
+| `"approved"` | Operation is approved to proceed |
+| `"denied"` | Operation is explicitly denied |
+| `"timeout"` | No response within the timeout period |
+
+## Using with xy_wrap
+
+```python
+from pruv import xy_wrap
+
+@xy_wrap(
+    chain_name="gated-agent",
+    approval_webhook="https://slack.mycompany.com/approve",
+    approval_operations=["file.write", "deploy", "database.migrate"],
+    approval_timeout=300,
+)
+async def sensitive_agent(task: str):
+    # If the agent performs file.write, deploy, or database.migrate,
+    # it will be gated by the approval webhook
+    return {"status": "completed"}
+```
+
+## Custom Approval Operations
+
+Define which operations require approval based on your risk model:
+
+```python
+gate = ApprovalGate(
+    webhook_url="https://approvals.company.com/gate",
+    operations={
+        "file.write",
+        "file.delete",
+        "deploy",
+        "database.migrate",
+        "database.drop",
+        "secret.rotate",
+        "user.delete",
+        "config.production",
+    },
+)
+```
+
+## Timeout Behavior
+
+When the webhook does not respond within the timeout:
+
+```python
+# Default: deny on timeout (safer)
+gate = ApprovalGate(
+    webhook_url="https://approvals.company.com/gate",
+    timeout=300,
+    on_timeout="deny",
+)
+
+# Alternative: approve on timeout (for non-critical operations)
+gate = ApprovalGate(
+    webhook_url="https://approvals.company.com/gate",
+    timeout=60,
+    on_timeout="approve",
+)
+```
+
+<Warning>
+  Setting `on_timeout="approve"` means that if your approval system is down, operations will proceed without approval. Only use this for low-risk operations.
+</Warning>
+
+## Integration Examples
+
+### Slack
+
+Build a Slack bot that listens for approval requests and posts interactive messages with Approve/Deny buttons.
+
+### PagerDuty
+
+Route approval requests through PagerDuty for on-call approval during off-hours operations.
+
+### Custom Dashboard
+
+Build a web dashboard that receives webhook requests and lets team members review and approve operations.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Cloud Sync" icon="cloud" href="/guides/cloud-sync">
+    Sync approved chains to pruv cloud.
+  </Card>
+  <Card title="AI Agents" icon="robot" href="/industries/ai-agents">
+    Approval gates for autonomous AI agents.
+  </Card>
+</CardGroup>

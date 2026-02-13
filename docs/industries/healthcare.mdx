@@ -1,0 +1,152 @@
+---
+title: "Healthcare"
+description: "Track modifications to patient records with tamper-evident chains. Build HIPAA-compliant audit trails with pruv."
+---
+
+# Healthcare
+
+Healthcare organizations must maintain rigorous audit trails for patient data. pruv creates cryptographically verifiable records of every modification to clinical data, prescriptions, and care plans.
+
+## Patient Record Audit Trail
+
+```python
+from xycore import XYChain, generate_keypair
+
+clinician_key, _ = generate_keypair()
+chain = XYChain(name="patient-record-MRN-12345")
+
+chain.append(
+    operation="admit",
+    y_state={
+        "patient_mrn": "MRN-12345",
+        "department": "emergency",
+        "admitting_physician": "Dr. Smith",
+        "chief_complaint": "chest pain",
+    },
+    private_key=clinician_key,
+    signer_id="dr.smith@hospital.org",
+)
+
+chain.append(
+    operation="order-labs",
+    y_state={
+        "orders": ["troponin", "CBC", "BMP", "chest-xray"],
+        "priority": "stat",
+    },
+    private_key=clinician_key,
+    signer_id="dr.smith@hospital.org",
+)
+
+chain.append(
+    operation="record-results",
+    y_state={
+        "troponin": 0.04,
+        "troponin_unit": "ng/mL",
+        "interpretation": "within normal limits",
+    },
+    private_key=clinician_key,
+    signer_id="lab-system@hospital.org",
+)
+```
+
+## HIPAA Compliance
+
+pruv supports HIPAA compliance requirements through:
+
+| Requirement | pruv Feature |
+|------------|-------------|
+| **Access audit trail** | Every data access creates a verifiable chain entry |
+| **Integrity verification** | Tamper-evident chains detect unauthorized modifications |
+| **Non-repudiation** | Ed25519 signatures prove who made each change |
+| **Minimum necessary** | Auto-redaction prevents storing unnecessary sensitive data |
+| **Breach detection** | Chain verification detects data tampering |
+
+## Prescription Tracking
+
+```python
+pharmacy_key, _ = generate_keypair()
+
+chain.append(
+    operation="prescribe",
+    y_state={
+        "medication": "lisinopril",
+        "dose": "10mg",
+        "frequency": "daily",
+        "prescriber": "Dr. Smith",
+        "dea_number": "AS1234567",
+    },
+    private_key=clinician_key,
+    signer_id="dr.smith@hospital.org",
+)
+
+chain.append(
+    operation="dispense",
+    y_state={
+        "medication": "lisinopril",
+        "quantity": 30,
+        "dispensed_by": "PharmD Jones",
+        "ndc": "00000-0000-00",
+    },
+    private_key=pharmacy_key,
+    signer_id="pharmacy@hospital.org",
+)
+```
+
+## Clinical Decision Support
+
+When AI systems assist with clinical decisions, pruv provides proof of the AI's reasoning:
+
+```python
+from pruv import xy_wrap
+
+@xy_wrap(
+    chain_name="clinical-ai-decision",
+    sign=True,
+    private_key=ai_system_key,
+    signer_id="clinical-ai@hospital.org",
+)
+async def clinical_ai(task: str):
+    # AI analyzes patient data and recommends treatment
+    return {
+        "recommendation": "consider cardiac catheterization",
+        "confidence": 0.87,
+        "evidence": ["elevated troponin trend", "ECG changes"],
+    }
+
+result = await clinical_ai("analyze patient MRN-12345 cardiac workup")
+# result.receipt contains verifiable proof of the AI's recommendation
+```
+
+## Multi-Provider Handoffs
+
+Track patient handoffs between providers with multi-signer chains:
+
+```python
+er_key, _ = generate_keypair()
+cardiology_key, _ = generate_keypair()
+
+chain.append(
+    operation="transfer-request",
+    y_state={"from": "emergency", "to": "cardiology", "acuity": "urgent"},
+    private_key=er_key,
+    signer_id="er-attending@hospital.org",
+)
+
+chain.append(
+    operation="transfer-accept",
+    y_state={"accepted": True, "bed_assigned": "CCU-4"},
+    private_key=cardiology_key,
+    signer_id="cardiology-attending@hospital.org",
+)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Digital Signatures" icon="key" href="/concepts/signatures">
+    Ed25519 signatures for clinical staff identification.
+  </Card>
+  <Card title="Auto-Redaction" icon="eye-slash" href="/concepts/redaction">
+    Automatic PHI protection in chain states.
+  </Card>
+</CardGroup>

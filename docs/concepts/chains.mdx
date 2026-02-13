@@ -1,0 +1,241 @@
+---
+title: "Chains"
+description: "XYChain is an ordered sequence of cryptographically linked entries. Learn how chains enforce integrity through the chain rule."
+---
+
+# Chains
+
+An `XYChain` is an ordered sequence of `XYEntry` objects where each entry is cryptographically linked to the previous one. This linking makes the chain **tamper-evident**: modifying any entry breaks the chain.
+
+## The Chain Rule
+
+The fundamental invariant of every XY chain:
+
+```
+Entry[N].x == Entry[N-1].y
+```
+
+The first entry is special:
+
+```
+Entry[0].x == "GENESIS"
+```
+
+This means every entry's "before state" hash must exactly match the previous entry's "after state" hash. Entries form an unbroken sequence from GENESIS to the current head.
+
+```
+GENESIS --> H0 --> H1 --> H2 --> H3 --> ... --> HEAD
+  E[0].x   E[0].y  E[1].y  E[2].y  E[3].y
+           E[1].x  E[2].x  E[3].x  E[4].x
+```
+
+## Creating a Chain
+
+```python
+from xycore import XYChain
+
+chain = XYChain(
+    name="my-chain",         # Human-readable name
+    auto_redact=True,        # Redact secrets automatically
+    auto_checkpoint=False,   # Auto-checkpoint at intervals
+    checkpoint_interval=20,  # Checkpoint every N entries
+)
+
+print(f"ID: {chain.id}")      # Random 12-char hex ID
+print(f"Head: {chain.head}")  # "GENESIS" when empty
+print(f"Length: {chain.length}")  # 0
+```
+
+## Appending Entries
+
+The `append()` method handles all the linking automatically:
+
+```python
+# Entry 0: x is automatically set to "GENESIS"
+chain.append(
+    operation="initialize",
+    y_state={"version": "1.0"},
+)
+
+# Entry 1: x is automatically set to Entry[0].y
+chain.append(
+    operation="configure",
+    y_state={"database": "postgres"},
+)
+
+# Entry 2: x is automatically set to Entry[1].y
+chain.append(
+    operation="deploy",
+    y_state={"status": "live"},
+    status="success",
+    metadata={"environment": "production"},
+)
+```
+
+You never set `x` manually. The chain computes it from the previous entry.
+
+## Chain Properties
+
+```python
+chain.id          # "a1b2c3d4e5f6" -- unique identifier
+chain.name        # "my-chain" -- human-readable name
+chain.length      # 3 -- number of entries
+chain.head        # SHA-256 hash of the last entry's y_state
+chain.root        # XY proof hash of the first entry
+chain.entries     # List of XYEntry objects
+```
+
+## Accessing Entries
+
+```python
+# By index
+entry = chain.get_entry(0)
+entry = chain[0]
+
+# Iterate
+for entry in chain:
+    print(f"[{entry.index}] {entry.operation}: {entry.xy}")
+
+# Length
+print(len(chain))  # 3
+```
+
+## Verification
+
+Verify the entire chain in one call:
+
+```python
+valid, break_index = chain.verify()
+
+if valid:
+    print("All entries verified -- chain is intact")
+else:
+    print(f"Chain broken at entry {break_index}")
+    broken_entry = chain[break_index]
+    print(f"  Operation: {broken_entry.operation}")
+    print(f"  Expected x: {chain[break_index - 1].y}")
+    print(f"  Actual x:   {broken_entry.x}")
+```
+
+### What Verification Checks
+
+For each entry `i`:
+
+1. Recompute `compute_xy(entry.x, entry.operation, entry.y, entry.timestamp)` and compare to `entry.xy`
+2. If `i == 0`: check that `entry.x == "GENESIS"`
+3. If `i > 0`: check that `entry.x == entries[i-1].y`
+
+If either check fails, verification returns `(False, i)`.
+
+## Signature Verification
+
+If entries have digital signatures, verify them separately:
+
+```python
+sigs_valid, sig_break = chain.verify_signatures()
+
+if sigs_valid:
+    print("All signatures verified")
+else:
+    print(f"Invalid signature at entry {sig_break}")
+```
+
+Unsigned entries are skipped during signature verification.
+
+## Serialization
+
+Chains can be serialized to and from dictionaries (and therefore JSON):
+
+```python
+import json
+
+# Serialize
+data = chain.to_dict()
+json_str = json.dumps(data, indent=2)
+
+# Deserialize
+loaded = XYChain.from_dict(json.loads(json_str))
+valid, _ = loaded.verify()
+assert valid
+```
+
+The serialized format includes:
+
+```json
+{
+  "id": "a1b2c3d4e5f6",
+  "name": "my-chain",
+  "entries": [...],
+  "auto_redact": true,
+  "auto_checkpoint": false,
+  "checkpoint_interval": 20,
+  "length": 3,
+  "head": "c7f1a4e6d3b9...",
+  "root": "xy_7e2f4a8c1d3b..."
+}
+```
+
+## Local Storage
+
+Persist chains to the local filesystem:
+
+```python
+from xycore import LocalStorage
+
+storage = LocalStorage(".pruv")  # Directory for chain files
+
+# Save
+path = storage.save(chain)  # Returns path like ".pruv/a1b2c3d4e5f6.json"
+
+# Load
+loaded = storage.load(chain.id)
+
+# List all chains
+for info in storage.list_chains():
+    print(f"{info['id']}: {info['name']} ({info['length']} entries)")
+
+# Check existence
+if storage.exists(chain.id):
+    print("Chain exists on disk")
+
+# Delete
+storage.delete(chain.id)
+```
+
+## Auto-Checkpoint
+
+Enable automatic checkpointing to create snapshots at regular intervals:
+
+```python
+from pruv import CheckpointManager
+
+chain = XYChain(
+    name="long-running",
+    auto_checkpoint=True,
+    checkpoint_interval=20,  # Checkpoint every 20 entries
+)
+
+manager = CheckpointManager(chain, project_dir="./my-project")
+# The manager registers itself with the chain
+# Every 20 entries, a checkpoint is automatically created
+```
+
+## Configuration
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `name` | `str` | `"default"` | Human-readable chain name |
+| `auto_redact` | `bool` | `True` | Auto-redact secrets in states |
+| `auto_checkpoint` | `bool` | `False` | Auto-checkpoint at intervals |
+| `checkpoint_interval` | `int` | `20` | Entries between checkpoints |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Entries" icon="cube" href="/concepts/entries">
+    Deep dive into the anatomy of an XY entry.
+  </Card>
+  <Card title="Verification" icon="shield-check" href="/concepts/verification">
+    How chain verification works and what it catches.
+  </Card>
+</CardGroup>

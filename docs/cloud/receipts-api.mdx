@@ -1,0 +1,151 @@
+---
+title: "Receipts API"
+description: "Retrieve receipts, export PDF data, and get embeddable SVG badges via the pruv cloud API."
+---
+
+# Receipts API
+
+The Receipts API lets you retrieve receipt details, export receipt data for PDF generation, and get embeddable SVG badges for verified chains.
+
+## Get a Receipt
+
+Retrieve a receipt by ID.
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key" \
+  https://api.pruv.dev/v1/receipts/r_abc123def456
+```
+
+### Response (200)
+
+```json
+{
+  "id": "r_abc123def456",
+  "chain_id": "a1b2c3d4e5f6",
+  "task": "deploy-my-app-v2.0",
+  "started": 1706745600.0,
+  "completed": 1706745645.2,
+  "duration": 45.2,
+  "entry_count": 5,
+  "first_x": "GENESIS",
+  "final_y": "c7f1a4e6d3b9e5f2...",
+  "root_xy": "xy_7e2f4a8c1d3b...",
+  "head_xy": "xy_2a8f5c1e7d4b...",
+  "all_verified": true,
+  "all_signatures_valid": true,
+  "receipt_hash": "8f3a2e1c5d7b4f9a...",
+  "agent_type": null,
+  "created_at": "2025-01-31T16:00:45Z"
+}
+```
+
+## Export Receipt PDF
+
+Get receipt data formatted for PDF generation.
+
+```bash
+curl -H "Authorization: Bearer pv_live_your_key" \
+  https://api.pruv.dev/v1/receipts/r_abc123def456/pdf
+```
+
+### Response (200)
+
+```json
+{
+  "receipt_id": "r_abc123def456",
+  "task": "deploy-my-app-v2.0",
+  "chain_id": "a1b2c3d4e5f6",
+  "verification_status": "verified",
+  "entry_count": 5,
+  "started": "2025-01-31T15:20:00Z",
+  "completed": "2025-01-31T15:20:45Z",
+  "duration_seconds": 45.2,
+  "root_xy": "xy_7e2f4a8c1d3b...",
+  "head_xy": "xy_2a8f5c1e7d4b...",
+  "receipt_hash": "8f3a2e1c5d7b4f9a...",
+  "signatures_valid": true,
+  "entries_summary": [
+    {"index": 0, "operation": "scan", "status": "success"},
+    {"index": 1, "operation": "test", "status": "success"},
+    {"index": 2, "operation": "build", "status": "success"},
+    {"index": 3, "operation": "deploy", "status": "success"},
+    {"index": 4, "operation": "verify", "status": "success"}
+  ]
+}
+```
+
+## Get Receipt Badge
+
+Get an embeddable SVG badge showing the verification status. This endpoint does **not** require authentication, making it suitable for public embedding.
+
+```bash
+curl https://api.pruv.dev/v1/receipts/r_abc123def456/badge
+```
+
+### Response (200)
+
+Returns an SVG image with:
+- Content-Type: `image/svg+xml`
+- Cache-Control: `public, max-age=300`
+
+The badge displays the verification status (verified/failed) and is styled to match common badge formats.
+
+### Embedding in Markdown
+
+```markdown
+![pruv verified](https://api.pruv.dev/v1/receipts/r_abc123def456/badge)
+```
+
+### Embedding in HTML
+
+```html
+<img src="https://api.pruv.dev/v1/receipts/r_abc123def456/badge"
+     alt="pruv verified" />
+```
+
+## Uploading Receipts
+
+Upload a receipt via the SDK:
+
+```python
+from pruv import CloudClient
+from xycore import XYReceipt
+
+client = CloudClient(api_key="pv_live_your_key")
+
+receipt = XYReceipt(
+    id="r_abc123def456",
+    task="deploy-my-app-v2.0",
+    started=1706745600.0,
+    completed=1706745645.2,
+    duration=45.2,
+    chain_id="a1b2c3d4e5f6",
+    entry_count=5,
+    first_x="GENESIS",
+    final_y="c7f1a4e6d3b9e5f2...",
+    root_xy="xy_7e2f4a8c1d3b...",
+    head_xy="xy_2a8f5c1e7d4b...",
+    all_verified=True,
+)
+
+result = await client.upload_receipt(receipt)
+```
+
+## Error Responses
+
+| Code | Condition |
+|:----:|-----------|
+| `404` | Receipt not found |
+| `401` | Invalid API key (except for badge endpoint) |
+| `429` | Rate limit exceeded |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Rate Limits" icon="gauge" href="/cloud/rate-limits">
+    API rate limits by plan.
+  </Card>
+  <Card title="Receipts Concept" icon="brain" href="/concepts/receipts">
+    Understanding receipts in depth.
+  </Card>
+</CardGroup>

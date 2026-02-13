@@ -1,0 +1,12 @@
+[project]
+name = "pruv-platform"
+version = "1.0.0"
+description = "pruv — Prove what happened. Verification infrastructure."
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "packages/xycore/tests",
+    "packages/pruv/tests",
+    "apps/api/tests",
+]

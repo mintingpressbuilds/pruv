@@ -1,0 +1,159 @@
+---
+title: "Changelog"
+description: "Release history for xycore and pruv packages."
+---
+
+# Changelog
+
+All notable changes to `xycore` and `pruv` are documented here.
+
+## xycore
+
+### v1.0.0 (2025-01-31)
+
+**Initial stable release.**
+
+The XY primitive is production-ready with zero external dependencies.
+
+#### Features
+
+- **XYChain**: Ordered sequence of cryptographically linked entries
+  - Automatic X linking (`Entry[N].x == Entry[N-1].y`)
+  - First entry starts with `x = "GENESIS"`
+  - Configurable auto-redaction and auto-checkpointing
+  - Full serialization/deserialization (`to_dict` / `from_dict`)
+
+- **XYEntry**: Fundamental unit of the XY chain
+  - State before (X) and after (Y) with proof hash (XY)
+  - XY proof format: `xy_{sha256_hex}`
+  - Optional state inspection data, metadata, and digital signatures
+  - Factory method `XYEntry.create()` with automatic XY computation
+
+- **Cryptographic Core**
+  - `hash_state()`: Deterministic SHA-256 hashing via canonical JSON
+  - `compute_xy()`: XY proof computation from X, operation, Y, timestamp
+  - `verify_entry()`: Single entry verification
+  - `verify_chain()`: Full chain verification with break detection
+
+- **Ed25519 Signatures** (optional dependency: `cryptography>=41.0`)
+  - `generate_keypair()`: Ed25519 keypair generation
+  - `sign_entry()`: Sign entries with Ed25519 private keys
+  - `verify_signature()`: Verify entry signatures
+  - Signed message format: `{x}:{operation}:{y}:{xy}`
+
+- **Auto-Redaction**
+  - Key name pattern matching (password, secret, api_key, token, etc.)
+  - Value pattern matching (Stripe, pruv, GitHub, AWS keys)
+  - Recursive redaction through nested dicts and lists
+  - Maximum recursion depth of 50
+
+- **XYReceipt**: Compact chain summary with deterministic hash
+  - Captures task, duration, entry count, verification status
+  - `ThinkingPhase` for AI agent reasoning data
+
+- **LocalStorage**: Persist chains to JSON files
+  - Save, load, list, delete, exists operations
+  - Default directory: `.pruv/`
+
+#### Technical Details
+
+- Python 3.10+ required
+- Zero external dependencies (core package)
+- MIT license
+- Typed with full type annotations
+
+---
+
+## pruv
+
+### v1.0.0 (2025-01-31)
+
+**Initial stable release.**
+
+The full SDK for scanning, wrapping, checkpoints, approval gates, cloud sync, and CLI.
+
+#### Features
+
+- **Scanner**
+  - File detection with language identification (20+ languages)
+  - Import analysis for Python, JavaScript, TypeScript
+  - Environment variable detection
+  - Framework detection (Next.js, React, Django, Flask, FastAPI, Express, LangChain, CrewAI, AutoGen, OpenAI)
+  - Service detection (Stripe, Supabase, OpenAI, AWS, GitHub, Redis, PostgreSQL)
+  - Configurable directory/file ignoring
+
+- **Graph**
+  - Deterministic project fingerprint via SHA-256 hash
+  - Graph diffing with added/removed/modified detection
+  - Serialization to dict and state dict formats
+
+- **xy_wrap**: Universal wrapper
+  - Decorator syntax: `@xy_wrap` or `@xy_wrap(sign=True)`
+  - Function call syntax: `xy_wrap(my_func)`
+  - Supports async and sync callables, classes with `run()` methods
+  - Automatic before/after project scanning
+  - Automatic chain creation, verification, and receipt generation
+  - Automatic cloud sync with offline queue
+  - Error capture with chain continuation
+
+- **CheckpointManager**
+  - Manual and auto-checkpointing
+  - Preview restore with graph diff
+  - Full restore with chain replacement
+  - Quick undo to latest checkpoint
+  - zstd compression (optional)
+  - Storage in `.pruv/checkpoints/`
+
+- **ApprovalGate**
+  - Webhook-based human approval for high-risk operations
+  - Configurable operation set and timeout
+  - Configurable timeout behavior (deny or approve)
+
+- **CloudClient**
+  - Full API client for api.pruv.dev
+  - Upload chains, append entries, verify, list
+  - Upload receipts
+  - Automatic retry with exponential backoff
+  - Offline queue with disk persistence
+
+- **CloudStorage**: High-level cloud storage wrapper
+  - `save()`, `load()`, `verify()` methods
+
+- **CLI** (`pruv` command)
+  - `pruv scan` -- scan a project directory
+  - `pruv verify` -- verify a chain file
+  - `pruv export` -- export chain to JSON/CSV
+  - `pruv undo` -- restore to checkpoint
+  - `pruv upload` -- upload scan to cloud
+
+#### Dependencies
+
+- `xycore>=1.0.0`
+- `httpx>=0.25.0`
+- `click>=8.0`
+- `pydantic>=2.0`
+- `zstandard>=0.21.0`
+
+#### Technical Details
+
+- Python 3.10+ required
+- MIT license
+- Typed with full type annotations
+- CLI entry point: `pruv = pruv.cli.commands:main`
+
+---
+
+## Reporting Issues
+
+Found a bug or have a feature request? Open an issue on [GitHub](https://github.com/pruv-dev/pruv/issues).
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/getting-started/installation">
+    Install the latest version.
+  </Card>
+  <Card title="GitHub" icon="github" href="https://github.com/pruv-dev/pruv">
+    View the source code.
+  </Card>
+</CardGroup>
