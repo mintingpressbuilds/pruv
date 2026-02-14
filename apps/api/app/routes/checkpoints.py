@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..core.dependencies import check_rate_limit, get_current_user
+from ..core.dependencies import check_rate_limit, get_current_user, require_write
 from ..core.rate_limit import RateLimitResult
 from ..schemas.schemas import (
     CheckpointCreate,
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/v1/chains/{chain_id}/checkpoints", tags=["checkpoint
 async def create_checkpoint(
     chain_id: str,
     body: CheckpointCreate,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_write),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Create a checkpoint."""
@@ -63,7 +63,7 @@ async def preview_restore(
 async def restore_checkpoint(
     chain_id: str,
     checkpoint_id: str,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_write),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Restore a chain to a checkpoint."""

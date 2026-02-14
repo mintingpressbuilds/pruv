@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from ..core.dependencies import check_rate_limit, get_current_user
+from ..core.dependencies import check_rate_limit, get_current_user, require_write
 from ..core.rate_limit import RateLimitResult
 from ..schemas.schemas import (
     ChainCreate,
@@ -29,7 +29,7 @@ router = APIRouter(prefix="/v1/chains", tags=["chains"])
 @router.post("", response_model=ChainResponse)
 async def create_chain(
     body: ChainCreate,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_write),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Create a new chain."""
@@ -70,7 +70,7 @@ async def get_chain(
 async def update_chain(
     chain_id: str,
     body: ChainUpdate,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_write),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Update a chain."""
@@ -86,7 +86,7 @@ async def update_chain(
 @router.delete("/{chain_id}")
 async def delete_chain(
     chain_id: str,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_write),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Delete a chain."""
@@ -126,7 +126,7 @@ async def share_chain(
 @router.post("/{chain_id}/undo", response_model=EntryResponse)
 async def undo_last_entry(
     chain_id: str,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_write),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Undo (remove) the last entry in a chain."""
@@ -143,7 +143,7 @@ async def undo_last_entry(
 async def append_entry(
     chain_id: str,
     body: EntryCreate,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_write),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Append an entry to a chain."""
@@ -168,7 +168,7 @@ async def append_entry(
 async def batch_append_entries(
     chain_id: str,
     body: EntryBatchCreate,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_write),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Batch append entries to a chain."""
