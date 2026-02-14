@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from ..core.config import settings
 from ..core.dependencies import check_rate_limit, get_current_user, require_write
@@ -83,7 +83,10 @@ async def get_usage(
 
 
 @router.post("/oauth/github")
-async def github_oauth_callback(code: str, request: Request):
+async def github_oauth_callback(
+    code: str = Query(..., min_length=8, max_length=256),
+    request: Request = None,
+):
     """Handle GitHub OAuth callback."""
     # Rate limit OAuth callbacks to prevent brute force
     client_ip = request.client.host if request.client else "unknown"
@@ -92,8 +95,6 @@ async def github_oauth_callback(code: str, request: Request):
         raise HTTPException(status_code=429, detail="Rate limit exceeded", headers=rl.to_headers())
     if not settings.github_client_id or not settings.github_client_secret:
         raise HTTPException(status_code=501, detail="GitHub OAuth not configured")
-    if not code or len(code) < 8:
-        raise HTTPException(status_code=400, detail="Invalid OAuth code")
     # In production: exchange code for token via GitHub API, fetch user info
     user = auth_service.get_or_create_oauth_user(
         provider="github",
@@ -106,7 +107,10 @@ async def github_oauth_callback(code: str, request: Request):
 
 
 @router.post("/oauth/google")
-async def google_oauth_callback(code: str, request: Request):
+async def google_oauth_callback(
+    code: str = Query(..., min_length=8, max_length=256),
+    request: Request = None,
+):
     """Handle Google OAuth callback."""
     # Rate limit OAuth callbacks to prevent brute force
     client_ip = request.client.host if request.client else "unknown"
@@ -115,8 +119,6 @@ async def google_oauth_callback(code: str, request: Request):
         raise HTTPException(status_code=429, detail="Rate limit exceeded", headers=rl.to_headers())
     if not settings.google_client_id or not settings.google_client_secret:
         raise HTTPException(status_code=501, detail="Google OAuth not configured")
-    if not code or len(code) < 8:
-        raise HTTPException(status_code=400, detail="Invalid OAuth code")
     # In production: exchange code for token via Google API, fetch user info
     user = auth_service.get_or_create_oauth_user(
         provider="google",
