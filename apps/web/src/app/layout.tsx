@@ -9,19 +9,20 @@ export const metadata: Metadata = {
     template: "%s | pruv",
   },
   description:
-    "Cryptographic verification for any system. Prove what happened with immutable, verifiable records.",
+    "Cryptographic verification primitive. Capture the before, the after, create proof. Chain rule: Entry[N].x == Entry[N-1].y.",
   keywords: [
     "pruv",
     "verification",
     "cryptographic proof",
-    "audit trail",
-    "observability",
-    "compliance",
+    "XY chain",
+    "state transformation",
+    "Ed25519",
+    "SHA-256",
   ],
   authors: [{ name: "pruv" }],
   openGraph: {
     title: "pruv — Prove what happened.",
-    description: "Cryptographic verification for any system.",
+    description: "Cryptographic verification primitive for any system that transforms state.",
     url: "https://pruv.dev",
     siteName: "pruv",
     locale: "en_US",
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "pruv — Prove what happened.",
-    description: "Cryptographic verification for any system.",
+    description: "Cryptographic verification primitive for any system that transforms state.",
   },
   robots: {
     index: true,
@@ -44,10 +45,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen flex flex-col">
+    <html lang="en">
+      <body>
         <Navbar />
-        <main className="flex-1">{children}</main>
+        <main>{children}</main>
         <Footer />
       </body>
     </html>
