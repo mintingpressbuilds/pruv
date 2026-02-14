@@ -6,7 +6,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..core.dependencies import get_current_user
+from ..core.dependencies import check_rate_limit, get_current_user
+from ..core.rate_limit import RateLimitResult
 from ..schemas.schemas import (
     CheckpointCreate,
     CheckpointListResponse,
@@ -24,6 +25,7 @@ async def create_checkpoint(
     chain_id: str,
     body: CheckpointCreate,
     user: dict[str, Any] = Depends(get_current_user),
+    _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Create a checkpoint."""
     cp = checkpoint_service.create_checkpoint(chain_id, user["id"], body.name)
@@ -36,6 +38,7 @@ async def create_checkpoint(
 async def list_checkpoints(
     chain_id: str,
     user: dict[str, Any] = Depends(get_current_user),
+    _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """List checkpoints for a chain."""
     checkpoints = checkpoint_service.list_checkpoints(chain_id)
@@ -47,6 +50,7 @@ async def preview_restore(
     chain_id: str,
     checkpoint_id: str,
     user: dict[str, Any] = Depends(get_current_user),
+    _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Preview what will change if restoring to a checkpoint."""
     result = checkpoint_service.preview_restore(chain_id, checkpoint_id, user["id"])
@@ -60,6 +64,7 @@ async def restore_checkpoint(
     chain_id: str,
     checkpoint_id: str,
     user: dict[str, Any] = Depends(get_current_user),
+    _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Restore a chain to a checkpoint."""
     result = checkpoint_service.restore_checkpoint(chain_id, checkpoint_id, user["id"])

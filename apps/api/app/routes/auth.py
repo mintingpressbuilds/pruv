@@ -6,7 +6,9 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..core.dependencies import get_current_user
+from ..core.config import settings
+from ..core.dependencies import check_rate_limit, get_current_user
+from ..core.rate_limit import RateLimitResult
 from ..core.security import create_jwt_token
 from ..schemas.schemas import ApiKeyCreate, ApiKeyCreatedResponse, ApiKeyResponse
 from ..services.auth_service import auth_service
@@ -18,6 +20,7 @@ router = APIRouter(prefix="/v1/auth", tags=["auth"])
 async def create_api_key(
     body: ApiKeyCreate,
     user: dict[str, Any] = Depends(get_current_user),
+    _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Create a new API key. The full key is only returned once."""
     result = auth_service.create_api_key(
@@ -33,6 +36,7 @@ async def create_api_key(
 @router.get("/api-keys")
 async def list_api_keys(
     user: dict[str, Any] = Depends(get_current_user),
+    _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """List all API keys for the current user."""
     keys = auth_service.list_api_keys(user["id"])
@@ -43,6 +47,7 @@ async def list_api_keys(
 async def revoke_api_key(
     key_id: str,
     user: dict[str, Any] = Depends(get_current_user),
+    _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Revoke an API key."""
     success = auth_service.revoke_api_key(key_id, user["id"])
@@ -54,6 +59,7 @@ async def revoke_api_key(
 @router.get("/me")
 async def get_current_user_info(
     user: dict[str, Any] = Depends(get_current_user),
+    _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Get current user information."""
     return {
@@ -67,6 +73,7 @@ async def get_current_user_info(
 @router.get("/usage")
 async def get_usage(
     user: dict[str, Any] = Depends(get_current_user),
+    _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Get usage information for the current user."""
     return auth_service.get_usage(user["id"])
@@ -78,7 +85,11 @@ async def get_usage(
 @router.post("/oauth/github")
 async def github_oauth_callback(code: str):
     """Handle GitHub OAuth callback."""
-    # In production: exchange code for token, fetch user info
+    if not settings.github_client_id or not settings.github_client_secret:
+        raise HTTPException(status_code=501, detail="GitHub OAuth not configured")
+    if not code or len(code) < 8:
+        raise HTTPException(status_code=400, detail="Invalid OAuth code")
+    # In production: exchange code for token via GitHub API, fetch user info
     user = auth_service.get_or_create_oauth_user(
         provider="github",
         provider_id=f"gh_{code[:8]}",
@@ -92,6 +103,11 @@ async def github_oauth_callback(code: str):
 @router.post("/oauth/google")
 async def google_oauth_callback(code: str):
     """Handle Google OAuth callback."""
+    if not settings.google_client_id or not settings.google_client_secret:
+        raise HTTPException(status_code=501, detail="Google OAuth not configured")
+    if not code or len(code) < 8:
+        raise HTTPException(status_code=400, detail="Invalid OAuth code")
+    # In production: exchange code for token via Google API, fetch user info
     user = auth_service.get_or_create_oauth_user(
         provider="google",
         provider_id=f"g_{code[:8]}",

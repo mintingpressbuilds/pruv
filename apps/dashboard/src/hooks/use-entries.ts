@@ -76,8 +76,8 @@ export function useCreateEntry(chainId: string) {
 
   return useMutation({
     mutationFn: (data: {
-      y: string;
-      action: string;
+      y_state?: Record<string, unknown>;
+      operation: string;
       metadata?: Record<string, unknown>;
     }) => entries.create(chainId, data),
     onSuccess: () => {

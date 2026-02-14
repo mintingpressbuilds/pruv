@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import secrets
 from dataclasses import dataclass
 
 
@@ -63,7 +64,7 @@ class Settings:
             database_url=os.getenv("DATABASE_URL", "postgresql://localhost:5432/pruv"),
             database_pool_size=int(os.getenv("DATABASE_POOL_SIZE", "10")),
             redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"),
-            jwt_secret=os.getenv("JWT_SECRET", "dev-secret-change-in-production"),
+            jwt_secret=os.getenv("JWT_SECRET") or secrets.token_hex(32),
             github_client_id=os.getenv("GITHUB_CLIENT_ID", ""),
             github_client_secret=os.getenv("GITHUB_CLIENT_SECRET", ""),
             google_client_id=os.getenv("GOOGLE_CLIENT_ID", ""),

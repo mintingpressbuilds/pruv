@@ -246,6 +246,30 @@ export interface ActivityItem {
   actor: string;
 }
 
+// ─── Checkpoint Types ────────────────────────────────────────────────────────
+
+export interface Checkpoint {
+  id: string;
+  chain_id: string;
+  name: string;
+  entry_index: number;
+  created_at: string;
+}
+
+export interface CheckpointPreview {
+  checkpoint_id: string;
+  checkpoint_name: string;
+  current_entry_index: number;
+  target_entry_index: number;
+  entries_to_rollback: number;
+}
+
+export interface CheckpointRestoreResult {
+  restored: boolean;
+  checkpoint_id: string;
+  new_length: number;
+}
+
 // ─── Filter / Sort Types ─────────────────────────────────────────────────────
 
 export interface ChainFilters {

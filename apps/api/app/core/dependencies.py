@@ -62,10 +62,16 @@ async def check_rate_limit(
     return result
 
 
-async def require_scope(scope: str):
+def require_scope(scope: str):
     """Create a dependency that requires a specific scope."""
     async def _check(user: dict[str, Any] = Depends(get_current_user)):
         if scope not in user.get("scopes", []):
             raise HTTPException(status_code=403, detail=f"Missing scope: {scope}")
         return user
     return _check
+
+
+# Pre-built scope dependencies
+require_read = require_scope("read")
+require_write = require_scope("write")
+require_admin = require_scope("admin")

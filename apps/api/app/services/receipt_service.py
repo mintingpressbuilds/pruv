@@ -52,6 +52,7 @@ class ReceiptService:
         receipt_id = uuid.uuid4().hex[:12]
         receipt = {
             "id": receipt_id,
+            "user_id": user_id,
             "chain_id": chain_id,
             "task": task,
             "started": entries[0]["timestamp"] if entries else now,
@@ -74,6 +75,18 @@ class ReceiptService:
 
     def get_receipt(self, receipt_id: str) -> dict[str, Any] | None:
         return self._receipts.get(receipt_id)
+
+    def get_receipt_for_user(self, receipt_id: str, user_id: str) -> dict[str, Any] | None:
+        receipt = self._receipts.get(receipt_id)
+        if not receipt or receipt.get("user_id") != user_id:
+            return None
+        return receipt
+
+    def list_receipts(self, user_id: str) -> list[dict[str, Any]]:
+        return [r for r in self._receipts.values() if r.get("user_id") == user_id]
+
+    def get_receipt_count(self, user_id: str) -> int:
+        return len([r for r in self._receipts.values() if r.get("user_id") == user_id])
 
     def get_receipt_pdf_data(self, receipt_id: str) -> dict[str, Any] | None:
         receipt = self.get_receipt(receipt_id)

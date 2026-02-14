@@ -13,12 +13,23 @@ from pydantic import BaseModel, Field
 
 class ChainCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
+    description: str | None = None
+    tags: list[str] = Field(default_factory=list)
     auto_redact: bool = True
+
+
+class ChainUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    tags: list[str] | None = None
+    auto_redact: bool | None = None
 
 
 class ChainResponse(BaseModel):
     id: str
     name: str
+    description: str | None = None
+    tags: list[str] = Field(default_factory=list)
     length: int
     root_xy: str | None = None
     head_xy: str | None = None
@@ -127,7 +138,30 @@ class CheckpointRestoreResponse(BaseModel):
     new_length: int
 
 
+# ──── Entry Validation Schemas ────
+
+
+class EntryValidationResponse(BaseModel):
+    index: int
+    valid: bool
+    reason: str | None = None
+    x_matches_prev_y: bool
+    proof_valid: bool
+    signature_valid: bool | None = None
+
+
 # ──── Receipt Schemas ────
+
+
+class ReceiptCreate(BaseModel):
+    chain_id: str
+    task: str = "verification"
+    agent_type: str | None = None
+
+
+class ReceiptListResponse(BaseModel):
+    receipts: list["ReceiptResponse"]
+    total: int
 
 
 class ReceiptResponse(BaseModel):
@@ -215,3 +249,24 @@ class ErrorResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str = "ok"
     version: str = "1.0.0"
+
+
+# ──── Dashboard Schemas ────
+
+
+class ActivityItemResponse(BaseModel):
+    id: str
+    type: str
+    description: str
+    timestamp: float
+    chain_id: str | None = None
+    chain_name: str | None = None
+    actor: str
+
+
+class DashboardStatsResponse(BaseModel):
+    total_chains: int
+    total_entries: int
+    total_receipts: int
+    verified_percentage: float
+    recent_activity: list[ActivityItemResponse]
