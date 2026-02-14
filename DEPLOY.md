@@ -172,15 +172,42 @@ The `next.config.ts` already has `output: "standalone"` and rewrites `/api/*` to
 
 ## 6. Deploy the Marketing Site — `pruv.dev`
 
+### Stack
+
+- **Next.js 15+** (App Router, static export)
+- **No Tailwind** — pure CSS custom properties in `globals.css`
+- **No framer-motion** — CSS animations only
+- **Fonts:** JetBrains Mono + Instrument Sans (Google Fonts, loaded via CSS `@import`)
+- **Interactive chain demo:** React client component (`chain-demo.tsx`)
+
+### Routes
+
+| Route            | Content                              |
+|------------------|--------------------------------------|
+| `/`              | Homepage — hero, live chain demo, receipt, comparison, industries, install |
+| `/how-it-works`  | XY primitive spec, step-by-step, chain rule, verification, properties |
+| `/pricing`       | 4-tier pricing grid, rate limits, FAQ |
+| `/industries`    | 8-industry grid with X:/Y: labels + per-industry detail |
+| `/security`      | Data protection spec, auto-redaction patterns, infrastructure |
+| `/privacy`       | Privacy policy                       |
+| `/terms`         | Terms of service                     |
+
 ### Vercel
 
 1. Same Vercel project or a new one
 2. Set **Root Directory** to `apps/web`
 3. Framework preset: **Next.js**
-4. No special env vars needed
+4. No special env vars needed — site is fully static
 5. Deploy
 6. Add custom domain: `pruv.dev`
 7. In Cloudflare DNS, point the root domain to Vercel
+
+### Notes
+
+- The build produces 100% static pages (no server-side rendering needed)
+- The only client component is the interactive chain demo on the homepage
+- Reference design is saved as `pruv-site.html` in the repo root
+- Design language: dark protocol-spec aesthetic — no gradient heroes, no feature cards with icons, no testimonial carousels
 
 ---
 

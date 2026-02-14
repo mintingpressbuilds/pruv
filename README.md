@@ -279,6 +279,7 @@ pip install pruv      # full SDK
 
 ### Links
 
+- [pruv.dev](https://pruv.dev) — marketing site
 - [Dashboard](https://app.pruv.dev) — chain explorer, time travel, receipts
 - [Docs](https://docs.pruv.dev) — full documentation
 - [API Reference](https://api.pruv.dev/docs) — REST API
