@@ -35,6 +35,9 @@ Thumbs.db
 # pruv local storage
 .pruv/
 
+# DevNog
+.devnog/
+
 # Testing
 .pytest_cache/
 .coverage
