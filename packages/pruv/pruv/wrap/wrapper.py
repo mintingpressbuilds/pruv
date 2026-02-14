@@ -7,13 +7,14 @@ import functools
 import inspect
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from xycore import XYChain, XYReceipt, hash_state
 
 from ..graph import Graph, GraphDiff
 from ..scanner import scan as scan_dir
+from .observers import ActionObserver, FileObserver, APIObserver
 
 
 @dataclass
@@ -25,6 +26,7 @@ class WrappedResult:
     receipt: XYReceipt
     graph_before: Graph | None = None
     graph_after: Graph | None = None
+    observer: ActionObserver | None = None
 
     @property
     def diff(self) -> GraphDiff | None:
@@ -36,6 +38,13 @@ class WrappedResult:
     def verified(self) -> bool:
         valid, _ = self.chain.verify()
         return valid
+
+    @property
+    def actions(self) -> list:
+        """All observed actions during execution."""
+        if self.observer:
+            return self.observer.actions
+        return []
 
 
 class WrappedAgent:
@@ -68,6 +77,28 @@ class WrappedAgent:
         self.approval_timeout = approval_timeout
         self.auto_redact = auto_redact
 
+        # Approval gate (created lazily when webhook is provided)
+        self._approval_gate = None
+        if self.approval_webhook:
+            from ..approval.gate import ApprovalGate
+            self._approval_gate = ApprovalGate(
+                webhook_url=self.approval_webhook,
+                timeout=self.approval_timeout,
+                operations=set(self.approval_operations) if self.approval_operations else None,
+            )
+
+    def _create_observer(self, chain: XYChain) -> ActionObserver:
+        """Create an observer that records intermediate actions into the chain."""
+        return ActionObserver(chain)
+
+    def _create_file_observer(self, chain: XYChain) -> FileObserver:
+        """Create a file observer for tracking file operations."""
+        return FileObserver(chain)
+
+    def _create_api_observer(self, chain: XYChain) -> APIObserver:
+        """Create an API observer for tracking HTTP calls."""
+        return APIObserver(chain)
+
     def run_sync(self, args: tuple, kwargs: dict) -> WrappedResult:
         """Execute the wrapped target synchronously and produce an XY chain."""
         task = str(args[0]) if args else "unknown"
@@ -92,6 +123,25 @@ class WrappedAgent:
             y_state=before_state,
             metadata={"task": task},
         )
+
+        # Create observers — inject into kwargs so wrapped function can use them
+        observer = self._create_observer(chain)
+        file_observer = self._create_file_observer(chain)
+        api_observer = self._create_api_observer(chain)
+
+        # Inject observers into kwargs if the function accepts them
+        sig = inspect.signature(self.target)
+        params = sig.parameters
+        if "observer" in params:
+            kwargs["observer"] = observer
+        if "file_observer" in params:
+            kwargs["file_observer"] = file_observer
+        if "api_observer" in params:
+            kwargs["api_observer"] = api_observer
+        if "approval_gate" in params and self._approval_gate:
+            kwargs["approval_gate"] = self._approval_gate
+        if "chain" in params:
+            kwargs["chain"] = chain
 
         output = None
         status = "success"
@@ -119,6 +169,12 @@ class WrappedAgent:
             after_state["graph_hash"] = graph_after.hash
         if error_msg:
             after_state["error"] = error_msg
+        if observer.count > 0:
+            after_state["actions_summary"] = observer.summary()
+        if file_observer.count > 0:
+            after_state["file_summary"] = file_observer.summary()
+        if api_observer.count > 0:
+            after_state["api_summary"] = api_observer.summary()
 
         chain.append(
             operation="complete",
@@ -146,13 +202,42 @@ class WrappedAgent:
             all_verified=valid,
         )
 
-        return WrappedResult(
+        # Pick the most specific observer to return
+        result_observer = observer
+        if file_observer.count > 0:
+            result_observer = file_observer
+        if api_observer.count > 0:
+            result_observer = api_observer
+
+        result = WrappedResult(
             output=output,
             chain=chain,
             receipt=receipt,
             graph_before=graph_before,
             graph_after=graph_after,
+            observer=result_observer,
         )
+
+        # Cloud sync if api_key provided (non-fatal)
+        if self.api_key:
+            try:
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        # Can't block here; schedule as a background task
+                        asyncio.ensure_future(self._cloud_sync(chain, receipt))
+                    else:
+                        loop.run_until_complete(self._cloud_sync(chain, receipt))
+                except RuntimeError:
+                    loop = asyncio.new_event_loop()
+                    try:
+                        loop.run_until_complete(self._cloud_sync(chain, receipt))
+                    finally:
+                        loop.close()
+            except Exception:
+                pass  # Cloud sync failures are non-fatal
+
+        return result
 
     async def run(self, args: tuple, kwargs: dict) -> WrappedResult:
         """Execute the wrapped target asynchronously and produce an XY chain."""
@@ -177,6 +262,24 @@ class WrappedAgent:
             y_state=before_state,
             metadata={"task": task},
         )
+
+        # Create observers — inject into kwargs so wrapped function can use them
+        observer = self._create_observer(chain)
+        file_observer = self._create_file_observer(chain)
+        api_observer = self._create_api_observer(chain)
+
+        sig = inspect.signature(self.target)
+        params = sig.parameters
+        if "observer" in params:
+            kwargs["observer"] = observer
+        if "file_observer" in params:
+            kwargs["file_observer"] = file_observer
+        if "api_observer" in params:
+            kwargs["api_observer"] = api_observer
+        if "approval_gate" in params and self._approval_gate:
+            kwargs["approval_gate"] = self._approval_gate
+        if "chain" in params:
+            kwargs["chain"] = chain
 
         output = None
         status = "success"
@@ -209,6 +312,12 @@ class WrappedAgent:
             after_state["graph_hash"] = graph_after.hash
         if error_msg:
             after_state["error"] = error_msg
+        if observer.count > 0:
+            after_state["actions_summary"] = observer.summary()
+        if file_observer.count > 0:
+            after_state["file_summary"] = file_observer.summary()
+        if api_observer.count > 0:
+            after_state["api_summary"] = api_observer.summary()
 
         chain.append(
             operation="complete",
@@ -236,13 +345,35 @@ class WrappedAgent:
             all_verified=valid,
         )
 
-        return WrappedResult(
+        result_observer = observer
+        if file_observer.count > 0:
+            result_observer = file_observer
+        if api_observer.count > 0:
+            result_observer = api_observer
+
+        result = WrappedResult(
             output=output,
             chain=chain,
             receipt=receipt,
             graph_before=graph_before,
             graph_after=graph_after,
+            observer=result_observer,
         )
+
+        # Cloud sync if api_key provided
+        if self.api_key:
+            await self._cloud_sync(chain, receipt)
+
+        return result
+
+    async def _cloud_sync(self, chain: XYChain, receipt: XYReceipt) -> None:
+        """Sync chain and receipt to the cloud."""
+        try:
+            from ..cloud.client import CloudClient
+            client = CloudClient(api_key=self.api_key)
+            await client.upload_chain(chain)
+        except Exception:
+            pass  # Sync failures are non-fatal
 
 
 def xy_wrap(
@@ -265,6 +396,13 @@ def xy_wrap(
     - Function call: ``wrapped = xy_wrap(my_agent)``
     - Decorator: ``@xy_wrap``
     - Decorator with args: ``@xy_wrap(sign=True)``
+
+    Wrapped functions can accept these optional keyword arguments:
+    - ``observer``: ActionObserver for recording arbitrary actions
+    - ``file_observer``: FileObserver for recording file operations
+    - ``api_observer``: APIObserver for recording API calls
+    - ``approval_gate``: ApprovalGate for requesting human approval
+    - ``chain``: The XYChain being built (for direct access)
     """
     def _make_wrapper(t: Any) -> WrappedAgent:
         return WrappedAgent(

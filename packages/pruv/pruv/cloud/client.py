@@ -118,13 +118,65 @@ class CloudClient:
         return sent
 
     async def upload_chain(self, chain: XYChain) -> dict[str, Any] | None:
-        """Upload a chain to the cloud."""
-        return await self._request("POST", "/v1/chains", chain.to_dict())
+        """Upload a chain to the cloud.
+
+        Creates the chain via POST /v1/chains with the correct body format,
+        then batch-appends all entries.
+        """
+        # Step 1: Create the chain with the body the backend expects
+        create_body = {
+            "name": chain.name,
+            "auto_redact": chain.auto_redact,
+        }
+        result = await self._request("POST", "/v1/chains", create_body)
+        if not result:
+            return None
+
+        remote_chain_id = result.get("id")
+        if not remote_chain_id:
+            return None
+
+        # Step 2: Append entries in batch format
+        if chain.entries:
+            entries_body = {
+                "entries": [
+                    {
+                        "operation": entry.operation,
+                        "x_state": entry.x_state,
+                        "y_state": entry.y_state,
+                        "status": entry.status,
+                        "metadata": entry.metadata,
+                        "signature": entry.signature,
+                        "signer_id": entry.signer_id,
+                        "public_key": entry.public_key,
+                    }
+                    for entry in chain.entries
+                ]
+            }
+            await self._request(
+                "POST", f"/v1/chains/{remote_chain_id}/entries/batch", entries_body,
+            )
+
+        return result
 
     async def append_entry(self, chain_id: str, entry: XYEntry) -> dict[str, Any] | None:
-        """Append an entry to a remote chain."""
+        """Append an entry to a remote chain.
+
+        Sends the entry in the format the backend expects (operation + states),
+        not the raw entry dict (which includes computed hashes).
+        """
+        body = {
+            "operation": entry.operation,
+            "x_state": entry.x_state,
+            "y_state": entry.y_state,
+            "status": entry.status,
+            "metadata": entry.metadata,
+            "signature": entry.signature,
+            "signer_id": entry.signer_id,
+            "public_key": entry.public_key,
+        }
         return await self._request(
-            "POST", f"/v1/chains/{chain_id}/entries", entry.to_dict(),
+            "POST", f"/v1/chains/{chain_id}/entries", body,
         )
 
     async def verify_chain(self, chain_id: str) -> dict[str, Any] | None:
@@ -141,7 +193,12 @@ class CloudClient:
 
     async def upload_receipt(self, receipt: XYReceipt) -> dict[str, Any] | None:
         """Upload a receipt."""
-        return await self._request("POST", f"/v1/receipts", receipt.to_dict())
+        body = {
+            "chain_id": receipt.chain_id,
+            "task": receipt.task,
+            "agent_type": receipt.agent_type,
+        }
+        return await self._request("POST", "/v1/receipts", body)
 
 
 class CloudStorage:
