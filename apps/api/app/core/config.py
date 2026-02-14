@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import secrets
+import warnings
 from dataclasses import dataclass
+
+logger = logging.getLogger("pruv.api.config")
 
 
 @dataclass
@@ -79,3 +83,12 @@ class Settings:
 
 
 settings = Settings.from_env()
+
+# Warn if JWT_SECRET is auto-generated (ephemeral — tokens invalidate on restart)
+if not os.getenv("JWT_SECRET"):
+    warnings.warn(
+        "JWT_SECRET not set. Using auto-generated key. "
+        "All tokens will be invalidated on server restart. "
+        "Set JWT_SECRET in your environment for production.",
+        stacklevel=1,
+    )

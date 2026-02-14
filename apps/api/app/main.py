@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import logging
+import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .core.config import settings
+from .middleware.cors import CORSConfig, SecurityHeadersMiddleware
+from .middleware.logging import RequestLoggingMiddleware
 from .routes import admin, analytics, auth, chains, checkpoints, dashboard, receipts, verify, webhooks
 from .schemas.schemas import HealthResponse
 
@@ -18,23 +21,28 @@ app = FastAPI(
     title="pruv API",
     description="Prove what happened. Cryptographic verification for any system.",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/docs" if settings.debug else None,
+    redoc_url="/redoc" if settings.debug else None,
 )
 
-# CORS — explicit methods and headers, no wildcards
+# CORS — environment-aware, no localhost in production
+environment = os.getenv("PRUV_ENV", "development")
+cors_config = CORSConfig(environment=environment)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins or [
-        "https://app.pruv.dev",
-        "https://pruv.dev",
-        "http://localhost:3000",
-        "http://localhost:3001",
-    ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "X-Request-ID"],
+    allow_origins=settings.cors_origins or cors_config.allow_origins,
+    allow_credentials=cors_config.allow_credentials,
+    allow_methods=cors_config.allow_methods,
+    allow_headers=cors_config.allow_headers,
+    expose_headers=cors_config.expose_headers,
+    max_age=cors_config.max_age,
 )
+
+# Security headers — HSTS, CSP, X-Frame-Options, etc.
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Request logging — structured log entries for every request
+app.add_middleware(RequestLoggingMiddleware)
 
 
 # Global exception handler — never leak stack traces

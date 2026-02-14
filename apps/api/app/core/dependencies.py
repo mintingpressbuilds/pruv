@@ -50,9 +50,16 @@ async def check_rate_limit(
     request: Request,
     user: dict[str, Any] = Depends(get_current_user),
 ) -> RateLimitResult:
-    """Check rate limit for the current user."""
+    """Check rate limit for the current user.
+
+    Stores rate limit headers on request state for middleware injection.
+    """
     key = f"rate:{user['id']}"
     result = rate_limiter.check(key, plan=user.get("plan", "free"))
+
+    # Store headers so middleware can inject them into the response
+    request.state.rate_limit_headers = result.to_headers()
+
     if not result.allowed:
         raise HTTPException(
             status_code=429,

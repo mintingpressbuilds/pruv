@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from ..core.config import settings
 from ..core.dependencies import check_rate_limit, get_current_user
-from ..core.rate_limit import RateLimitResult
+from ..core.rate_limit import RateLimitResult, rate_limiter
 from ..core.security import create_jwt_token
 from ..schemas.schemas import ApiKeyCreate, ApiKeyCreatedResponse, ApiKeyResponse
 from ..services.auth_service import auth_service
@@ -83,8 +83,13 @@ async def get_usage(
 
 
 @router.post("/oauth/github")
-async def github_oauth_callback(code: str):
+async def github_oauth_callback(code: str, request: Request):
     """Handle GitHub OAuth callback."""
+    # Rate limit OAuth callbacks to prevent brute force
+    client_ip = request.client.host if request.client else "unknown"
+    rl = rate_limiter.check(f"oauth:{client_ip}", plan="free")
+    if not rl.allowed:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded", headers=rl.to_headers())
     if not settings.github_client_id or not settings.github_client_secret:
         raise HTTPException(status_code=501, detail="GitHub OAuth not configured")
     if not code or len(code) < 8:
@@ -101,8 +106,13 @@ async def github_oauth_callback(code: str):
 
 
 @router.post("/oauth/google")
-async def google_oauth_callback(code: str):
+async def google_oauth_callback(code: str, request: Request):
     """Handle Google OAuth callback."""
+    # Rate limit OAuth callbacks to prevent brute force
+    client_ip = request.client.host if request.client else "unknown"
+    rl = rate_limiter.check(f"oauth:{client_ip}", plan="free")
+    if not rl.allowed:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded", headers=rl.to_headers())
     if not settings.google_client_id or not settings.google_client_secret:
         raise HTTPException(status_code=501, detail="Google OAuth not configured")
     if not code or len(code) < 8:

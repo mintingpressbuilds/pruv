@@ -16,11 +16,12 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    create_engine,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Session, relationship, sessionmaker
 
 Base = declarative_base()
 
@@ -179,3 +180,47 @@ class Webhook(Base):
     created_at = Column(DateTime, default=func.now(), nullable=False)
 
     user = relationship("User", back_populates="webhooks")
+
+    __table_args__ = (
+        Index("idx_webhooks_user_id", "user_id"),
+    )
+
+
+# ──── Database Engine with Connection Pooling ────
+
+
+def get_engine(database_url: str, pool_size: int = 10, max_overflow: int = 20):
+    """Create a SQLAlchemy engine with connection pooling.
+
+    Args:
+        database_url: PostgreSQL connection string (or sqlite for testing).
+        pool_size: Number of connections to maintain in the pool.
+        max_overflow: Max connections beyond pool_size allowed temporarily.
+    """
+    # Pool settings only apply to PostgreSQL; SQLite uses SingletonThreadPool
+    if database_url.startswith("sqlite"):
+        return create_engine(database_url, echo=False)
+    return create_engine(
+        database_url,
+        pool_size=pool_size,
+        max_overflow=max_overflow,
+        pool_timeout=30,
+        pool_recycle=1800,
+        pool_pre_ping=True,
+        echo=False,
+    )
+
+
+def get_session_factory(database_url: str, pool_size: int = 10) -> sessionmaker:
+    """Create a session factory with connection pooling."""
+    engine = get_engine(database_url, pool_size=pool_size)
+    return sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def get_db(session_factory: sessionmaker):
+    """Dependency that yields a database session."""
+    db = session_factory()
+    try:
+        yield db
+    finally:
+        db.close()
