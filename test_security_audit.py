@@ -304,7 +304,24 @@ for method, path, body, needs_write, is_admin in ROUTES:
 
     # ── 6. Oversized payload → 413 or 422, not 500 ──────────
     if body is not None:
-        oversized = {"name": "x" * (1024 * 1024 + 100)}  # >1MB in name field alone
+        # Build oversized payload using a field the schema actually validates
+        big = "x" * (1024 * 1024 + 100)
+        if "name" in body:
+            oversized = {"name": big}
+        elif "operation" in body:
+            oversized = {"operation": big}
+        elif "url" in body:
+            oversized = {"url": "https://example.com/" + big}
+        elif "chain_id" in body:
+            oversized = {"chain_id": big}
+        elif "entries" in body:
+            oversized = {"entries": [{"operation": big}]}
+        elif "events" in body:
+            oversized = {"events": [big]}
+        else:
+            # Fallback: use the first key from the body schema
+            first_key = next(iter(body))
+            oversized = {first_key: big}
         r = send(method, path, oversized, AUTH if not is_admin else ADMIN_AUTH)
         check(r.status_code in (413, 422, 400),
               f"Oversized payload → {r.status_code} (expect 413/422/400, not 500)")
