@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 
-from ..core.dependencies import check_rate_limit, get_current_user
+from ..core.dependencies import check_rate_limit, get_current_user, require_write
 from ..core.rate_limit import RateLimitResult
 from ..schemas.schemas import ReceiptCreate, ReceiptListResponse, ReceiptResponse
 from ..services.receipt_service import receipt_service
@@ -28,7 +28,7 @@ async def list_receipts(
 @router.post("", response_model=ReceiptResponse)
 async def create_receipt(
     body: ReceiptCreate,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_write),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Create a receipt for a chain."""

@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from ..core.dependencies import check_rate_limit, get_current_user
+from ..core.dependencies import check_rate_limit, get_current_user, require_write
 from ..core.rate_limit import RateLimitResult
 
 router = APIRouter(prefix="/v1/webhooks", tags=["webhooks"])
@@ -85,7 +85,7 @@ class WebhookUpdate(BaseModel):
 @router.post("", response_model=WebhookResponse)
 async def create_webhook(
     body: WebhookCreate,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_write),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Create a webhook endpoint."""
@@ -138,7 +138,7 @@ async def get_webhook(
 async def update_webhook(
     webhook_id: str,
     body: WebhookUpdate,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_write),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Update a webhook."""
@@ -161,7 +161,7 @@ async def update_webhook(
 @router.delete("/{webhook_id}")
 async def delete_webhook(
     webhook_id: str,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_write),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Delete a webhook."""

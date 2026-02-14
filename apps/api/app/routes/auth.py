@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from ..core.config import settings
-from ..core.dependencies import check_rate_limit, get_current_user
+from ..core.dependencies import check_rate_limit, get_current_user, require_write
 from ..core.rate_limit import RateLimitResult, rate_limiter
 from ..core.security import create_jwt_token
 from ..schemas.schemas import ApiKeyCreate, ApiKeyCreatedResponse
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/v1/auth", tags=["auth"])
 @router.post("/api-keys", response_model=ApiKeyCreatedResponse)
 async def create_api_key(
     body: ApiKeyCreate,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_write),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Create a new API key. The full key is only returned once."""
@@ -46,7 +46,7 @@ async def list_api_keys(
 @router.delete("/api-keys/{key_id}")
 async def revoke_api_key(
     key_id: str,
-    user: dict[str, Any] = Depends(get_current_user),
+    user: dict[str, Any] = Depends(require_write),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Revoke an API key."""
