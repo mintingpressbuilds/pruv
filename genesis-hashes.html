@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#030306;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px;font-family:'JetBrains Mono',monospace;color:#c8c8d8}
+</style>
+</head>
+<body>
+<div style="text-align:center;margin-bottom:40px">
+<div style="font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#505068;margin-bottom:12px">pruv protocol</div>
+<div style="font-size:32px;font-weight:700;color:#fff;margin-bottom:8px">Genesis Hashes</div>
+<div style="font-size:13px;color:#505068;max-width:400px;line-height:1.7">The first 1,000 proofs ever created on the xycore primitive.</div>
+</div>
+<div id="cards" style="display:flex;flex-direction:column;gap:16px;max-width:420px;width:100%"></div>
+<div style="margin-top:40px;text-align:center">
+<button onclick="mint()" style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 28px;border-radius:8px;border:1px solid rgba(0,220,115,0.3);background:rgba(0,220,115,0.06);color:#00dc73;cursor:pointer;letter-spacing:1px">mint genesis hashes</button>
+</div>
+<div style="margin-top:60px;text-align:center;padding-top:30px;border-top:1px solid #141424">
+<div style="font-size:13px;color:#505068">X → Y → Proof.</div>
+</div>
+<script>
+function h(s){let a=0x6a09e667,b=0xbb67ae85,c=0x3c6ef372,d=0xa54ff53a;for(let i=0;i<s.length;i++){a=Math.imul(a^s.charCodeAt(i),0x9e3779b1);b=Math.imul(b^s.charCodeAt(i),0x5f356495);c=Math.imul(c^s.charCodeAt(i),0x27d4eb2d);d=Math.imul(d^s.charCodeAt(i),0x165667b1)}return(a>>>0).toString(16).padStart(8,'0')+(b>>>0).toString(16).padStart(8,'0')+(c>>>0).toString(16).padStart(8,'0')+(d>>>0).toString(16).padStart(8,'0')}
+function hs(o){return h(JSON.stringify(o))}
+function xy(x,op,y,t){return'xy_'+h(x+':'+op+':'+y+':'+t)}
+const tiers={0:{l:'origin',c:'#00dc73'},1:{l:'creator',c:'#00dc73'},101:{l:'team',c:'#ffaa33'},201:{l:'founding',c:'#3399ff'},501:{l:'reserved',c:'#505068'}};
+function tier(n){if(n===0)return tiers[0];if(n<=100)return tiers[1];if(n<=200)return tiers[101];if(n<=500)return tiers[201];return tiers[501]}
+function mint(){
+const nums=[0,1,42,100,201,333,500,777,999];
+const el=document.getElementById('cards');
+el.innerHTML='';
+nums.forEach((n,i)=>{
+const t=tier(n);
+const ts=1739491200000+n;
+const xs=n===0?{state:'nothing'}:{number:n,of:1000,protocol:'pruv'};
+const ys=n===0?{state:'everything',message:'X changed. Prove it.',author:'luke'}:{number:n,of:1000,protocol:'pruv',minted:true};
+const x=n===0?'GENESIS':hs(xs);
+const y=hs(ys);
+const p=xy(x,n===0?'protocol.origin':'genesis.mint',y,ts);
+setTimeout(()=>{
+el.innerHTML+=`
+<div style="background:${n===0?'linear-gradient(180deg,#0f0f18,#08080f)':'#08080f'};border:1px solid ${n===0?'rgba(0,220,115,0.2)':'#141424'};border-radius:14px;overflow:hidden;opacity:0;animation:fi .4s ease forwards">
+<div style="height:${n===0?3:2}px;background:linear-gradient(90deg,transparent,${t.c},transparent);opacity:${n===0?1:.4}"></div>
+<div style="padding:24px 24px 20px">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+<div>
+<div style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#505068;margin-bottom:4px">genesis</div>
+<div style="font-size:34px;font-weight:700;color:#fff;line-height:1">${String(n).padStart(4,'0')}<span style="font-size:12px;font-weight:400;color:#505068;margin-left:6px">/ 1000</span></div>
+</div>
+<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:20px;border:1px solid ${t.c}33;color:${t.c};background:${t.c}0a">${t.l}</div>
+</div>
+<div style="margin-bottom:16px">
+<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#505068;margin-bottom:4px">xy proof</div>
+<div style="font-size:11px;color:#00dc73;word-break:break-all;line-height:1.6;opacity:.85">${p}</div>
+</div>
+<div style="display:flex;align-items:center;padding:12px 0;border-top:1px solid #141424;border-bottom:1px solid #141424">
+<div style="flex:1;text-align:center"><div style="font-size:15px;font-weight:700;color:#3399ff">X</div><div style="font-size:9px;color:#505068;margin-top:2px">${x==='GENESIS'?'GENESIS':x.slice(0,8)}</div></div>
+<div style="color:#505068;padding:0 4px">→</div>
+<div style="flex:1;text-align:center"><div style="font-size:15px;font-weight:700;color:#00dc73">Y</div><div style="font-size:9px;color:#505068;margin-top:2px">${y.slice(0,8)}</div></div>
+<div style="color:#505068;padding:0 4px">→</div>
+<div style="flex:1;text-align:center"><div style="font-size:15px;font-weight:700;color:#fff">XY</div><div style="font-size:9px;color:#505068;margin-top:2px">${p.slice(3,11)}</div></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+<div><div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#505068">minted</div><div style="font-size:11px;color:#c8c8d8;margin-top:2px">2026-02-14</div></div>
+<div><div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#505068">holder</div><div style="font-size:11px;color:${t.l==='founding'?'#3399ff':t.l==='reserved'?'#ffaa33':'#c8c8d8'};margin-top:2px">${t.l==='founding'||t.l==='team'?'available':t.l==='origin'||t.l==='creator'?'protocol creator':'reserved'}</div></div>
+<div><div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#505068">chain</div><div style="font-size:11px;color:#c8c8d8;margin-top:2px">root · 1 entry</div></div>
+<div><div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#505068">status</div><div style="font-size:11px;color:#00dc73;margin-top:2px">verified ✓</div></div>
+</div>
+</div>
+<div style="background:#0d0d16;padding:10px 24px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #141424">
+<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#505068">xycore v1.0.0</div>
+<div style="font-size:9px;color:#00dc73;display:flex;align-items:center;gap:6px"><div style="width:6px;height:6px;border-radius:50%;background:#00dc73;animation:pulse 2s ease infinite"></div>independently verifiable</div>
+</div>
+</div>`;
+},i*180);
+});
+}
+</script>
+<style>
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,220,115,.15)}50%{opacity:.7;box-shadow:0 0 8px 4px rgba(0,220,115,.15)}}
+</style>
+</body>
+</html>
