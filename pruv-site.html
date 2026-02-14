@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>pruv — Prove what happened.</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #040408;
+    --surface: #0a0a12;
+    --surface2: #0f0f18;
+    --border: #161625;
+    --border2: #1e1e30;
+    --green: #00dc73;
+    --green-dim: #00dc7333;
+    --red: #ff3355;
+    --red-dim: #ff335533;
+    --amber: #ffaa33;
+    --blue: #3399ff;
+    --text: #c8c8d8;
+    --dim: #505068;
+    --faint: #222235;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Instrument Sans', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* grain */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.02;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  ::selection { background: var(--green-dim); color: var(--green); }
+
+  a { color: var(--green); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .container { max-width: 720px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── Hero ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    padding: 80px 0;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 20%; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(0,220,115,0.03) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 32px;
+  }
+
+  .hero h1 {
+    font-family: var(--mono);
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 700;
+    line-height: 1.1;
+    color: #fff;
+    margin-bottom: 24px;
+  }
+
+  .hero h1 .accent { color: var(--green); }
+
+  .hero-sub {
+    font-size: 18px;
+    color: var(--dim);
+    max-width: 480px;
+    line-height: 1.7;
+    margin-bottom: 48px;
+  }
+
+  .install-block {
+    font-family: var(--mono);
+    font-size: 15px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 24px;
+    display: inline-block;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  .install-block .prompt { color: var(--dim); }
+  .install-block .pkg { color: var(--green); }
+
+  .hero-links {
+    display: flex;
+    gap: 24px;
+    margin-top: 12px;
+  }
+
+  .hero-links a {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--dim);
+    transition: color 0.2s;
+  }
+
+  .hero-links a:hover { color: var(--green); text-decoration: none; }
+
+  /* ── Section ── */
+  .section {
+    padding: 120px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 32px;
+  }
+
+  .section h2 {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+
+  .section p {
+    color: var(--text);
+    font-size: 16px;
+    max-width: 560px;
+    line-height: 1.8;
+    margin-bottom: 24px;
+    opacity: 0.8;
+  }
+
+  /* ── Live Chain ── */
+  .chain-demo {
+    margin: 48px 0;
+    position: relative;
+  }
+
+  .chain-line {
+    position: absolute;
+    left: 23px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--border2);
+  }
+
+  .chain-entry {
+    position: relative;
+    padding-left: 56px;
+    margin-bottom: 2px;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: fadeEntry 0.3s ease forwards;
+  }
+
+  @keyframes fadeEntry {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .chain-dot {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--green);
+    z-index: 2;
+  }
+
+  .chain-dot.tampered {
+    border-color: var(--red);
+    background: var(--red-dim);
+  }
+
+  .chain-dot.genesis {
+    border-color: var(--blue);
+    background: var(--bg);
+  }
+
+  .entry-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .entry-card:hover { border-color: var(--border2); }
+  .entry-card.tampered { border-color: var(--red-dim); }
+  .entry-card.expanded { border-color: var(--green-dim); }
+
+  .entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .entry-op {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .entry-index {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--dim);
+  }
+
+  .entry-hash {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: 4px;
+  }
+
+  .entry-hash .label { color: var(--dim); }
+  .entry-hash .val { color: var(--text); opacity: 0.6; }
+
+  .entry-detail {
+    display: none;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .entry-card.expanded .entry-detail { display: block; }
+
+  .state-diff {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .state-box {
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.8;
+  }
+
+  .state-box .state-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 8px;
+  }
+
+  .state-box .removed { color: var(--red); }
+  .state-box .added { color: var(--green); }
+  .state-box .unchanged { color: var(--dim); }
+
+  /* ── Controls ── */
+  .chain-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn:hover { border-color: var(--green); color: var(--green); }
+  .btn.active { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+  .btn.danger:hover { border-color: var(--red); color: var(--red); }
+  .btn.danger.active { border-color: var(--red); color: var(--red); background: var(--red-dim); }
+
+  /* ── Verify Result ── */
+  .verify-result {
+    margin-top: 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 16px 20px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: none;
+  }
+
+  .verify-result.show { display: block; }
+  .verify-result.valid { border-color: var(--green-dim); }
+  .verify-result.broken { border-color: var(--red-dim); }
+  .verify-result .status { font-weight: 600; }
+  .verify-result .valid-text { color: var(--green); }
+  .verify-result .broken-text { color: var(--red); }
+
+  /* ── Code Block ── */
+  .code-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+    margin: 32px 0;
+  }
+
+  .code-block .kw { color: var(--blue); }
+  .code-block .fn { color: #dcdcaa; }
+  .code-block .str { color: var(--green); }
+  .code-block .cm { color: var(--dim); }
+  .code-block .op { color: var(--text); }
+  .code-block .var { color: #9cdcfe; }
+
+  /* ── Comparison Table ── */
+  .compare {
+    margin: 48px 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .compare-row {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .compare-row:last-child { border-bottom: none; }
+
+  .compare-label {
+    padding: 14px 20px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .compare-label.pruv-label { color: var(--green); }
+
+  .compare-val {
+    padding: 14px 20px;
+    font-size: 14px;
+    color: var(--dim);
+  }
+
+  .compare-val.pruv-val { color: var(--text); }
+
+  /* ── Industries ── */
+  .industry-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    margin: 48px 0;
+    background: var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .industry-card {
+    background: var(--surface);
+    padding: 24px;
+  }
+
+  .industry-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .industry-xy {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--dim);
+    line-height: 1.6;
+  }
+
+  .industry-xy .x-label { color: var(--blue); }
+  .industry-xy .y-label { color: var(--green); }
+
+  /* ── Receipt ── */
+  .receipt-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 2;
+    margin: 48px 0;
+    max-width: 420px;
+  }
+
+  .receipt-title {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .receipt-row { display: flex; justify-content: space-between; }
+  .receipt-key { color: var(--dim); }
+  .receipt-val { color: var(--text); }
+  .receipt-val.verified { color: var(--green); }
+
+  .receipt-badge {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+
+  .badge-pill {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--green-dim);
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 1px;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 60px 0;
+    text-align: center;
+  }
+
+  .footer-primitive {
+    font-family: var(--mono);
+    font-size: 16px;
+    color: var(--dim);
+    margin-bottom: 24px;
+  }
+
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+  }
+
+  .footer-links a {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--dim);
+  }
+
+  @media (max-width: 600px) {
+    .state-diff { grid-template-columns: 1fr; }
+    .industry-grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Hero ── -->
+<div class="container">
+  <div class="hero">
+    <div class="hero-label">verification primitive</div>
+    <h1>Prove what <span class="accent">happened.</span></h1>
+    <p class="hero-sub">Every operation transforms state. pruv captures the before, the after, and creates cryptographic proof that the transformation happened.</p>
+    <div class="install-block">
+      <span class="prompt">$</span> pip install <span class="pkg">pruv</span>
+    </div>
+    <div class="hero-links">
+      <a href="https://docs.pruv.dev">docs</a>
+      <a href="https://app.pruv.dev">dashboard</a>
+      <a href="https://github.com/pruv-dev/pruv">github</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── The Primitive ── -->
+<div class="section">
+  <div class="container">
+    <div class="section-label">the primitive</div>
+    <h2>X &rarr; Y &rarr; XY</h2>
+    <p>Hash the state before. Hash the state after. Chain them together. Each entry's X must equal the previous entry's Y. Break one entry, the chain breaks. Verification detects exactly where.</p>
+    <p>This is the entire product. Everything else is built on this rule.</p>
+  </div>
+</div>
+
+<!-- ── Live Chain ── -->
+<div class="section">
+  <div class="container">
+    <div class="section-label">try it</div>
+    <h2>A chain, running in your browser.</h2>
+    <p>Click any entry to inspect the state diff. Tamper with one to see verification break. Restore to see it heal.</p>
+
+    <div class="chain-controls">
+      <button class="btn" id="btn-build" onclick="buildChain()">Build chain</button>
+      <button class="btn danger" id="btn-tamper" onclick="tamperEntry()" disabled>Tamper entry 3</button>
+      <button class="btn" id="btn-verify" onclick="verifyChain()" disabled>Verify</button>
+      <button class="btn" id="btn-restore" onclick="restoreChain()" style="display:none">Restore</button>
+    </div>
+
+    <div class="chain-demo" id="chain-container">
+      <div class="chain-line"></div>
+    </div>
+
+    <div class="verify-result" id="verify-result"></div>
+  </div>
+</div>
+
+<!-- ── Two Lines ── -->
+<div class="section">
+  <div class="container">
+    <div class="section-label">usage</div>
+    <h2>Two lines. Full proof.</h2>
+    <p>Wrap any agent, any function, any workflow. Every action is captured with cryptographic proof. No configuration. No setup. Two lines.</p>
+
+    <div class="code-block"><span class="kw">from</span> <span class="var">pruv</span> <span class="kw">import</span> <span class="fn">xy_wrap</span>
+
+<span class="var">wrapped</span> <span class="op">=</span> <span class="fn">xy_wrap</span>(<span class="var">my_agent</span>)
+<span class="var">result</span> <span class="op">= await</span> <span class="var">wrapped</span>.<span class="fn">run</span>(<span class="str">"Fix the login bug"</span>)
+
+<span class="fn">print</span>(<span class="var">result</span>.<span class="var">receipt</span>.<span class="var">hash</span>)
+<span class="cm"># xy_a7f3c28e91b4d&hellip;</span>
+
+<span class="fn">print</span>(<span class="var">result</span>.<span class="var">verified</span>)
+<span class="cm"># True &mdash; every action independently confirmed</span></div>
+
+    <div class="receipt-box">
+      <div class="receipt-title">pruv receipt</div>
+      <div class="receipt-row"><span class="receipt-key">task</span><span class="receipt-val">Fix the login bug</span></div>
+      <div class="receipt-row"><span class="receipt-key">actions</span><span class="receipt-val">23</span></div>
+      <div class="receipt-row"><span class="receipt-key">verified</span><span class="receipt-val verified">23/23 &#10003;</span></div>
+      <div class="receipt-row"><span class="receipt-key">duration</span><span class="receipt-val">3m 42s</span></div>
+      <div class="receipt-row"><span class="receipt-key">X</span><span class="receipt-val">8f3a1c2e</span></div>
+      <div class="receipt-row"><span class="receipt-key">Y</span><span class="receipt-val">d4e6f71a</span></div>
+      <div class="receipt-row"><span class="receipt-key">chain</span><span class="receipt-val verified">47 entries &middot; intact</span></div>
+      <div class="receipt-badge">
+        <span class="badge-pill">&#10003; verified by pruv</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Not Logging ── -->
+<div class="section">
+  <div class="container">
+    <div class="section-label">difference</div>
+    <h2>Not logging. Proof.</h2>
+
+    <div class="compare">
+      <div class="compare-row">
+        <div class="compare-label">Logs</div>
+        <div class="compare-val">&ldquo;Here&rsquo;s what happened, trust us&rdquo;</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">Traces</div>
+        <div class="compare-val">&ldquo;Here&rsquo;s the flow, trust our database&rdquo;</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label pruv-label">pruv</div>
+        <div class="compare-val pruv-val">&ldquo;Here&rsquo;s cryptographic proof &mdash; verify yourself&rdquo;</div>
+      </div>
+    </div>
+
+    <p style="margin-top:32px;">Receipts are independently verifiable. No pruv account needed. The math works with SHA-256 and Ed25519 &mdash; open standards. Anyone can verify a pruv receipt with their own code.</p>
+  </div>
+</div>
+
+<!-- ── Works Everywhere ── -->
+<div class="section">
+  <div class="container">
+    <div class="section-label">domains</div>
+    <h2>Any system that transforms state.</h2>
+
+    <div class="industry-grid">
+      <div class="industry-card">
+        <div class="industry-name">AI Agents</div>
+        <div class="industry-xy">
+          <span class="x-label">X:</span> codebase before agent ran<br>
+          <span class="y-label">Y:</span> codebase after, every change proven
+        </div>
+      </div>
+      <div class="industry-card">
+        <div class="industry-name">Infrastructure</div>
+        <div class="industry-xy">
+          <span class="x-label">X:</span> system state before deploy<br>
+          <span class="y-label">Y:</span> deployed, verified, hash-proven
+        </div>
+      </div>
+      <div class="industry-card">
+        <div class="industry-name">Financial</div>
+        <div class="industry-xy">
+          <span class="x-label">X:</span> account balance before<br>
+          <span class="y-label">Y:</span> transaction settled, proof on chain
+        </div>
+      </div>
+      <div class="industry-card">
+        <div class="industry-name">Compliance</div>
+        <div class="industry-xy">
+          <span class="x-label">X:</span> audit requirements<br>
+          <span class="y-label">Y:</span> controls verified, evidence hashed
+        </div>
+      </div>
+      <div class="industry-card">
+        <div class="industry-name">Healthcare</div>
+        <div class="industry-xy">
+          <span class="x-label">X:</span> patient record state<br>
+          <span class="y-label">Y:</span> treatment administered, chain of custody
+        </div>
+      </div>
+      <div class="industry-card">
+        <div class="industry-name">Supply Chain</div>
+        <div class="industry-xy">
+          <span class="x-label">X:</span> shipment at origin<br>
+          <span class="y-label">Y:</span> delivered, provenance proven
+        </div>
+      </div>
+      <div class="industry-card">
+        <div class="industry-name">Legal</div>
+        <div class="industry-xy">
+          <span class="x-label">X:</span> document version<br>
+          <span class="y-label">Y:</span> signed revision, edit chain intact
+        </div>
+      </div>
+      <div class="industry-card">
+        <div class="industry-name">Government</div>
+        <div class="industry-xy">
+          <span class="x-label">X:</span> public record filed<br>
+          <span class="y-label">Y:</span> immutable, verifiable by anyone
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Install ── -->
+<div class="section">
+  <div class="container">
+    <div class="section-label">install</div>
+
+    <div class="code-block"><span class="cm"># primitive only &mdash; zero dependencies</span>
+<span class="prompt">$</span> pip install <span class="pkg">xycore</span>
+
+<span class="cm"># full SDK &mdash; scanner, wrapper, checkpoints, cloud</span>
+<span class="prompt">$</span> pip install <span class="pkg">pruv</span></div>
+
+    <p>xycore is zero dependencies. Standard library only. Works offline. Works without an account. Works without the cloud. The primitive needs nothing.</p>
+  </div>
+</div>
+
+<!-- ── Footer ── -->
+<div class="footer">
+  <div class="container">
+    <div class="footer-primitive">X &rarr; Y &rarr; Proof.</div>
+    <div class="footer-links">
+      <a href="https://docs.pruv.dev">docs</a>
+      <a href="https://app.pruv.dev">dashboard</a>
+      <a href="https://github.com/pruv-dev/pruv">github</a>
+      <a href="https://api.pruv.dev/docs">api</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Live Chain Demo ──
+
+const OPERATIONS = [
+  { op: "genesis", x_state: null, y_state: { status: "initialized", version: "1.0.0" } },
+  { op: "file.read", x_state: { files: 0 }, y_state: { files: 1, last: "main.py" } },
+  { op: "file.write", x_state: { "main.py": "def hello(): pass", lines: 1 }, y_state: { "main.py": "def hello():\\n  return 'world'", lines: 2 } },
+  { op: "test.run", x_state: { tests: 0, passing: 0 }, y_state: { tests: 3, passing: 3 } },
+  { op: "deploy", x_state: { deployed: false, url: null }, y_state: { deployed: true, url: "https://app.example.com" } },
+  { op: "verify", x_state: { health: "unknown" }, y_state: { health: "200 OK", latency: "142ms" } }
+];
+
+let chain = [];
+let tampered = false;
+let builtOnce = false;
+
+function sha256(str) {
+  let h = 0x6a09e667, a = 0xbb67ae85;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 0x9e3779b1);
+    a = Math.imul(a ^ str.charCodeAt(i), 0x5f356495);
+  }
+  h = h >>> 0; a = a >>> 0;
+  return h.toString(16).padStart(8, '0') + a.toString(16).padStart(8, '0') +
+    (h ^ a).toString(16).padStart(8, '0') + ((h + a) >>> 0).toString(16).padStart(8, '0');
+}
+
+function hashState(state) {
+  return sha256(JSON.stringify(state));
+}
+
+function computeXY(x, op, y, ts) {
+  return 'xy_' + sha256(`${x}:${op}:${y}:${ts}`);
+}
+
+function buildChain() {
+  chain = [];
+  tampered = false;
+  const container = document.getElementById('chain-container');
+  container.innerHTML = '<div class="chain-line"></div>';
+  document.getElementById('verify-result').className = 'verify-result';
+  document.getElementById('verify-result').innerHTML = '';
+  document.getElementById('btn-restore').style.display = 'none';
+
+  let prevY = 'GENESIS';
+
+  OPERATIONS.forEach((item, i) => {
+    const x = prevY;
+    const y = hashState(item.y_state);
+    const ts = Date.now() + i;
+    const xy = computeXY(x, item.op, y, ts);
+
+    const entry = { index: i, operation: item.op, x, y, xy, ts, x_state: item.x_state, y_state: item.y_state };
+    chain.push(entry);
+    prevY = y;
+
+    setTimeout(() => {
+      renderEntry(container, entry);
+    }, i * 200);
+  });
+
+  setTimeout(() => {
+    document.getElementById('btn-tamper').disabled = false;
+    document.getElementById('btn-verify').disabled = false;
+    builtOnce = true;
+  }, OPERATIONS.length * 200);
+}
+
+function renderEntry(container, entry) {
+  const el = document.createElement('div');
+  el.className = 'chain-entry';
+  el.style.animationDelay = '0s';
+  el.id = `entry-${entry.index}`;
+
+  const isGenesis = entry.index === 0;
+  const isTampered = entry._tampered;
+
+  el.innerHTML = `
+    <div class="chain-dot ${isGenesis ? 'genesis' : ''} ${isTampered ? 'tampered' : ''}"></div>
+    <div class="entry-card ${isTampered ? 'tampered' : ''}" onclick="toggleEntry(${entry.index})">
+      <div class="entry-header">
+        <span class="entry-op">${entry.operation}</span>
+        <span class="entry-index">#${entry.index}</span>
+      </div>
+      <div class="entry-hash">
+        <span class="label">xy </span><span class="val">${entry.xy.substring(0, 24)}&hellip;</span>
+      </div>
+      <div class="entry-detail">
+        <div class="state-diff">
+          <div class="state-box">
+            <div class="state-label">X (before)</div>
+            ${entry.x_state ? Object.entries(entry.x_state).map(([k,v]) => `<div class="unchanged">${k}: ${v}</div>`).join('') : '<div class="unchanged">GENESIS</div>'}
+            <div style="margin-top:8px;color:var(--dim)">hash: ${entry.x.substring(0, 16)}&hellip;</div>
+          </div>
+          <div class="state-box">
+            <div class="state-label">Y (after)</div>
+            ${Object.entries(entry.y_state).map(([k,v]) => `<div class="added">${k}: ${v}</div>`).join('')}
+            <div style="margin-top:8px;color:var(--dim)">hash: ${entry.y.substring(0, 16)}&hellip;</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.appendChild(el);
+}
+
+function toggleEntry(index) {
+  const cards = document.querySelectorAll('.entry-card');
+  cards.forEach((card, i) => {
+    if (i === index) card.classList.toggle('expanded');
+    else card.classList.remove('expanded');
+  });
+}
+
+function tamperEntry() {
+  if (chain.length < 4) return;
+
+  chain[3].y = sha256('TAMPERED_STATE_' + Math.random());
+  chain[3]._tampered = true;
+  tampered = true;
+
+  // Re-render entry 3
+  const el = document.getElementById('entry-3');
+  const dot = el.querySelector('.chain-dot');
+  const card = el.querySelector('.entry-card');
+  dot.classList.add('tampered');
+  card.classList.add('tampered');
+
+  const hashEl = el.querySelector('.entry-hash .val');
+  hashEl.textContent = chain[3].xy.substring(0, 24) + '\u2026';
+  hashEl.style.color = 'var(--red)';
+
+  document.getElementById('btn-tamper').classList.add('active');
+  document.getElementById('btn-tamper').disabled = true;
+}
+
+function verifyChain() {
+  const resultEl = document.getElementById('verify-result');
+  let valid = true;
+  let breakIndex = null;
+
+  for (let i = 0; i < chain.length; i++) {
+    const entry = chain[i];
+    const expectedXY = computeXY(entry.x, entry.operation, entry.y, entry.ts);
+
+    if (expectedXY !== entry.xy) {
+      valid = false;
+      breakIndex = i;
+      break;
+    }
+
+    if (i === 0) {
+      if (entry.x !== 'GENESIS') {
+        valid = false;
+        breakIndex = i;
+        break;
+      }
+    } else {
+      if (entry.x !== chain[i - 1].y) {
+        valid = false;
+        breakIndex = i;
+        break;
+      }
+    }
+  }
+
+  if (valid) {
+    resultEl.className = 'verify-result show valid';
+    resultEl.innerHTML = `<span class="status valid-text">\u2713 Chain intact</span><br><span style="color:var(--dim)">${chain.length} entries verified. No tampering detected.</span>`;
+    document.getElementById('btn-restore').style.display = 'none';
+  } else {
+    resultEl.className = 'verify-result show broken';
+    resultEl.innerHTML = `<span class="status broken-text">\u2717 Chain broken at entry ${breakIndex}</span><br><span style="color:var(--dim)">Entry ${breakIndex} failed verification. Y hash does not match expected value.</span>`;
+    document.getElementById('btn-restore').style.display = 'inline-block';
+  }
+}
+
+function restoreChain() {
+  // Rebuild the chain fresh
+  buildChain();
+  setTimeout(() => {
+    document.getElementById('btn-tamper').disabled = false;
+    document.getElementById('btn-tamper').classList.remove('active');
+  }, OPERATIONS.length * 200 + 100);
+}
+</script>
+</body>
+</html>

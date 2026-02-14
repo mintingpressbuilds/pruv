@@ -15,7 +15,7 @@ pruv-platform/
 │   └── pruv/            # pip install pruv — full SDK
 ├── apps/
 │   ├── api/             # api.pruv.dev — FastAPI backend
-│   ├── web/             # pruv.dev — Next.js 16+ marketing site
+│   ├── web/             # pruv.dev — Next.js 15+ marketing site (pure CSS, no Tailwind)
 │   └── dashboard/       # app.pruv.dev — Next.js 16+ dashboard
 └── docs/                # docs.pruv.dev — Mintlify
 ```
@@ -28,7 +28,7 @@ Each layer stands alone. Each layer builds on the one below it without requiring
 1. **pruv SDK** — Scanner, xy_wrap() universal wrapper, checkpoints, approval gates, cloud sync. Depends on xycore.
 1. **API** — Cloud storage, verification, export, receipts, shared links. Depends on pruv SDK.
 1. **Dashboard** — Chain explorer, time travel, replay, receipt viewer. Depends on API.
-1. **Marketing site** — Product pages, industry pages, pricing. Independent.
+1. **Marketing site** — Static Next.js site. Pure CSS custom properties (no Tailwind). JetBrains Mono + Instrument Sans. Dark protocol-spec aesthetic. Interactive chain demo (React client component). Reference design: `pruv-site.html`. Independent.
 
 ## Core rules
 
