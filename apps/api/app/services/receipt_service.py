@@ -82,6 +82,12 @@ class ReceiptService:
             return None
         return receipt
 
+    def list_receipts(self, user_id: str) -> list[dict[str, Any]]:
+        return [r for r in self._receipts.values() if r.get("user_id") == user_id]
+
+    def get_receipt_count(self, user_id: str) -> int:
+        return len([r for r in self._receipts.values() if r.get("user_id") == user_id])
+
     def get_receipt_pdf_data(self, receipt_id: str) -> dict[str, Any] | None:
         receipt = self.get_receipt(receipt_id)
         if not receipt:

@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .core.config import settings
-from .routes import admin, analytics, auth, chains, checkpoints, receipts, verify, webhooks
+from .routes import admin, analytics, auth, chains, checkpoints, dashboard, receipts, verify, webhooks
 from .schemas.schemas import HealthResponse
 
 logger = logging.getLogger("pruv.api")
@@ -51,6 +51,7 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
 app.include_router(auth.router)
 app.include_router(chains.router)
 app.include_router(checkpoints.router)
+app.include_router(dashboard.router)
 app.include_router(receipts.router)
 app.include_router(verify.router)
 app.include_router(webhooks.router)

@@ -18,12 +18,17 @@ class ChainService:
         self._entries: dict[str, list[dict[str, Any]]] = {}
         self._share_map: dict[str, str] = {}  # share_id -> chain_id
 
-    def create_chain(self, user_id: str, name: str, auto_redact: bool = True) -> dict[str, Any]:
+    def create_chain(
+        self, user_id: str, name: str, description: str | None = None,
+        tags: list[str] | None = None, auto_redact: bool = True,
+    ) -> dict[str, Any]:
         chain_id = uuid.uuid4().hex[:12]
         chain = {
             "id": chain_id,
             "user_id": user_id,
             "name": name,
+            "description": description,
+            "tags": tags or [],
             "length": 0,
             "root_xy": None,
             "head_xy": None,
@@ -135,6 +140,62 @@ class ChainService:
             if entry:
                 results.append(entry)
         return results
+
+    def update_chain(self, chain_id: str, user_id: str, updates: dict[str, Any]) -> dict[str, Any] | None:
+        chain = self.get_chain(chain_id, user_id)
+        if not chain:
+            return None
+        for key, value in updates.items():
+            if key in ("name", "description", "tags", "auto_redact"):
+                chain[key] = value
+        chain["updated_at"] = time.time()
+        return chain
+
+    def delete_chain(self, chain_id: str, user_id: str) -> bool:
+        chain = self.get_chain(chain_id, user_id)
+        if not chain:
+            return False
+        del self._chains[chain_id]
+        self._entries.pop(chain_id, None)
+        share_id = chain.get("share_id")
+        if share_id:
+            self._share_map.pop(share_id, None)
+        return True
+
+    def get_entry_by_index(self, chain_id: str, index: int) -> dict[str, Any] | None:
+        entries = self._entries.get(chain_id, [])
+        if 0 <= index < len(entries):
+            return entries[index]
+        return None
+
+    def undo_last_entry(self, chain_id: str, user_id: str) -> dict[str, Any] | None:
+        chain = self.get_chain(chain_id, user_id)
+        if not chain:
+            return None
+        entries = self._entries.get(chain_id, [])
+        if not entries:
+            return None
+        removed = entries.pop()
+        chain["length"] = len(entries)
+        if entries:
+            chain["head_xy"] = entries[-1]["xy"]
+            chain["head_y"] = entries[-1]["y"]
+        else:
+            chain["head_xy"] = None
+            chain["head_y"] = "GENESIS"
+            chain["root_xy"] = None
+        chain["updated_at"] = time.time()
+        return removed
+
+    def get_chain_count(self, user_id: str) -> int:
+        return len([c for c in self._chains.values() if c["user_id"] == user_id])
+
+    def get_entry_count(self, user_id: str) -> int:
+        total = 0
+        for chain in self._chains.values():
+            if chain["user_id"] == user_id:
+                total += chain.get("length", 0)
+        return total
 
     def list_entries(self, chain_id: str, offset: int = 0, limit: int = 100) -> list[dict[str, Any]]:
         entries = self._entries.get(chain_id, [])
