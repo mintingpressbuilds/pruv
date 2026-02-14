@@ -13,15 +13,15 @@ from pydantic import BaseModel, Field
 
 class ChainCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
-    description: str | None = None
-    tags: list[str] = Field(default_factory=list)
+    description: str | None = Field(default=None, max_length=2000)
+    tags: list[str] = Field(default_factory=list, max_length=20)
     auto_redact: bool = True
 
 
 class ChainUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    tags: list[str] | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=2000)
+    tags: list[str] | None = Field(default=None, max_length=20)
     auto_redact: bool | None = None
 
 
@@ -63,15 +63,18 @@ class ChainShareResponse(BaseModel):
 # ──── Entry Schemas ────
 
 
+VALID_ENTRY_STATUSES = {"success", "failed", "pending", "skipped"}
+
+
 class EntryCreate(BaseModel):
     operation: str = Field(..., min_length=1, max_length=255)
     x_state: dict[str, Any] | None = None
     y_state: dict[str, Any] | None = None
-    status: str = "success"
+    status: str = Field(default="success", pattern=r"^(success|failed|pending|skipped)$")
     metadata: dict[str, Any] = Field(default_factory=dict)
-    signature: str | None = None
-    signer_id: str | None = None
-    public_key: str | None = None
+    signature: str | None = Field(default=None, max_length=200)
+    signer_id: str | None = Field(default=None, max_length=255)
+    public_key: str | None = Field(default=None, max_length=500)
 
 
 class EntryBatchCreate(BaseModel):
@@ -154,9 +157,9 @@ class EntryValidationResponse(BaseModel):
 
 
 class ReceiptCreate(BaseModel):
-    chain_id: str
-    task: str = "verification"
-    agent_type: str | None = None
+    chain_id: str = Field(..., min_length=1, max_length=36)
+    task: str = Field(default="verification", min_length=1, max_length=1000)
+    agent_type: str | None = Field(default=None, max_length=100)
 
 
 class ReceiptListResponse(BaseModel):
@@ -211,9 +214,12 @@ class SharedChainResponse(BaseModel):
 # ──── Auth Schemas ────
 
 
+VALID_SCOPES = {"read", "write", "admin"}
+
+
 class ApiKeyCreate(BaseModel):
-    name: str = "Default"
-    scopes: list[str] = Field(default=["read", "write"])
+    name: str = Field(default="Default", min_length=1, max_length=255)
+    scopes: list[str] = Field(default=["read", "write"], max_length=10)
 
 
 class ApiKeyResponse(BaseModel):

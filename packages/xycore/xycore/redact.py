@@ -17,6 +17,9 @@ SECRET_KEY_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"auth", re.IGNORECASE),
     re.compile(r"credential", re.IGNORECASE),
     re.compile(r"access[_-]?key", re.IGNORECASE),
+    re.compile(r"connection[_-]?string", re.IGNORECASE),
+    re.compile(r"database[_-]?url", re.IGNORECASE),
+    re.compile(r"dsn", re.IGNORECASE),
 ]
 
 # Patterns that match secret values directly
@@ -24,9 +27,11 @@ SECRET_VALUE_PATTERNS: list[re.Pattern[str]] = [
     # Stripe keys
     re.compile(r"sk_live_[a-zA-Z0-9]+"),
     re.compile(r"sk_test_[a-zA-Z0-9]+"),
+    re.compile(r"pk_live_[a-zA-Z0-9]+"),
+    re.compile(r"pk_test_[a-zA-Z0-9]+"),
     # pruv keys
-    re.compile(r"pv_live_[a-zA-Z0-9]+"),
-    re.compile(r"pv_test_[a-zA-Z0-9]+"),
+    re.compile(r"pv_live_[a-zA-Z0-9_-]+"),
+    re.compile(r"pv_test_[a-zA-Z0-9_-]+"),
     # GitHub tokens
     re.compile(r"ghp_[a-zA-Z0-9]+"),
     re.compile(r"gho_[a-zA-Z0-9]+"),
@@ -34,6 +39,15 @@ SECRET_VALUE_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"ghr_[a-zA-Z0-9]+"),
     # AWS keys
     re.compile(r"AKIA[A-Z0-9]{16}"),
+    # Slack tokens
+    re.compile(r"xoxb-[a-zA-Z0-9-]+"),
+    re.compile(r"xoxp-[a-zA-Z0-9-]+"),
+    re.compile(r"xoxs-[a-zA-Z0-9-]+"),
+    # PEM private keys
+    re.compile(r"-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----[\s\S]*?-----END\s+(?:RSA\s+)?PRIVATE\s+KEY-----"),
+    re.compile(r"-----BEGIN\s+EC\s+PRIVATE\s+KEY-----[\s\S]*?-----END\s+EC\s+PRIVATE\s+KEY-----"),
+    # Database connection strings
+    re.compile(r"(?:postgresql|postgres|mysql|mongodb(?:\+srv)?|redis)://\S+"),
     # Generic patterns
     re.compile(r"(?:password|secret|token|api_key)\s*=\s*\S+", re.IGNORECASE),
 ]

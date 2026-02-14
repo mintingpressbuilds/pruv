@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import json
+import logging
+import re
+import sys
 import time
 import uuid
 from typing import Callable
@@ -10,9 +14,32 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
+logger = logging.getLogger("pruv.api.access")
+
+# Patterns to redact from log error messages
+_SECRET_PATTERNS = [
+    re.compile(r"sk_(?:live|test)_[a-zA-Z0-9]+"),
+    re.compile(r"pv_(?:live|test)_[a-zA-Z0-9_-]+"),
+    re.compile(r"ghp_[a-zA-Z0-9]+"),
+    re.compile(r"gho_[a-zA-Z0-9]+"),
+    re.compile(r"AKIA[A-Z0-9]{16}"),
+    re.compile(r"xoxb-[a-zA-Z0-9-]+"),
+    re.compile(r"Bearer\s+\S+"),
+    re.compile(r"(?:password|secret|token|api_key)\s*=\s*\S+", re.IGNORECASE),
+    re.compile(r"(?:postgresql|postgres|mysql|mongodb|redis)://\S+"),
+]
+
+
+def _redact_secrets(text: str) -> str:
+    """Remove known secret patterns from a string."""
+    result = text
+    for pattern in _SECRET_PATTERNS:
+        result = pattern.sub("[REDACTED]", result)
+    return result
+
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
-    """Middleware that logs request details and timing."""
+    """Middleware that logs request details as structured JSON."""
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         request_id = str(uuid.uuid4())
@@ -34,7 +61,12 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             response.headers["X-Request-ID"] = request_id
             response.headers["X-Response-Time"] = f"{duration_ms:.2f}ms"
 
-            # Log the request
+            # Inject rate limit headers if set by dependency
+            if hasattr(request.state, "rate_limit_headers"):
+                for header, value in request.state.rate_limit_headers.items():
+                    response.headers[header] = value
+
+            # Log structured JSON
             _log_request(
                 request_id=request_id,
                 method=method,
@@ -57,7 +89,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 duration_ms=duration_ms,
                 client_ip=client_ip,
                 user_agent=user_agent,
-                error=str(exc),
+                error=_redact_secrets(str(exc)),
             )
             raise
 
@@ -72,8 +104,10 @@ def _log_request(
     user_agent: str,
     error: str | None = None,
 ) -> None:
-    """Log a structured request entry."""
+    """Log a structured request entry as JSON."""
     log_entry = {
+        "timestamp": time.time(),
+        "level": "error" if status_code >= 500 else ("warn" if status_code >= 400 else "info"),
         "request_id": request_id,
         "method": method,
         "path": path,
@@ -85,14 +119,17 @@ def _log_request(
     if error:
         log_entry["error"] = error
 
-    # In production, this would go to a structured logging service
-    # For now, we store in the request log buffer
+    # Output structured JSON to stdout
+    log_line = json.dumps(log_entry, separators=(",", ":"))
+    logger.info(log_line)
+
+    # Buffer for admin endpoint
     _request_log_buffer.append(log_entry)
     if len(_request_log_buffer) > _MAX_LOG_BUFFER:
         _request_log_buffer.pop(0)
 
 
-# In-memory log buffer (production would use external logging)
+# In-memory log buffer for admin endpoints
 _request_log_buffer: list[dict] = []
 _MAX_LOG_BUFFER = 10000
 
@@ -145,3 +182,17 @@ def get_request_stats() -> dict:
         "error_rate": round(errors / total, 4),
         "status_codes": status_codes,
     }
+
+
+# Configure structured JSON logging to stdout
+def _setup_logging() -> None:
+    """Configure the pruv API logger for structured JSON output."""
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    api_logger = logging.getLogger("pruv.api")
+    api_logger.addHandler(handler)
+    api_logger.setLevel(logging.INFO)
+    api_logger.propagate = False
+
+
+_setup_logging()
