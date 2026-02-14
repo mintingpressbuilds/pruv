@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 PLAN_LIMITS = {
     "free": {"requests_per_minute": 60, "entries_per_month": 1000},

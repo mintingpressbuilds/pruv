@@ -6,7 +6,7 @@ import time
 import uuid
 from typing import Any
 
-from xycore import XYChain, XYEntry, hash_state, verify_chain, verify_entry
+from xycore import XYEntry, hash_state, verify_chain
 from xycore.redact import redact_state
 
 
