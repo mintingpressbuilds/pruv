@@ -43,6 +43,7 @@ Thumbs.db
 .coverage
 coverage/
 htmlcov/
+test-results/
 
 # Build
 *.tsbuildinfo
