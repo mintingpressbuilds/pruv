@@ -270,7 +270,7 @@ class TestInputValidation:
 
     def test_admin_logs_invalid_type(self):
         resp = client.get("/admin/logs?type=invalid", headers=_admin_jwt())
-        assert resp.status_code == 400
+        assert resp.status_code == 422  # FastAPI Query(pattern=) validation
 
 
 class TestSQLInjection:

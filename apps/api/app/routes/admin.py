@@ -10,7 +10,7 @@ import os
 import time
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.core.dependencies import check_rate_limit, require_admin
 from app.core.rate_limit import get_rate_limiter, PLAN_LIMITS, RateLimitResult
@@ -67,16 +67,12 @@ async def system_metrics(
 
 @router.get("/logs")
 async def recent_logs(
-    limit: int = 100,
-    type: str = "all",
+    limit: int = Query(default=100, ge=1, le=1000),
+    type: str = Query(default="all", pattern=r"^(all|slow|errors)$"),
     user: dict[str, Any] = Depends(require_admin),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ) -> dict[str, Any]:
     """Get recent request logs."""
-    limit = min(limit, 1000)
-
-    if type not in ("all", "slow", "errors"):
-        raise HTTPException(status_code=400, detail="Invalid log type. Must be: all, slow, errors")
 
     if type == "slow":
         logs = get_slow_requests(limit=limit)

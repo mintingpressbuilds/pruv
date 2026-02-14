@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # ──── Chain Schemas ────
@@ -220,6 +220,14 @@ VALID_SCOPES = {"read", "write", "admin"}
 class ApiKeyCreate(BaseModel):
     name: str = Field(default="Default", min_length=1, max_length=255)
     scopes: list[str] = Field(default=["read", "write"], max_length=10)
+
+    @field_validator("scopes")
+    @classmethod
+    def validate_scopes(cls, v: list[str]) -> list[str]:
+        invalid = set(v) - VALID_SCOPES
+        if invalid:
+            raise ValueError(f"Invalid scopes: {', '.join(sorted(invalid))}. Must be: {', '.join(sorted(VALID_SCOPES))}")
+        return v
 
 
 class ApiKeyResponse(BaseModel):
