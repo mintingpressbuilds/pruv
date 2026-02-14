@@ -6,7 +6,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-from .crypto import compute_xy, hash_state
+from .crypto import compute_xy
 
 
 @dataclass

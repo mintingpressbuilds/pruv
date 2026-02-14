@@ -10,7 +10,7 @@ from ..core.config import settings
 from ..core.dependencies import check_rate_limit, get_current_user
 from ..core.rate_limit import RateLimitResult, rate_limiter
 from ..core.security import create_jwt_token
-from ..schemas.schemas import ApiKeyCreate, ApiKeyCreatedResponse, ApiKeyResponse
+from ..schemas.schemas import ApiKeyCreate, ApiKeyCreatedResponse
 from ..services.auth_service import auth_service
 
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
