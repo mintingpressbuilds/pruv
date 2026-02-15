@@ -1,11 +1,9 @@
 [build]
-# Build from repo root so Dockerfile can access packages/xycore
 dockerfilePath = "Dockerfile"
 watchPatterns = ["apps/api/**", "packages/xycore/**"]
 
 [deploy]
-startCommand = "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 4"
 healthcheckPath = "/health"
-healthcheckTimeout = 30
+healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

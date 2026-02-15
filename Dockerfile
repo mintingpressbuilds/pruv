@@ -13,5 +13,5 @@ RUN pip install --no-cache-dir "apps/api[prod]"
 WORKDIR /srv/apps/api
 
 ENV PORT=8000
-EXPOSE ${PORT}
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --workers 4
+EXPOSE 8000
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2"]
