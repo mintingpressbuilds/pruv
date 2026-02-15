@@ -1,0 +1,106 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "Package to publish"
+        required: true
+        type: choice
+        options:
+          - xycore
+          - pruv
+          - both
+
+jobs:
+  build-xycore:
+    name: Build xycore
+    if: >-
+      github.event_name == 'release' ||
+      inputs.package == 'xycore' ||
+      inputs.package == 'both'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build xycore
+        run: python -m build packages/xycore
+
+      - name: Upload xycore artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: xycore-dist
+          path: packages/xycore/dist/
+
+  build-pruv:
+    name: Build pruv
+    if: >-
+      github.event_name == 'release' ||
+      inputs.package == 'pruv' ||
+      inputs.package == 'both'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build pruv
+        run: python -m build packages/pruv
+
+      - name: Upload pruv artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pruv-dist
+          path: packages/pruv/dist/
+
+  publish-xycore:
+    name: Publish xycore to PyPI
+    needs: build-xycore
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download xycore artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: xycore-dist
+          path: dist/
+
+      - name: Publish xycore to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-pruv:
+    name: Publish pruv to PyPI
+    needs: [build-pruv, publish-xycore]
+    if: >-
+      always() &&
+      needs.build-pruv.result == 'success' &&
+      (needs.publish-xycore.result == 'success' || needs.publish-xycore.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download pruv artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pruv-dist
+          path: dist/
+
+      - name: Publish pruv to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
