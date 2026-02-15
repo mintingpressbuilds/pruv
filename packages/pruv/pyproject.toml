@@ -7,7 +7,7 @@ name = "pruv"
 version = "1.0.1"
 description = "Prove what happened. Cryptographic verification for any system."
 readme = "README.md"
-license = "MIT"
+license = {text = "MIT"}
 requires-python = ">=3.10"
 dependencies = [
     "xycore>=1.0.0",
@@ -35,7 +35,7 @@ pruv = "pruv.cli.commands:main"
 [project.urls]
 Homepage = "https://pruv.dev"
 Documentation = "https://docs.pruv.dev"
-Repository = "https://github.com/pruv-dev/pruv"
+Repository = "https://github.com/mintingpressbuilds/pruv"
 
 [tool.setuptools.packages.find]
 include = ["pruv*"]
