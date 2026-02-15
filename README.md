@@ -1,5 +1,9 @@
 # pruv
 
+[![PyPI - xycore](https://img.shields.io/pypi/v/xycore?label=xycore&color=blue)](https://pypi.org/project/xycore/)
+[![PyPI - pruv](https://img.shields.io/pypi/v/pruv?label=pruv&color=blue)](https://pypi.org/project/pruv/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 **Prove what happened.**
 
 Cryptographic verification primitive for any system. Two lines of code. Full proof chain.
@@ -283,6 +287,9 @@ pip install pruv      # full SDK
 - [Dashboard](https://app.pruv.dev) — chain explorer, time travel, receipts
 - [Docs](https://docs.pruv.dev) — full documentation
 - [API Reference](https://api.pruv.dev/docs) — REST API
+- [xycore on PyPI](https://pypi.org/project/xycore/) — zero-dependency primitive
+- [pruv on PyPI](https://pypi.org/project/pruv/) — full SDK
+- [Follow on X](https://x.com/pruvxy) — @pruvxy
 
 -----
 
