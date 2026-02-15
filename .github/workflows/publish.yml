@@ -18,7 +18,7 @@ jobs:
   build-xycore:
     name: Build xycore
     if: >-
-      github.event_name == 'release' ||
+      (github.event_name == 'release' && (startsWith(github.event.release.tag_name, 'xycore-') || !startsWith(github.event.release.tag_name, 'pruv-'))) ||
       inputs.package == 'xycore' ||
       inputs.package == 'both'
     runs-on: ubuntu-latest
@@ -44,7 +44,7 @@ jobs:
   build-pruv:
     name: Build pruv
     if: >-
-      github.event_name == 'release' ||
+      (github.event_name == 'release' && (startsWith(github.event.release.tag_name, 'pruv-') || !startsWith(github.event.release.tag_name, 'xycore-'))) ||
       inputs.package == 'pruv' ||
       inputs.package == 'both'
     runs-on: ubuntu-latest
