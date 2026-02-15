@@ -12,6 +12,9 @@ RUN pip install --no-cache-dir "apps/api[prod]"
 
 WORKDIR /srv/apps/api
 
+COPY apps/api/entrypoint.sh /srv/entrypoint.sh
+RUN chmod +x /srv/entrypoint.sh
+
 ENV PORT=8000
 EXPOSE 8000
-CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2"]
+ENTRYPOINT ["/srv/entrypoint.sh"]
