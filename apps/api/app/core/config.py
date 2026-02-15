@@ -65,7 +65,9 @@ class Settings:
     def from_env(cls) -> "Settings":
         return cls(
             debug=os.getenv("DEBUG", "false").lower() == "true",
-            database_url=os.getenv("DATABASE_URL", "postgresql://localhost:5432/pruv"),
+            database_url=os.getenv("DATABASE_URL", "postgresql://localhost:5432/pruv").replace(
+                "postgres://", "postgresql://", 1
+            ),
             database_pool_size=int(os.getenv("DATABASE_POOL_SIZE", "10")),
             redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"),
             jwt_secret=os.getenv("JWT_SECRET") or secrets.token_hex(32),
