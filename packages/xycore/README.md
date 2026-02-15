@@ -1,5 +1,9 @@
 # xycore
 
+[![PyPI](https://img.shields.io/pypi/v/xycore)](https://pypi.org/project/xycore/)
+[![Python](https://img.shields.io/pypi/pyversions/xycore)](https://pypi.org/project/xycore/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/mintingpressbuilds/pruv/blob/main/LICENSE)
+
 The XY primitive. Cryptographic verification for any system.
 
 ```bash
