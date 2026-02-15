@@ -106,37 +106,14 @@ This creates all tables: `users`, `api_keys`, `chains`, `entries`, `checkpoints`
 
 ### Railway
 
+The API depends on `xycore`, a local package in `packages/xycore` (not on PyPI). The build must run from the **repo root** so the Dockerfile can access both `packages/xycore` and `apps/api`. A `railway.toml` at the repo root and `Dockerfile` in `apps/api/` handle this automatically.
+
 1. Connect your GitHub repo in Railway
-2. Set root directory to `apps/api`
-3. Add all environment variables from section 2
-4. Set the start command:
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 4
-```
-
-5. Railway auto-detects Python. If it doesn't, add a `Dockerfile`:
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-# Install xycore first (local dependency)
-COPY packages/xycore /tmp/xycore
-RUN pip install /tmp/xycore
-
-COPY apps/api/pyproject.toml .
-RUN pip install -e ".[prod]"
-
-COPY apps/api/ .
-
-EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
-```
-
-6. Add custom domain: `api.pruv.dev`
-7. In Cloudflare DNS, add a CNAME record pointing `api` to Railway's domain
+2. **Do NOT set a root directory** — leave it as the repo root so the Dockerfile can reach `packages/xycore`
+3. Railway will detect `railway.toml` at the repo root, which points the build to `apps/api/Dockerfile`
+4. Add all environment variables from section 2
+5. Add custom domain: `api.pruv.dev`
+6. In Cloudflare DNS, add a CNAME record pointing `api` to Railway's domain
 
 ### Verify
 
