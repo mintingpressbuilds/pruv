@@ -129,7 +129,7 @@ export default function ChainDetailPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header
           title={chain?.name ?? "chain"}
           subtitle={chainLoading ? undefined : `${entries.length} entries`}

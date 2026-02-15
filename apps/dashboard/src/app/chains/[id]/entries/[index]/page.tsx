@@ -43,7 +43,7 @@ export default function EntryDetailPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header
           title={`entry #${entryIndex}`}
           subtitle={chain?.name}

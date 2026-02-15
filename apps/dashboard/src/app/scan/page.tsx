@@ -80,7 +80,7 @@ export default function ScanPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header title="scan" subtitle="verify chain integrity" />
 
         <main className="p-6 space-y-6 max-w-3xl">

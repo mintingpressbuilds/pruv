@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { auth } from "@/lib/api";
+import { PruvIcon } from "@/components/icons/pruv-icon";
 
 function GitHubIcon() {
   return (
@@ -49,9 +50,9 @@ export default function SignInPage() {
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-            className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-pruv-600 text-white text-2xl font-bold shadow-lg shadow-pruv-600/30"
+            className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-pruv-600 shadow-lg shadow-pruv-600/30"
           >
-            p
+            <PruvIcon size={40} className="text-pruv-400" />
           </motion.div>
           <h1 className="mt-6 text-2xl font-bold text-[var(--text-primary)]">
             sign in to pruv

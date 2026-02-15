@@ -90,7 +90,7 @@ export default function BillingPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header
           title="billing"
           subtitle="manage your plan and usage"
