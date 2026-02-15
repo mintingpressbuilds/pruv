@@ -106,7 +106,7 @@ This creates all tables: `users`, `api_keys`, `chains`, `entries`, `checkpoints`
 
 ### Railway
 
-The API depends on `xycore`, a local package in `packages/xycore` (not on PyPI). The build must run from the **repo root** so the Dockerfile can access both `packages/xycore` and `apps/api`. A `railway.toml` at the repo root and `Dockerfile` in `apps/api/` handle this automatically.
+The API depends on `xycore` (installed from the local `packages/xycore` during Docker build). The build must run from the **repo root** so the Dockerfile can access both `packages/xycore` and `apps/api`. A `railway.toml` at the repo root and `Dockerfile` in `apps/api/` handle this automatically.
 
 1. Connect your GitHub repo in Railway
 2. **Do NOT set a root directory** — leave it as the repo root so the Dockerfile can reach `packages/xycore`
@@ -202,25 +202,50 @@ The `next.config.ts` already has `output: "standalone"` and rewrites `/api/*` to
 
 ## 8. Publish Python packages to PyPI
 
-### xycore (zero dependencies)
+Publishing is automated via GitHub Actions. The workflow uses **PyPI Trusted Publishers** (OIDC) — no API tokens to manage.
+
+### One-time setup on PyPI
+
+For each package (`xycore` and `pruv`), add a trusted publisher on PyPI:
+
+1. Go to https://pypi.org/manage/account/publishing/
+2. Click "Add a new pending publisher" (for first publish) or go to the package settings
+3. Fill in:
+   - **PyPI project name**: `xycore` (then repeat for `pruv`)
+   - **Owner**: `pruv-dev`
+   - **Repository**: `pruv`
+   - **Workflow name**: `publish.yml`
+   - **Environment name**: `pypi`
+4. Save
+
+### Publishing
+
+**Option A: Create a GitHub release** (recommended)
+
+Create a release on GitHub — both packages build and publish automatically.
+
+**Option B: Manual trigger**
+
+Go to Actions → "Publish to PyPI" → Run workflow → pick `xycore`, `pruv`, or `both`.
+
+### Manual publish (fallback)
 
 ```bash
+pip install build twine
+
+# xycore first
 cd packages/xycore
-pip install build twine
+python -m build
+twine upload dist/*
+
+# then pruv
+cd ../pruv
 python -m build
 twine upload dist/*
 ```
 
-### pruv SDK
+### Verify
 
-```bash
-cd packages/pruv
-pip install build twine
-python -m build
-twine upload dist/*
-```
-
-Users install with:
 ```bash
 pip install xycore        # primitive only
 pip install pruv          # full SDK
