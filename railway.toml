@@ -1,6 +1,6 @@
 [build]
 # Build from repo root so Dockerfile can access packages/xycore
-dockerfilePath = "apps/api/Dockerfile"
+dockerfilePath = "Dockerfile"
 watchPatterns = ["apps/api/**", "packages/xycore/**"]
 
 [deploy]
