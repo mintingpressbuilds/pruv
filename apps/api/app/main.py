@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,10 +13,25 @@ from fastapi.responses import JSONResponse
 from .core.config import settings
 from .middleware.cors import CORSConfig, SecurityHeadersMiddleware
 from .middleware.logging import RequestLoggingMiddleware
+from .models.database import Base, get_engine
 from .routes import admin, analytics, auth, chains, checkpoints, dashboard, receipts, verify, webhooks
 from .schemas.schemas import HealthResponse
 
 logger = logging.getLogger("pruv.api")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Create database tables on startup if they don't exist."""
+    if settings.database_url:
+        try:
+            engine = get_engine(settings.database_url)
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database tables verified/created.")
+        except Exception:
+            logger.exception("Failed to create database tables.")
+    yield
+
 
 app = FastAPI(
     title="pruv API",
@@ -23,6 +39,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs" if settings.debug else None,
     redoc_url="/redoc" if settings.debug else None,
+    lifespan=lifespan,
 )
 
 # CORS — environment-aware, no localhost in production
