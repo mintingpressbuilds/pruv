@@ -86,11 +86,7 @@ jobs:
 
   publish-pruv:
     name: Publish pruv to PyPI
-    needs: [build-pruv, publish-xycore]
-    if: >-
-      always() &&
-      needs.build-pruv.result == 'success' &&
-      (needs.publish-xycore.result == 'success' || needs.publish-xycore.result == 'skipped')
+    needs: build-pruv
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
