@@ -24,3 +24,6 @@ prod = [
     "redis>=5.0",
     "stripe>=7.0",
 ]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
