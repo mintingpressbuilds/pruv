@@ -7,7 +7,7 @@ name = "pruv"
 version = "1.0.0"
 description = "Prove what happened. Cryptographic verification for any system."
 readme = "README.md"
-license = {file = "LICENSE"}
+license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
     "xycore>=1.0.0",
