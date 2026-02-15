@@ -63,19 +63,19 @@ function StatCard({
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.3 }}
-      className="rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] p-5"
+      className="rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] p-5 hover:border-pruv-500/30 transition-colors"
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
+          <p className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-widest font-mono">
             {label}
           </p>
-          <p className="mt-2 text-3xl font-bold text-[var(--text-primary)]">
+          <p className="mt-2 text-2xl font-bold text-[var(--text-primary)] font-mono tabular-nums">
             {value}
           </p>
         </div>
         <div
-          className={`flex h-11 w-11 items-center justify-center rounded-xl ${color}`}
+          className={`flex h-10 w-10 items-center justify-center rounded-lg ${color}`}
         >
           {icon}
         </div>
@@ -97,7 +97,7 @@ export default function OverviewPage() {
       <div className="flex-1 ml-64">
         <Header title="overview" subtitle="your pruv dashboard" />
 
-        <main className="p-6 space-y-6">
+        <main className="p-6 space-y-6 max-w-[1400px]">
           {/* Stats grid */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
@@ -126,8 +126,8 @@ export default function OverviewPage() {
               value={
                 isLoading ? "—" : `${stats?.verified_percentage ?? 0}%`
               }
-              icon={<TrendingUp size={20} className="text-yellow-400" />}
-              color="bg-yellow-500/10"
+              icon={<TrendingUp size={20} className="text-pruv-400" />}
+              color="bg-pruv-500/10"
               delay={0.15}
             />
           </div>
@@ -137,7 +137,7 @@ export default function OverviewPage() {
             {/* Recent activity */}
             <div className="lg:col-span-2 rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] p-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+                <h2 className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-widest font-mono">
                   recent activity
                 </h2>
                 <Link
@@ -226,7 +226,7 @@ export default function OverviewPage() {
             {/* Quick actions */}
             <div className="space-y-4">
               <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] p-5">
-                <h2 className="text-sm font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-4">
+                <h2 className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-widest font-mono mb-4">
                   quick actions
                 </h2>
                 <div className="space-y-2">
@@ -285,13 +285,13 @@ export default function OverviewPage() {
 
               {/* Chain rule reminder */}
               <div className="rounded-xl border border-pruv-500/20 bg-pruv-500/5 p-5">
-                <h3 className="text-xs font-medium text-pruv-400 uppercase tracking-wider mb-2">
+                <h3 className="text-[11px] font-medium text-pruv-400 uppercase tracking-widest font-mono mb-3">
                   chain rule
                 </h3>
-                <p className="text-sm text-[var(--text-secondary)] font-mono">
+                <p className="text-sm text-pruv-400 font-mono font-semibold">
                   entry[n].x == entry[n-1].y
                 </p>
-                <p className="mt-2 text-xs text-[var(--text-tertiary)]">
+                <p className="mt-2 text-xs text-[var(--text-tertiary)] leading-relaxed">
                   every entry&apos;s input state must match the previous
                   entry&apos;s output state. this is the foundation of
                   proof-of-state verification.

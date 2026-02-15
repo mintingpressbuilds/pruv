@@ -94,7 +94,7 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center justify-between px-4 border-b border-[var(--border)]">
         <Link href="/" className="flex items-center gap-2">
-          <PruvIcon size={32} className="text-pruv-600" />
+          <PruvIcon size={32} className="text-pruv-400" />
           {!collapsed && (
             <motion.span
               initial={{ opacity: 0 }}
