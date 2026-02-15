@@ -183,8 +183,19 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Sign out */}
-      <div className="border-t border-[var(--border)] p-3">
+      {/* Footer */}
+      <div className="border-t border-[var(--border)] p-3 space-y-1">
+        <a
+          href="https://x.com/pruvxy"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] hover:text-[var(--text-primary)] transition-all duration-150"
+        >
+          <svg width={20} height={20} viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          </svg>
+          {!collapsed && <span>follow on x</span>}
+        </a>
         <button
           onClick={() => auth.signOut()}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-400 transition-all duration-150"
