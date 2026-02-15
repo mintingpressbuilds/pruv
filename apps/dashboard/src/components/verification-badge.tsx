@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck, ShieldX, Loader2, Play } from "lucide-react";
+import { ShieldX, Loader2, Play } from "lucide-react";
 import type { EntryValidation } from "@/lib/types";
+import { PruvIcon } from "@/components/icons/pruv-icon";
 
 interface VerificationBadgeProps {
   chainId: string;
@@ -57,7 +58,7 @@ export function VerificationBadge({
           >
             {allValid ? (
               <>
-                <ShieldCheck size={16} />
+                <PruvIcon size={16} className="text-green-400" />
                 <span className="text-sm font-medium">
                   chain verified ({validations.length} entries)
                 </span>

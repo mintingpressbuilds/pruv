@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { auth } from "@/lib/api";
+import { PruvIcon } from "@/components/icons/pruv-icon";
 
 interface NavItem {
   href: string;
@@ -93,9 +94,7 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center justify-between px-4 border-b border-[var(--border)]">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-pruv-600 text-white font-bold text-sm">
-            p
-          </div>
+          <PruvIcon size={32} className="text-pruv-600" />
           {!collapsed && (
             <motion.span
               initial={{ opacity: 0 }}
