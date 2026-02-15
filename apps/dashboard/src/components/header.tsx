@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronRight, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 interface Breadcrumb {
   label: string;
@@ -18,7 +19,6 @@ function buildBreadcrumbs(pathname: string): Breadcrumb[] {
   let currentPath = "";
   for (const segment of segments) {
     currentPath += `/${segment}`;
-    // Skip dynamic segments that look like IDs
     const label = segment.startsWith("[")
       ? segment.replace(/\[|\]/g, "")
       : segment;
@@ -38,58 +38,65 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const breadcrumbs = buildBreadcrumbs(pathname);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)]/80 px-6 backdrop-blur-xl">
-      <div className="flex flex-col justify-center">
-        {/* Breadcrumbs */}
-        <nav className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
-          {breadcrumbs.map((crumb, i) => (
-            <span key={crumb.href} className="flex items-center gap-1">
-              {i > 0 && <ChevronRight size={12} />}
-              {i < breadcrumbs.length - 1 ? (
-                <Link
-                  href={crumb.href}
-                  className="hover:text-[var(--text-secondary)] transition-colors"
-                >
-                  {crumb.label}
-                </Link>
-              ) : (
-                <span className="text-[var(--text-secondary)]">
-                  {crumb.label}
+    <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--surface)]/80 px-6 py-3 backdrop-blur-xl">
+      <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-1">
+          {/* Breadcrumbs */}
+          <nav className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
+            {breadcrumbs.map((crumb, i) => (
+              <span key={crumb.href} className="flex items-center gap-1">
+                {i > 0 && <ChevronRight size={12} />}
+                {i < breadcrumbs.length - 1 ? (
+                  <Link
+                    href={crumb.href}
+                    className="hover:text-[var(--text-secondary)] transition-colors"
+                  >
+                    {crumb.label}
+                  </Link>
+                ) : (
+                  <span className="text-[var(--text-secondary)]">
+                    {crumb.label}
+                  </span>
+                )}
+              </span>
+            ))}
+          </nav>
+
+          {/* Title */}
+          {title && (
+            <div className="flex items-baseline gap-3">
+              <h1 className="text-lg font-semibold text-[var(--text-primary)] leading-tight">
+                {title}
+              </h1>
+              {subtitle && (
+                <span className="text-xs text-[var(--text-tertiary)]">
+                  {subtitle}
                 </span>
               )}
-            </span>
-          ))}
-        </nav>
+            </div>
+          )}
+        </div>
 
-        {/* Title */}
-        {title && (
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg font-semibold text-[var(--text-primary)]">
-              {title}
-            </h1>
-            {subtitle && (
-              <span className="text-sm text-[var(--text-tertiary)]">
-                {subtitle}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+        <div className="flex items-center gap-3 pt-1">
+          {actions}
 
-      <div className="flex items-center gap-3">
-        {actions}
-
-        {/* Theme toggle */}
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-          aria-label="Toggle theme"
-        >
-          {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-        </motion.button>
+          {/* Theme toggle */}
+          {mounted && (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-tertiary)] transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+            </motion.button>
+          )}
+        </div>
       </div>
     </header>
   );

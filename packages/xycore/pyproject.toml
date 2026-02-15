@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xycore"
-version = "1.0.0"
+version = "1.0.1"
 description = "The XY primitive — cryptographic verification for any system."
 readme = "README.md"
-license = {file = "LICENSE"}
+license = "MIT"
 requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 5 - Production/Stable",

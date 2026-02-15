@@ -1,17 +1,18 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @theme {
-  --color-pruv-50: #eef2ff;
-  --color-pruv-100: #e0e7ff;
-  --color-pruv-200: #c7d2fe;
-  --color-pruv-300: #a5b4fc;
-  --color-pruv-400: #818cf8;
-  --color-pruv-500: #6366f1;
-  --color-pruv-600: #4f46e5;
-  --color-pruv-700: #4338ca;
-  --color-pruv-800: #3730a3;
-  --color-pruv-900: #312e81;
-  --color-pruv-950: #1e1b4b;
+  --color-pruv-50: #e8faf0;
+  --color-pruv-100: #c4f2d8;
+  --color-pruv-200: #8ae5b1;
+  --color-pruv-300: #4dd88a;
+  --color-pruv-400: #00dc73;
+  --color-pruv-500: #00c466;
+  --color-pruv-600: #00a858;
+  --color-pruv-700: #008c4a;
+  --color-pruv-800: #006e3a;
+  --color-pruv-900: #00502a;
+  --color-pruv-950: #003018;
 }
 
 :root {
@@ -61,9 +62,9 @@ body {
   width: 2px;
   background: linear-gradient(
     to bottom,
-    var(--color-pruv-600),
+    var(--color-pruv-700),
     var(--color-pruv-400),
-    var(--color-pruv-600)
+    var(--color-pruv-700)
   );
   transform: translateX(-50%);
 }
@@ -111,10 +112,10 @@ body {
 @keyframes verifyPulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+    box-shadow: 0 0 0 0 rgba(0, 220, 115, 0.4);
   }
   50% {
-    box-shadow: 0 0 0 12px rgba(99, 102, 241, 0);
+    box-shadow: 0 0 0 12px rgba(0, 220, 115, 0);
   }
 }
 

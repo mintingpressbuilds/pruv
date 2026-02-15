@@ -22,7 +22,7 @@ export default function HomePage() {
           <div className="hero-links">
             <a href="https://docs.pruv.dev">docs</a>
             <a href="https://app.pruv.dev">dashboard</a>
-            <a href="https://github.com/pruv-dev/pruv">github</a>
+            <a href="https://github.com/mintingpressbuilds/pruv">github</a>
           </div>
         </div>
       </div>
