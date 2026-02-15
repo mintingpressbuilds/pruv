@@ -1,7 +1,7 @@
 # pruv
 
-[![PyPI](https://img.shields.io/pypi/v/pruv)](https://pypi.org/project/pruv/)
-[![Python](https://img.shields.io/pypi/pyversions/pruv)](https://pypi.org/project/pruv/)
+[![pruv](https://img.shields.io/badge/pruv-v1.0.1-green)](https://pypi.org/project/pruv/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://pypi.org/project/pruv/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/mintingpressbuilds/pruv/blob/main/LICENSE)
 
 Prove what happened. Cryptographic verification for any system.

@@ -1,8 +1,8 @@
 # pruv
 
-[![PyPI - xycore](https://img.shields.io/pypi/v/xycore?label=xycore)](https://pypi.org/project/xycore/)
-[![PyPI - pruv](https://img.shields.io/pypi/v/pruv?label=pruv)](https://pypi.org/project/pruv/)
-[![Python](https://img.shields.io/pypi/pyversions/pruv)](https://pypi.org/project/pruv/)
+[![xycore](https://img.shields.io/badge/xycore-v1.0.1-green)](https://pypi.org/project/xycore/)
+[![pruv](https://img.shields.io/badge/pruv-v1.0.1-green)](https://pypi.org/project/pruv/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://pypi.org/project/pruv/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 **Prove what happened.**
