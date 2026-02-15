@@ -2,24 +2,23 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  ShieldCheck,
-  ShieldX,
-  Clock,
-  AlertCircle,
-  FileCheck,
-} from "lucide-react";
+import { ShieldX, Clock, AlertCircle, FileCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Receipt } from "@/lib/types";
+import { PruvIcon } from "@/components/icons/pruv-icon";
 
 interface ReceiptCardProps {
   receipt: Receipt;
   index?: number;
 }
 
+function PruvStatusIcon({ size, className }: { size?: number; className?: string }) {
+  return <PruvIcon size={size} className={className} />;
+}
+
 const statusConfig = {
   verified: {
-    icon: ShieldCheck,
+    icon: PruvStatusIcon,
     color: "text-green-400",
     bg: "bg-green-500/10 border-green-500/20",
     label: "verified",

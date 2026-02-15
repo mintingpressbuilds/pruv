@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShieldCheck,
   ShieldX,
   Download,
   Copy,
@@ -15,6 +14,8 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import type { Receipt, ThinkingStep } from "@/lib/types";
+import { PruvIcon } from "@/components/icons/pruv-icon";
+import { PruvBadge } from "@/components/icons/pruv-badge";
 
 interface ReceiptDetailProps {
   receipt: Receipt;
@@ -98,7 +99,7 @@ export function ReceiptDetailView({
       >
         <div className="flex items-center gap-3">
           {isVerified ? (
-            <ShieldCheck size={24} className="text-green-400" />
+            <PruvIcon size={24} className="text-green-400" />
           ) : (
             <ShieldX size={24} className="text-red-400" />
           )}
@@ -267,11 +268,7 @@ export function ReceiptDetailView({
             embeddable badge
           </h4>
           <div className="flex items-center gap-4">
-            <img
-              src={receipt.badge_url}
-              alt="pruv verification badge"
-              className="h-8"
-            />
+            <PruvBadge height={32} />
             <div className="flex-1">
               <code className="block rounded-md bg-[var(--surface)] px-3 py-2 font-mono text-xs text-[var(--text-secondary)] border border-[var(--border)] truncate">
                 {`<img src="${receipt.badge_url}" alt="pruv verified" />`}
