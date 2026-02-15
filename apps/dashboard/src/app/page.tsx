@@ -94,7 +94,7 @@ export default function OverviewPage() {
     <div className="flex min-h-screen">
       <Sidebar />
 
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header title="overview" subtitle="your pruv dashboard" />
 
         <main className="p-6 space-y-6 max-w-[1400px]">

@@ -16,7 +16,7 @@ export default function ReceiptDetailPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header
           title={`receipt ${receiptId.slice(0, 12)}...`}
           subtitle={receipt?.chain_name}

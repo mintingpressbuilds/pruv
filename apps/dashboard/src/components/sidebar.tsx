@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Link2,
@@ -15,8 +15,10 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Menu,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { auth } from "@/lib/api";
 import { PruvIcon } from "@/components/icons/pruv-icon";
 
@@ -75,27 +77,31 @@ const navItems: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(
     pathname.startsWith("/settings")
   );
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   const isActive = (href: string): boolean => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
 
-  return (
-    <motion.aside
-      initial={false}
-      animate={{ width: collapsed ? 72 : 256 }}
-      transition={{ duration: 0.2, ease: "easeInOut" }}
-      className="fixed left-0 top-0 bottom-0 z-40 flex flex-col border-r border-[var(--border)] bg-[var(--surface-secondary)]"
-    >
+  // Mobile sidebar is always full-width
+  const showCollapsed = collapsed && !mobileOpen;
+
+  const sidebarContent = (
+    <>
       {/* Logo */}
       <div className="flex h-16 items-center justify-between px-4 border-b border-[var(--border)]">
         <Link href="/" className="flex items-center gap-2">
           <PruvIcon size={32} className="text-pruv-400" />
-          {!collapsed && (
+          {!showCollapsed && (
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -106,11 +112,19 @@ export function Sidebar() {
             </motion.span>
           )}
         </Link>
+        {/* Desktop: collapse toggle */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-[var(--surface-tertiary)] text-[var(--text-secondary)] transition-colors"
+          className="hidden lg:flex h-7 w-7 items-center justify-center rounded-md hover:bg-[var(--surface-tertiary)] text-[var(--text-secondary)] transition-colors"
         >
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        </button>
+        {/* Mobile: close button */}
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="flex lg:hidden h-7 w-7 items-center justify-center rounded-md hover:bg-[var(--surface-tertiary)] text-[var(--text-secondary)] transition-colors"
+        >
+          <X size={16} />
         </button>
       </div>
 
@@ -129,7 +143,7 @@ export function Sidebar() {
                   }`}
                 >
                   {item.icon}
-                  {!collapsed && (
+                  {!showCollapsed && (
                     <>
                       <span className="flex-1 text-left">{item.label}</span>
                       <motion.div
@@ -141,7 +155,7 @@ export function Sidebar() {
                     </>
                   )}
                 </button>
-                {settingsOpen && !collapsed && (
+                {settingsOpen && !showCollapsed && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
@@ -176,7 +190,7 @@ export function Sidebar() {
                 }`}
               >
                 {item.icon}
-                {!collapsed && <span>{item.label}</span>}
+                {!showCollapsed && <span>{item.label}</span>}
               </Link>
             )}
           </div>
@@ -194,16 +208,57 @@ export function Sidebar() {
           <svg width={20} height={20} viewBox="0 0 24 24" fill="currentColor">
             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
           </svg>
-          {!collapsed && <span>follow on x</span>}
+          {!showCollapsed && <span>follow on x</span>}
         </a>
         <button
           onClick={() => auth.signOut()}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-400 transition-all duration-150"
         >
           <LogOut size={20} />
-          {!collapsed && <span>sign out</span>}
+          {!showCollapsed && <span>sign out</span>}
         </button>
       </div>
-    </motion.aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile hamburger button */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className={`fixed top-3 left-3 z-50 flex lg:hidden h-10 w-10 items-center justify-center rounded-xl bg-[var(--surface-secondary)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all ${
+          mobileOpen ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}
+        aria-label="Open menu"
+      >
+        <Menu size={18} />
+      </button>
+
+      {/* Mobile backdrop */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setMobileOpen(false)}
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar — mobile: slide-in drawer, desktop: fixed */}
+      <motion.aside
+        initial={false}
+        animate={{ width: showCollapsed ? 72 : 256 }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
+        className={`fixed left-0 top-0 bottom-0 z-50 flex flex-col border-r border-[var(--border)] bg-[var(--surface-secondary)] transition-transform duration-200 ease-in-out lg:translate-x-0 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {sidebarContent}
+      </motion.aside>
+    </>
   );
 }

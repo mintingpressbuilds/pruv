@@ -22,7 +22,7 @@
     },
     {
       "name": "GitHub",
-      "url": "https://github.com/pruv-dev/pruv"
+      "url": "https://github.com/mintingpressbuilds/pruv"
     },
     {
       "name": "Community",
@@ -115,7 +115,7 @@
     }
   ],
   "footerSocials": {
-    "github": "https://github.com/pruv-dev/pruv",
+    "github": "https://github.com/mintingpressbuilds/pruv",
     "discord": "https://discord.gg/pruv",
     "x": "https://x.com/pruvdev"
   },

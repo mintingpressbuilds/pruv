@@ -43,8 +43,8 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
   useEffect(() => setMounted(true), []);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--surface)]/80 px-6 py-3 backdrop-blur-xl">
-      <div className="flex items-start justify-between">
+    <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--surface)]/80 pl-16 pr-6 py-3 backdrop-blur-xl lg:px-6">
+      <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           {/* Breadcrumbs */}
           <nav className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
@@ -90,10 +90,10 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-tertiary)] transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-secondary)] transition-all"
               aria-label="Toggle theme"
             >
-              {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
             </motion.button>
           )}
         </div>

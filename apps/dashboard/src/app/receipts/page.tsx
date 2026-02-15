@@ -30,7 +30,7 @@ export default function ReceiptsPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-0 lg:ml-64">
         <Header title="receipts" />
 
         <main className="p-6 space-y-4">
