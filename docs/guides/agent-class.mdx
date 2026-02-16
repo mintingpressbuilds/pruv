@@ -1,0 +1,199 @@
+---
+title: "Agent Class"
+description: "Use the pruv Agent class to record and verify every action your AI agent performs. Automatic chain creation, hash linking, and receipt generation."
+---
+
+# Agent Class
+
+The `Agent` class is the primary interface for adding cryptographic verification to AI agent workflows. Every call to `action()` appends an entry to a pruv chain on the server. The chain is cryptographically linked — tamper with one entry and the chain breaks.
+
+## Quick Start
+
+```python
+import pruv
+
+agent = pruv.Agent("email-assistant", api_key="pv_live_xxx")
+
+agent.action("read_inbox", {"account": "work", "count": 12})
+agent.action("draft_reply", {"to": "sarah@company.com"})
+agent.action("send_email", {"to": "sarah@company.com", "subject": "Re: Q3"})
+
+chain = agent.verify()
+# ✓ 3 actions · all verified · chain intact
+```
+
+## Constructor
+
+```python
+pruv.Agent(
+    name: str,
+    api_key: str,
+    endpoint: str = "https://api.pruv.dev",
+    metadata: dict | None = None,
+)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `name` | `str` | required | Name for this agent session. Used as the chain name. |
+| `api_key` | `str` | required | Your pruv API key (`pv_live_` or `pv_test_` prefix). |
+| `endpoint` | `str` | `"https://api.pruv.dev"` | API endpoint URL. |
+| `metadata` | `dict \| None` | `None` | Optional metadata attached to the chain. |
+
+On initialization, the Agent creates a new chain on the pruv API automatically.
+
+## Methods
+
+### `action()`
+
+Record a verified action.
+
+```python
+agent.action(
+    operation: str,
+    data: dict,
+    sensitive_keys: list[str] | None = None,
+)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `operation` | `str` | required | Name of the action (e.g., `"send_email"`, `"read_file"`). |
+| `data` | `dict` | required | Action payload. Becomes the entry's state data. |
+| `sensitive_keys` | `list[str] \| None` | `None` | Keys in `data` to redact before hashing. |
+
+Each call to `action()` creates a new `XYEntry` in the chain. The entry's `x` is automatically linked to the previous entry's `y`. The first entry's `x` is `"GENESIS"`.
+
+```python
+# Record actions with automatic chain linking
+agent.action("read_inbox", {"account": "work", "unread": 12})
+agent.action("draft_reply", {"to": "sarah@co.com", "subject": "Re: Q3"})
+
+# Redact sensitive fields before they enter the chain
+agent.action("send_email", {
+    "to": "sarah@co.com",
+    "body": "Here are the credentials...",
+    "api_key": "sk_live_secret123",
+}, sensitive_keys=["body", "api_key"])
+```
+
+### `verify()`
+
+Verify the entire action chain.
+
+```python
+result = agent.verify()
+```
+
+Returns the chain verification result. Walks every entry, recomputes every hash, and checks every link. If anything was modified, reports exactly where the break occurred.
+
+### `chain()`
+
+Get the full chain with all entries.
+
+```python
+chain = agent.chain()
+print(f"Entries: {len(chain['entries'])}")
+print(f"Chain ID: {chain['id']}")
+```
+
+### `receipt(entry_id)`
+
+Get a single action receipt by entry ID.
+
+```python
+receipt = agent.receipt(entry_id="xy_8f3a2b1c...")
+```
+
+### `export()`
+
+Export the chain as a self-verifying HTML artifact.
+
+```python
+html = agent.export()
+# Returns HTML string with embedded verification script
+```
+
+The exported HTML contains all chain data and a JavaScript verification script. Anyone can open the file in a browser to independently verify the chain — no pruv account required.
+
+## Auto-Redaction
+
+The Agent automatically redacts known secret patterns before they enter the chain:
+
+- `sk_live_*`, `sk_test_*` (Stripe)
+- `pv_live_*`, `pv_test_*` (pruv)
+- `ghp_*`, `gho_*` (GitHub)
+- `AKIA*` (AWS)
+- `password=*`, `api_key=*`, `secret=*`, `token=*`
+
+You can also explicitly mark fields as sensitive:
+
+```python
+agent.action("api_call", {
+    "url": "https://api.stripe.com/charges",
+    "api_key": "sk_live_abc123",
+    "amount": 2000,
+}, sensitive_keys=["api_key"])
+```
+
+Redacted values are replaced with `[REDACTED:sha256:abc123...]` — the hash commitment preserves chain integrity while removing the sensitive value.
+
+## Error Handling
+
+If an action fails, the Agent records the error as a legitimate state transition:
+
+```python
+from pruv import Agent, ActionError
+
+agent = pruv.Agent("my-agent", api_key="pv_live_xxx")
+
+try:
+    agent.action("risky_operation", {"target": "production"})
+except ActionError as e:
+    print(f"Action failed: {e}")
+    # The failure is still recorded in the chain
+    # The chain remains valid — failures are verified too
+```
+
+## Full Example
+
+```python
+import pruv
+
+# Initialize
+agent = pruv.Agent(
+    "code-review-agent",
+    api_key="pv_live_xxx",
+    metadata={"repo": "acme/backend", "pr": 142},
+)
+
+# Record actions
+agent.action("clone_repo", {"repo": "acme/backend", "branch": "feature/auth"})
+agent.action("read_file", {"path": "src/auth.py", "lines": 247})
+agent.action("analyze_code", {"findings": 3, "severity": "medium"})
+agent.action("post_review", {
+    "pr": 142,
+    "comments": 3,
+    "approved": False,
+})
+
+# Verify the chain
+result = agent.verify()
+print(f"Verified: {result}")
+
+# Export as standalone HTML proof
+html = agent.export()
+with open("review-receipt.html", "w") as f:
+    f.write(html)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="@pruv.verified Decorator" icon="at" href="/guides/verified-decorator">
+    Decorate functions for automatic verification.
+  </Card>
+  <Card title="Wrapping Agents" icon="robot" href="/guides/wrapping-agents">
+    Use xy_wrap for more advanced wrapping patterns.
+  </Card>
+</CardGroup>

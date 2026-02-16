@@ -5,24 +5,25 @@ import { Footer } from "@/components/footer";
 
 export const metadata: Metadata = {
   title: {
-    default: "pruv — Prove what happened.",
+    default: "pruv — Prove what your AI agent did.",
     template: "%s | pruv",
   },
   description:
-    "Cryptographic verification primitive. Capture the before, the after, create proof. Chain rule: Entry[N].x == Entry[N-1].y.",
+    "Cryptographic receipts for AI agents. Every action, every tool call, every message — verified with math your agent can't fake.",
   keywords: [
     "pruv",
-    "verification",
+    "AI agent verification",
     "cryptographic proof",
-    "XY chain",
-    "state transformation",
-    "Ed25519",
+    "agent receipts",
+    "LangChain verification",
+    "CrewAI verification",
     "SHA-256",
+    "Ed25519",
   ],
   authors: [{ name: "pruv" }],
   openGraph: {
-    title: "pruv — Prove what happened.",
-    description: "Cryptographic verification primitive for any system that transforms state.",
+    title: "pruv — Prove what your AI agent did.",
+    description: "Cryptographic receipts for AI agents. Every action verified with math your agent can't fake.",
     url: "https://pruv.dev",
     siteName: "pruv",
     locale: "en_US",
@@ -30,8 +31,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "pruv — Prove what happened.",
-    description: "Cryptographic verification primitive for any system that transforms state.",
+    title: "pruv — Prove what your AI agent did.",
+    description: "Cryptographic receipts for AI agents. Every action verified with math your agent can't fake.",
   },
   robots: {
     index: true,

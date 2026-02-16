@@ -1,0 +1,108 @@
+---
+title: "Chain Explorer"
+description: "Use the pruv dashboard to view, inspect, and verify your chains visually. Timeline view, entry details, time travel, and alerts."
+---
+
+# Chain Explorer
+
+The chain explorer is the primary interface in the [pruv dashboard](https://app.pruv.dev) for inspecting verification chains. It shows every action as a visual timeline, lets you expand entries for detail, and displays alerts inline.
+
+## Accessing the Explorer
+
+1. Sign in at [app.pruv.dev](https://app.pruv.dev)
+2. Navigate to **Chains** in the sidebar
+3. Click any chain to open the explorer
+
+Or go directly to `https://app.pruv.dev/chains/{chain_id}`.
+
+## Timeline View
+
+The chain explorer displays entries as a vertical timeline. Each entry shows:
+
+- **Sequence number** — Position in the chain
+- **Operation name** — What action was performed (e.g., `send_email`, `tool.start`)
+- **Timestamp** — When the action occurred
+- **Status** — Success, failed, or pending
+- **Verification badge** — Green checkmark if the entry's hash is valid
+
+Entries are connected by a vertical line. The line represents the cryptographic link between entries — each entry's `x` equals the previous entry's `y`.
+
+## Entry Detail
+
+Click any entry in the timeline to expand its details:
+
+- **X hash** — Hash of the state before the action
+- **Y hash** — Hash of the state after the action
+- **XY proof** — The combined proof hash
+- **State data** — The actual before/after state (if stored)
+- **Signature** — Ed25519 signature and signer ID (if signed)
+- **Metadata** — Any custom metadata attached to the entry
+
+## Verification
+
+The explorer runs verification automatically when you open a chain. The verification status appears at the top:
+
+- **Verified** — Every entry's hash is valid, every link is intact
+- **Break detected** — The chain broke at a specific entry. The break point is highlighted in red in the timeline.
+
+You can also manually re-verify by clicking the **Verify** button.
+
+## Alerts
+
+If alerts exist for the chain, they appear as a summary banner at the top of the explorer:
+
+- **Critical** alerts show in red with a count badge
+- **Warning** alerts show in yellow
+- **Info** alerts show in blue
+
+Click the alert banner to see full details. Alerts with an `entry_id` link directly to the entry that triggered them in the timeline.
+
+## Time Travel
+
+Use the time travel slider to view the chain at any point in its history:
+
+1. Open the time travel panel (clock icon)
+2. Drag the slider to a specific entry
+3. The timeline shows only entries up to that point
+4. Verification runs on the partial chain
+
+This is useful for investigating when a problem first appeared or understanding the sequence of events leading to an issue.
+
+## Export
+
+Export chains from the explorer:
+
+- **HTML** — Self-verifying HTML file. Anyone can open it in a browser and verify the chain independently, without a pruv account.
+- **PDF** — Formatted receipt document suitable for compliance records or stakeholder reports.
+- **JSON** — Raw chain data for programmatic processing.
+
+Click the **Export** button in the explorer toolbar to choose a format.
+
+## Checkpoints
+
+If checkpoints exist for the chain, they appear as markers on the timeline. Click a checkpoint to:
+
+- **Preview** — See the state snapshot at that point
+- **Compare** — Diff the checkpoint state against the current state
+- **Restore** — Roll back to that checkpoint (requires confirmation)
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `j` / `k` | Navigate entries (down / up) |
+| `Enter` | Expand/collapse entry detail |
+| `v` | Run verification |
+| `t` | Toggle time travel panel |
+| `e` | Open export menu |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Alerting" icon="bell" href="/guides/alerting">
+    Understand the alert rules and severity levels.
+  </Card>
+  <Card title="Cloud Sync" icon="cloud" href="/guides/cloud-sync">
+    Upload chains to the dashboard for team visibility.
+  </Card>
+</CardGroup>

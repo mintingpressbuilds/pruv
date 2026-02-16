@@ -1,0 +1,161 @@
+---
+title: "CrewAI Integration"
+description: "Add cryptographic verification to CrewAI crews. Every task execution and agent action in your crew gets a verified receipt."
+---
+
+# CrewAI Integration
+
+pruv integrates with CrewAI via `pruv_wrap_crew()`, which wraps a Crew object so that every task execution — including individual agent actions — is automatically recorded in a verified pruv chain.
+
+## Installation
+
+```bash
+pip install pruv crewai
+```
+
+## Quick Start
+
+```python
+from crewai import Agent, Task, Crew
+from pruv.integrations.crewai import pruv_wrap_crew
+
+# Define your crew as usual
+researcher = Agent(role="Researcher", goal="Find data", backstory="...")
+writer = Agent(role="Writer", goal="Write report", backstory="...")
+
+task = Task(description="Research and write a market analysis", agents=[researcher, writer])
+crew = Crew(agents=[researcher, writer], tasks=[task])
+
+# Wrap with pruv
+crew = pruv_wrap_crew(
+    crew,
+    agent_name="market-research",
+    api_key="pv_live_xxx",
+)
+
+# Run — every action is now verified
+result = crew.kickoff()
+
+# Access the verification chain
+chain = crew._pruv_agent.chain()
+verification = crew._pruv_agent.verify()
+```
+
+## Function Signature
+
+```python
+pruv_wrap_crew(
+    crew: Crew,
+    agent_name: str = "crewai-agent",
+    api_key: str | None = None,
+    endpoint: str = "https://api.pruv.dev",
+) -> Crew
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `crew` | `Crew` | required | The CrewAI Crew instance to wrap. |
+| `agent_name` | `str` | `"crewai-agent"` | Name for the pruv chain. |
+| `api_key` | `str \| None` | `None` | pruv API key. Falls back to `PRUV_API_KEY` env var. |
+| `endpoint` | `str` | `"https://api.pruv.dev"` | API endpoint URL. |
+
+Returns the same Crew instance, now instrumented with pruv verification.
+
+## What Gets Recorded
+
+### Crew-Level Events
+
+| Event | Operation | Data Captured |
+|-------|-----------|---------------|
+| Crew start | `crew.kickoff.start` | Crew name, task count, agent count |
+| Crew complete | `crew.kickoff.complete` | Result hash, duration |
+| Crew error | `crew.kickoff.error` | Error type and message |
+
+### Agent-Level Events
+
+Each agent's `execute_task()` method is wrapped individually:
+
+| Event | Operation | Data Captured |
+|-------|-----------|---------------|
+| Task start | `agent.{role}.task.start` | Task description hash, agent role |
+| Task complete | `agent.{role}.task.complete` | Output hash |
+| Task error | `agent.{role}.task.error` | Error type and message |
+
+## Example: Multi-Agent Research Crew
+
+```python
+from crewai import Agent, Task, Crew
+from pruv.integrations.crewai import pruv_wrap_crew
+
+# Define agents
+analyst = Agent(
+    role="Data Analyst",
+    goal="Analyze competitor data",
+    backstory="Expert data analyst with 10 years experience",
+)
+
+writer = Agent(
+    role="Report Writer",
+    goal="Write clear, actionable reports",
+    backstory="Technical writer specializing in market research",
+)
+
+reviewer = Agent(
+    role="Quality Reviewer",
+    goal="Ensure accuracy and completeness",
+    backstory="Senior analyst who reviews all published work",
+)
+
+# Define tasks
+research = Task(description="Gather competitor pricing data", agent=analyst)
+write = Task(description="Write competitive analysis report", agent=writer)
+review = Task(description="Review report for accuracy", agent=reviewer)
+
+# Create and wrap the crew
+crew = Crew(agents=[analyst, writer, reviewer], tasks=[research, write, review])
+crew = pruv_wrap_crew(crew, agent_name="competitive-analysis", api_key="pv_live_xxx")
+
+result = crew.kickoff()
+
+# The chain now contains entries for:
+# 1. crew.kickoff.start
+# 2. agent.data_analyst.task.start
+# 3. agent.data_analyst.task.complete
+# 4. agent.report_writer.task.start
+# 5. agent.report_writer.task.complete
+# 6. agent.quality_reviewer.task.start
+# 7. agent.quality_reviewer.task.complete
+# 8. crew.kickoff.complete
+
+verification = crew._pruv_agent.verify()
+print(f"All actions verified: {verification}")
+```
+
+## Accessing Results
+
+After crew execution, the pruv agent is available on the crew object:
+
+```python
+# Get the pruv Agent instance
+pruv_agent = crew._pruv_agent
+
+# Full chain
+chain = pruv_agent.chain()
+
+# Verify integrity
+result = pruv_agent.verify()
+
+# Export as HTML receipt
+html = pruv_agent.export()
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="OpenClaw Integration" icon="claw-marks" href="/guides/openclaw">
+    Verify OpenClaw agent workflows.
+  </Card>
+  <Card title="Alerting" icon="bell" href="/guides/alerting">
+    Detect anomalies in multi-agent workflows.
+  </Card>
+</CardGroup>

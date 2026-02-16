@@ -109,7 +109,7 @@ export default function PricingPage() {
             </div>
           </div>
 
-          <div className="section" style={{ borderTop: "none", paddingTop: 48 }}>
+          <div style={{ paddingTop: 48 }}>
             <div className="section-label">rate limits</div>
             <div className="spec-table">
               <div className="spec-row">

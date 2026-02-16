@@ -1,0 +1,187 @@
+---
+title: "@pruv.verified Decorator"
+description: "Add cryptographic verification to any function with a single decorator. Zero changes to your logic."
+---
+
+# @pruv.verified Decorator
+
+The `@pruv.verified` decorator records every function call as a verified action. Before execution, a `.start` entry is appended to the chain. On success, a `.complete` entry with the result hash is appended. On failure, a `.error` entry is appended and the exception is re-raised.
+
+## Quick Start
+
+```python
+import pruv
+
+# Initialize once — all @pruv.verified functions use this agent
+pruv.init("my-app", api_key="pv_live_xxx")
+
+@pruv.verified
+def send_email(to, subject, body):
+    smtp.send(to, subject, body)
+
+# Every call to send_email now has a cryptographic receipt
+send_email("sarah@co.com", "Re: Q3", "See attached report.")
+```
+
+## Setup
+
+Before using `@pruv.verified`, initialize the default agent:
+
+```python
+import pruv
+
+pruv.init(
+    name="my-app",
+    api_key="pv_live_xxx",
+    endpoint="https://api.pruv.dev",  # optional
+    metadata={"env": "production"},   # optional
+)
+```
+
+This creates a module-level `Agent` that all decorated functions use. You only call `pruv.init()` once, typically at application startup.
+
+## Usage Forms
+
+### Bare decorator
+
+```python
+@pruv.verified
+def process_order(order_id, items):
+    # action_type defaults to "process_order" (function name)
+    return {"status": "shipped"}
+```
+
+### With parameters
+
+```python
+@pruv.verified(action_type="payment.charge")
+def charge_card(card_token, amount):
+    return stripe.charges.create(amount=amount, source=card_token)
+```
+
+### With sensitive key redaction
+
+```python
+@pruv.verified(
+    action_type="auth.login",
+    sensitive_keys=["password", "token"],
+)
+def authenticate(username, password):
+    return auth_service.login(username, password)
+```
+
+### With a specific agent
+
+```python
+agent = pruv.Agent("billing-service", api_key="pv_live_xxx")
+
+@pruv.verified(agent=agent)
+def create_invoice(customer_id, amount):
+    return billing.create_invoice(customer_id, amount)
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `action_type` | `str \| None` | Function name | Custom action type name for the chain entry. |
+| `sensitive_keys` | `list[str] \| None` | `None` | Argument names to redact before recording. |
+| `agent` | `Agent \| None` | Default agent | Specific Agent instance to use instead of the global default. |
+
+## What Gets Recorded
+
+For each decorated function call, two entries are appended to the chain:
+
+### Start entry
+
+```
+operation: "send_email.start"
+y_state: {
+  "args_hash": "sha256:a1b2c3...",
+  "timestamp": 1739644800.123
+}
+```
+
+### Complete entry (on success)
+
+```
+operation: "send_email.complete"
+y_state: {
+  "result_hash": "sha256:d4e5f6...",
+  "timestamp": 1739644800.456
+}
+```
+
+### Error entry (on failure)
+
+```
+operation: "send_email.error"
+y_state: {
+  "error": "ConnectionError",
+  "message": "SMTP server unreachable",
+  "timestamp": 1739644800.789
+}
+```
+
+The exception is re-raised after the error entry is recorded. The chain remains valid — failures are verified state transitions.
+
+## Serialization
+
+Arguments and return values are serialized before hashing. The decorator handles common types automatically:
+
+- Primitives (`str`, `int`, `float`, `bool`, `None`)
+- Collections (`list`, `dict`, `tuple`, `set`)
+- Dataclasses and Pydantic models (via `dict()` or `__dict__`)
+- Objects with `__str__` representation
+
+Unsupported types fall back to string representation for hashing.
+
+## Example: Multiple Decorated Functions
+
+```python
+import pruv
+
+pruv.init("order-pipeline", api_key="pv_live_xxx")
+
+@pruv.verified
+def validate_order(order):
+    if order["total"] <= 0:
+        raise ValueError("Invalid total")
+    return {"valid": True}
+
+@pruv.verified(sensitive_keys=["card_number"])
+def charge_payment(order_id, card_number, amount):
+    return payment_gateway.charge(card_number, amount)
+
+@pruv.verified
+def ship_order(order_id, address):
+    return shipping.create_label(order_id, address)
+
+# Each function call creates 2 chain entries (start + complete/error)
+# The full pipeline produces a verified chain of 6 entries
+validate_order({"id": 1, "total": 99.99})
+charge_payment(1, "4242424242424242", 99.99)
+ship_order(1, "123 Main St")
+```
+
+## Compared to Agent.action()
+
+| Feature | `@pruv.verified` | `Agent.action()` |
+|---------|-------------------|-------------------|
+| Usage | Decorate existing functions | Explicit action calls |
+| Code changes | None (add decorator) | Wrap logic in action calls |
+| Granularity | Per function call | Per action |
+| Error handling | Automatic (re-raises) | Manual |
+| Entry count | 2 per call (start + end) | 1 per call |
+| Best for | Decorating existing code | Building agent workflows |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Agent Class" icon="robot" href="/guides/agent-class">
+    Use the Agent class for explicit action recording.
+  </Card>
+  <Card title="LangChain Integration" icon="link" href="/guides/langchain">
+    Add pruv verification to LangChain agents.
+  </Card>
+</CardGroup>

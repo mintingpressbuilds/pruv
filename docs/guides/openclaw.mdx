@@ -1,0 +1,186 @@
+---
+title: "OpenClaw Integration"
+description: "Add cryptographic verification to OpenClaw agents. Every skill execution, message, and resource access gets a verified receipt."
+---
+
+# OpenClaw Integration
+
+pruv integrates with OpenClaw via `OpenClawVerifier`, a middleware class that records skill executions, messages, file access, and API calls as verified entries in a pruv chain.
+
+## Installation
+
+```bash
+pip install pruv openclaw
+```
+
+## Quick Start
+
+```python
+from pruv.integrations.openclaw import OpenClawVerifier
+
+verifier = OpenClawVerifier(api_key="pv_live_xxx")
+
+# Hook into skill lifecycle
+verifier.before_skill("web_search", {"query": "pruv documentation"})
+verifier.after_skill("web_search", {"results": 10, "top_url": "https://docs.pruv.dev"})
+
+# Record messages
+verifier.message_received({"role": "user", "content": "Search for pruv docs"})
+verifier.message_sent({"role": "assistant", "content": "Found 10 results..."})
+
+# Verify everything
+result = verifier.verify()
+print(f"Verified: {result}")
+```
+
+## Constructor
+
+```python
+OpenClawVerifier(
+    api_key: str | None = None,
+    agent_name: str = "openclaw-agent",
+    endpoint: str = "https://api.pruv.dev",
+    redact_content: bool = True,
+)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `api_key` | `str \| None` | `None` | pruv API key. Falls back to `PRUV_API_KEY` env var. |
+| `agent_name` | `str` | `"openclaw-agent"` | Name for the pruv chain. |
+| `endpoint` | `str` | `"https://api.pruv.dev"` | API endpoint URL. |
+| `redact_content` | `bool` | `True` | Auto-redact message content, body, password, and token fields. |
+
+## Methods
+
+### Skill Lifecycle
+
+```python
+# Before a skill executes
+verifier.before_skill(skill_name: str, input_data: dict)
+
+# After a skill completes
+verifier.after_skill(skill_name: str, output_data: dict)
+```
+
+Records `skill.start` and `skill.complete` entries. If a skill fails, call `after_skill` with error details in the output data.
+
+### Message Events
+
+```python
+# When a message is received
+verifier.message_received(message: dict)
+
+# When a message is sent
+verifier.message_sent(message: dict)
+```
+
+Records `message.received` and `message.sent` entries. When `redact_content=True`, fields named `body`, `content`, `message`, `text`, `password`, and `token` are automatically redacted.
+
+### Resource Events
+
+```python
+# When a file is accessed
+verifier.file_accessed(path: str, metadata: dict | None = None)
+
+# When an API is called
+verifier.api_called(url: str, method: str = "GET", metadata: dict | None = None)
+```
+
+Records `file.access` and `api.call` entries. File paths and API URLs are captured for anomaly detection (sensitive file access alerts, unknown domain alerts).
+
+### Chain Access
+
+```python
+# Get the full chain
+chain = verifier.get_chain()
+
+# Verify the chain
+result = verifier.verify()
+
+# Export as HTML
+html = verifier.export()
+```
+
+## What Gets Recorded
+
+| Method | Operation | Data Captured |
+|--------|-----------|---------------|
+| `before_skill()` | `skill.start` | Skill name, input data hash |
+| `after_skill()` | `skill.complete` | Skill name, output data hash |
+| `message_received()` | `message.received` | Role, content hash (redacted if enabled) |
+| `message_sent()` | `message.sent` | Role, content hash (redacted if enabled) |
+| `file_accessed()` | `file.access` | File path, metadata |
+| `api_called()` | `api.call` | URL, HTTP method, metadata |
+
+## Example: Full Agent Session
+
+```python
+from pruv.integrations.openclaw import OpenClawVerifier
+
+verifier = OpenClawVerifier(
+    api_key="pv_live_xxx",
+    agent_name="customer-support",
+    redact_content=True,
+)
+
+# User sends a message
+verifier.message_received({
+    "role": "user",
+    "content": "I need to reset my password",
+})
+
+# Agent looks up the user
+verifier.before_skill("user_lookup", {"email": "user@example.com"})
+verifier.after_skill("user_lookup", {"user_id": "u_123", "found": True})
+
+# Agent accesses the auth API
+verifier.api_called("https://auth.example.com/reset", method="POST")
+
+# Agent reads a template file
+verifier.file_accessed("templates/password_reset.html")
+
+# Agent sends response
+verifier.message_sent({
+    "role": "assistant",
+    "content": "I've sent a password reset link to your email.",
+})
+
+# Verify the session
+result = verifier.verify()
+chain = verifier.get_chain()
+print(f"Actions: {len(chain['entries'])}")
+print(f"Verified: {result}")
+```
+
+## Content Redaction
+
+When `redact_content=True` (default), these fields are automatically redacted in message data:
+
+- `body`
+- `content`
+- `message`
+- `text`
+- `password`
+- `token`
+
+Standard pruv auto-redaction patterns (Stripe keys, AWS keys, GitHub tokens, etc.) also apply.
+
+```python
+# Content is redacted before entering the chain
+verifier.message_received({
+    "role": "user",
+    "content": "My API key is sk_live_abc123",  # Will be redacted
+})
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Alerting" icon="bell" href="/guides/alerting">
+    Detect anomalous agent behavior automatically.
+  </Card>
+  <Card title="Chain Explorer" icon="timeline" href="/guides/chain-explorer">
+    View and inspect chains in the dashboard.
+  </Card>
+</CardGroup>

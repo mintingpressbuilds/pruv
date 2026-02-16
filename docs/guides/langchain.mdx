@@ -1,0 +1,202 @@
+---
+title: "LangChain Integration"
+description: "Add cryptographic verification to LangChain agents with PruvCallbackHandler. Every LLM call, tool use, and chain execution gets a verified receipt."
+---
+
+# LangChain Integration
+
+pruv integrates with LangChain via `PruvCallbackHandler`, which hooks into LangChain's callback system. Every LLM call, tool execution, chain run, and agent action is automatically recorded as a verified entry in a pruv chain.
+
+## Installation
+
+```bash
+pip install pruv langchain
+```
+
+## Quick Start
+
+```python
+from pruv.integrations.langchain import PruvCallbackHandler
+from langchain.agents import initialize_agent, load_tools
+from langchain.llms import OpenAI
+
+# Create the handler
+handler = PruvCallbackHandler(
+    agent_name="research-assistant",
+    api_key="pv_live_xxx",
+)
+
+# Use it with any LangChain component
+llm = OpenAI(temperature=0)
+tools = load_tools(["serpapi", "llm-math"], llm=llm)
+agent = initialize_agent(tools, llm, callbacks=[handler])
+
+agent.run("What is the population of Tokyo divided by 3?")
+
+# Verify the chain
+chain = handler.pruv_agent.chain()
+result = handler.pruv_agent.verify()
+```
+
+## Constructor
+
+```python
+PruvCallbackHandler(
+    agent_name: str = "langchain-agent",
+    api_key: str | None = None,
+    endpoint: str = "https://api.pruv.dev",
+    record_prompts: bool = False,
+    sensitive_keys: list[str] | None = None,
+)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `agent_name` | `str` | `"langchain-agent"` | Name for the pruv chain. |
+| `api_key` | `str \| None` | `None` | pruv API key. Falls back to `PRUV_API_KEY` env var. |
+| `endpoint` | `str` | `"https://api.pruv.dev"` | API endpoint URL. |
+| `record_prompts` | `bool` | `False` | Whether to record full prompt text. Set to `False` to avoid storing sensitive input. |
+| `sensitive_keys` | `list[str] \| None` | `None` | Additional keys to redact in action data. |
+
+## What Gets Recorded
+
+The handler captures events across all LangChain components:
+
+### LLM Events
+
+| Event | Operation | Data Captured |
+|-------|-----------|---------------|
+| LLM start | `llm.start` | Model name, prompt hash (or full prompt if `record_prompts=True`) |
+| LLM end | `llm.complete` | Token count, generation hash |
+| LLM error | `llm.error` | Error type and message |
+
+### Tool Events
+
+| Event | Operation | Data Captured |
+|-------|-----------|---------------|
+| Tool start | `tool.start` | Tool name, input hash |
+| Tool end | `tool.complete` | Output hash |
+| Tool error | `tool.error` | Error type and message |
+
+### Chain Events
+
+| Event | Operation | Data Captured |
+|-------|-----------|---------------|
+| Chain start | `chain.start` | Chain type, input keys |
+| Chain end | `chain.complete` | Output keys |
+| Chain error | `chain.error` | Error type and message |
+
+### Agent Events
+
+| Event | Operation | Data Captured |
+|-------|-----------|---------------|
+| Agent action | `agent.action` | Tool name, tool input hash |
+| Agent finish | `agent.finish` | Final output hash |
+
+## Accessing the Chain
+
+After execution, access the verification chain through the handler:
+
+```python
+# Get the underlying pruv Agent
+agent = handler.pruv_agent
+
+# Verify the chain
+result = agent.verify()
+
+# Get all entries
+chain = agent.chain()
+for entry in chain["entries"]:
+    print(f"  {entry['operation']}: {entry['xy'][:16]}...")
+
+# Export as standalone HTML
+html = agent.export()
+```
+
+## Example: RAG Pipeline
+
+```python
+from pruv.integrations.langchain import PruvCallbackHandler
+from langchain.chains import RetrievalQA
+from langchain.vectorstores import Chroma
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.llms import OpenAI
+
+handler = PruvCallbackHandler(
+    agent_name="rag-pipeline",
+    api_key="pv_live_xxx",
+)
+
+# Set up RAG
+vectorstore = Chroma.from_documents(docs, OpenAIEmbeddings())
+qa = RetrievalQA.from_chain_type(
+    llm=OpenAI(),
+    retriever=vectorstore.as_retriever(),
+    callbacks=[handler],
+)
+
+answer = qa.run("What is our refund policy?")
+
+# The chain now contains entries for:
+# 1. chain.start (RetrievalQA)
+# 2. llm.start (embedding query)
+# 3. llm.complete
+# 4. llm.start (generating answer)
+# 5. llm.complete
+# 6. chain.complete
+```
+
+## Example: Agent with Tools
+
+```python
+from pruv.integrations.langchain import PruvCallbackHandler
+from langchain.agents import AgentType, initialize_agent, load_tools
+from langchain.chat_models import ChatOpenAI
+
+handler = PruvCallbackHandler(
+    agent_name="tool-agent",
+    api_key="pv_live_xxx",
+    record_prompts=True,  # Record full prompts for debugging
+)
+
+llm = ChatOpenAI(model="gpt-4", temperature=0)
+tools = load_tools(["serpapi", "llm-math", "wikipedia"], llm=llm)
+
+agent = initialize_agent(
+    tools,
+    llm,
+    agent=AgentType.OPENAI_FUNCTIONS,
+    callbacks=[handler],
+)
+
+result = agent.run("What year was the Eiffel Tower built and what is that year squared?")
+
+# Verify everything the agent did
+verification = handler.pruv_agent.verify()
+print(f"Verified: {verification}")
+```
+
+## Prompt Recording
+
+By default, `record_prompts=False` to avoid storing potentially sensitive user input. When enabled, full prompt text is included in action data (and subject to auto-redaction).
+
+```python
+# Record prompts for debugging/auditing
+handler = PruvCallbackHandler(
+    agent_name="debug-agent",
+    api_key="pv_live_xxx",
+    record_prompts=True,
+    sensitive_keys=["password", "ssn"],  # Extra redaction
+)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="CrewAI Integration" icon="users" href="/guides/crewai">
+    Verify CrewAI multi-agent workflows.
+  </Card>
+  <Card title="Alerting" icon="bell" href="/guides/alerting">
+    Set up anomaly detection on your chains.
+  </Card>
+</CardGroup>

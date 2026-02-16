@@ -4,7 +4,9 @@ export function Footer() {
   return (
     <footer className="footer">
       <div className="container">
-        <div className="footer-primitive">X &rarr; Y &rarr; Proof.</div>
+        <div className="footer-primitive">
+          pruv &mdash; prove what your AI agent did.
+        </div>
         <div className="footer-links">
           <a href="https://docs.pruv.dev" target="_blank" rel="noopener noreferrer">docs</a>
           <a href="https://app.pruv.dev" target="_blank" rel="noopener noreferrer">dashboard</a>
