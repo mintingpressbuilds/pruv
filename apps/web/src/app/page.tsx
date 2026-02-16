@@ -135,28 +135,28 @@ def send_notification(user, message):
               <div className="step-number">1</div>
               <div className="step-title">Something happens in your system</div>
               <div className="step-desc">
-                A payment, a deployment, an agent action &mdash; any event.
+                A payment settles. A deployment runs. An agent acts. Any state change.
               </div>
             </div>
             <div className="step-item">
               <div className="step-number">2</div>
-              <div className="step-title">The event data is hashed (SHA-256)</div>
+              <div className="step-title">Before and after are hashed (SHA-256)</div>
               <div className="step-desc">
-                Before state, after state, operation, timestamp &mdash; all hashed.
+                Balance before, balance after. Config before, config after. Every transition captured.
               </div>
             </div>
             <div className="step-item">
               <div className="step-number">3</div>
-              <div className="step-title">The hash includes the previous entry&apos;s hash</div>
+              <div className="step-title">Each hash links to the one before it</div>
               <div className="step-desc">
-                Each receipt is linked to every receipt before it. Break one, the chain breaks.
+                Every receipt chains to the previous. Alter a single payment, a single deploy &mdash; the chain breaks.
               </div>
             </div>
             <div className="step-item">
               <div className="step-number">4</div>
               <div className="step-title">A signed receipt is stored</div>
               <div className="step-desc">
-                Ed25519 digital signature. Independently verifiable by anyone.
+                Ed25519 digital signature. Independently verifiable by anyone. Every dollar accounted for.
               </div>
             </div>
           </div>
