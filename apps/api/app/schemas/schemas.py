@@ -284,3 +284,19 @@ class DashboardStatsResponse(BaseModel):
     total_receipts: int
     verified_percentage: float
     recent_activity: list[ActivityItemResponse]
+
+
+# ──── Alert Schemas ────
+
+
+class AlertResponse(BaseModel):
+    rule: str
+    severity: str
+    message: str
+    entry_id: str | None = None
+
+
+class ChainAlertsResponse(BaseModel):
+    chain_id: str
+    alerts: list[AlertResponse]
+    analyzed_at: float

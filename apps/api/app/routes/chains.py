@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import HTMLResponse
 
 from ..core.dependencies import check_rate_limit, get_current_user, require_write
 from ..core.rate_limit import RateLimitResult
 from ..schemas.schemas import (
+    ChainAlertsResponse,
     ChainCreate,
     ChainListResponse,
     ChainResponse,
@@ -21,7 +24,9 @@ from ..schemas.schemas import (
     EntryResponse,
     EntryValidationResponse,
 )
+from ..services.alerts import analyze_chain as run_alert_analysis
 from ..services.chain_service import chain_service
+from ..services.webhook_service import get_webhook_service
 
 router = APIRouter(prefix="/v1/chains", tags=["chains"])
 
@@ -121,6 +126,173 @@ async def share_chain(
     if not result:
         raise HTTPException(status_code=404, detail="Chain not found")
     return result
+
+
+@router.get("/{chain_id}/alerts", response_model=ChainAlertsResponse)
+async def get_chain_alerts(
+    chain_id: str,
+    user: dict[str, Any] = Depends(get_current_user),
+    _rl: RateLimitResult = Depends(check_rate_limit),
+):
+    """Analyze a chain for anomalies and return alerts."""
+    chain = chain_service.get_chain(chain_id, user["id"])
+    if not chain:
+        raise HTTPException(status_code=404, detail="Chain not found")
+    entries = chain_service.list_entries(chain_id, offset=0, limit=10000)
+    alerts = run_alert_analysis(chain, entries)
+
+    # Queue webhook deliveries for warning+ alerts
+    webhook_svc = get_webhook_service()
+    critical_alerts = [a for a in alerts if a.severity.value in ("warning", "critical")]
+    if critical_alerts:
+        webhook_svc.queue_delivery(
+            event="alert.triggered",
+            data={
+                "chain_id": chain_id,
+                "alert_count": len(critical_alerts),
+                "alerts": [
+                    {"rule": a.rule, "severity": a.severity.value, "message": a.message}
+                    for a in critical_alerts
+                ],
+            },
+            user_id=user["id"],
+        )
+
+    return {
+        "chain_id": chain_id,
+        "alerts": [
+            {
+                "rule": a.rule,
+                "severity": a.severity.value,
+                "message": a.message,
+                "entry_id": a.entry_id,
+            }
+            for a in alerts
+        ],
+        "analyzed_at": time.time(),
+    }
+
+
+@router.get("/{chain_id}/export", response_class=HTMLResponse)
+async def export_chain(
+    chain_id: str,
+    user: dict[str, Any] = Depends(get_current_user),
+    _rl: RateLimitResult = Depends(check_rate_limit),
+):
+    """Export a chain as a self-verifying HTML document."""
+    chain = chain_service.get_chain(chain_id, user["id"])
+    if not chain:
+        raise HTTPException(status_code=404, detail="Chain not found")
+    entries = chain_service.list_entries(chain_id, offset=0, limit=10000)
+    verification = chain_service.verify_chain(chain_id)
+
+    import html as html_mod
+    import json
+
+    name = html_mod.escape(chain.get("name", chain_id))
+    verified = verification.get("valid", False)
+    status_text = "VERIFIED" if verified else "BROKEN"
+    status_color = "#00dc73" if verified else "#ef4444"
+
+    entries_json = json.dumps(
+        [
+            {
+                "index": e["index"],
+                "operation": e["operation"],
+                "x": e["x"],
+                "y": e["y"],
+                "xy": e["xy"],
+                "timestamp": e["timestamp"],
+            }
+            for e in entries
+        ],
+        indent=2,
+    )
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>pruv chain: {name}</title>
+<style>
+  body {{ font-family: 'JetBrains Mono', monospace; background: #0f1117; color: #f3f4f6; margin: 0; padding: 2rem; }}
+  h1 {{ font-size: 1.2rem; color: #00dc73; margin-bottom: 0.5rem; }}
+  .status {{ display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: bold; background: {status_color}20; color: {status_color}; border: 1px solid {status_color}40; margin-bottom: 1rem; }}
+  .meta {{ font-size: 0.75rem; color: #6b7280; margin-bottom: 2rem; }}
+  .entry {{ border-left: 2px solid #2a2e3a; padding: 0.75rem 1rem; margin-bottom: 0.5rem; }}
+  .entry:hover {{ border-color: #00dc73; }}
+  .op {{ color: #f3f4f6; font-weight: bold; }}
+  .hash {{ color: #00dc73; font-size: 0.7rem; opacity: 0.7; }}
+  .ts {{ color: #6b7280; font-size: 0.7rem; }}
+  .footer {{ margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #2a2e3a; font-size: 0.7rem; color: #6b7280; }}
+  #verify-btn {{ background: #00dc73; color: #0f1117; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-family: inherit; font-weight: bold; font-size: 0.8rem; }}
+  #verify-btn:hover {{ background: #00c466; }}
+  #verify-result {{ margin-top: 0.5rem; font-size: 0.75rem; }}
+</style>
+</head>
+<body>
+<h1>pruv chain: {name}</h1>
+<span class="status">{status_text}</span>
+<div class="meta">{len(entries)} entries &middot; chain id: {html_mod.escape(chain_id)}</div>
+<div id="entries"></div>
+<button id="verify-btn" onclick="verifyChain()">re-verify chain</button>
+<div id="verify-result"></div>
+<div class="footer">exported from pruv &middot; self-verifying artifact</div>
+<script>
+const entries = {entries_json};
+
+// Render entries
+const container = document.getElementById('entries');
+entries.forEach(e => {{
+  const div = document.createElement('div');
+  div.className = 'entry';
+  div.innerHTML = `
+    <span class="ts">#${{e.index}} &middot; ${{new Date(e.timestamp * 1000).toISOString()}}</span><br>
+    <span class="op">${{e.operation}}</span><br>
+    <span class="hash">${{e.xy}}</span>
+  `;
+  container.appendChild(div);
+}});
+
+// Self-verification using SubtleCrypto
+async function sha256(msg) {{
+  const buf = new TextEncoder().encode(msg);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}}
+
+async function verifyChain() {{
+  const result = document.getElementById('verify-result');
+  result.textContent = 'verifying...';
+  let valid = true;
+  let breakIdx = null;
+
+  for (let i = 0; i < entries.length; i++) {{
+    const e = entries[i];
+    // Check chain rule
+    if (i === 0) {{
+      if (e.x !== 'GENESIS') {{ valid = false; breakIdx = i; break; }}
+    }} else {{
+      if (e.x !== entries[i-1].y) {{ valid = false; breakIdx = i; break; }}
+    }}
+    // Check proof
+    const raw = e.x + '|' + e.operation + '|' + e.y + '|' + String(e.timestamp);
+    const hash = await sha256(raw);
+    const expected = 'xy_' + hash;
+    if (e.xy !== expected) {{ valid = false; breakIdx = i; break; }}
+  }}
+
+  if (valid) {{
+    result.innerHTML = '<span style="color:#00dc73">chain verified — all ' + entries.length + ' entries valid</span>';
+  }} else {{
+    result.innerHTML = '<span style="color:#ef4444">chain broken at entry #' + breakIdx + '</span>';
+  }}
+}}
+</script>
+</body>
+</html>"""
+
+    return HTMLResponse(content=html_content)
 
 
 @router.post("/{chain_id}/undo", response_model=EntryResponse)

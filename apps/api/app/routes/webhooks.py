@@ -30,6 +30,7 @@ VALID_EVENTS = [
     "receipt.created",
     "verification.completed",
     "verification.failed",
+    "alert.triggered",
 ]
 
 _BLOCKED_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0", "[::1]"}
