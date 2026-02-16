@@ -12,19 +12,113 @@ pip install pruv
 
 ## Quick Start
 
-```python
-from pruv import xy_wrap
+Wrap any AI agent in 3 lines. Every action gets hashed, chained, and verified.
 
-wrapped = xy_wrap(my_agent)
-result = await wrapped.run("Fix the bug")
-print(result.receipt.hash)
+```python
+import pruv
+
+agent = pruv.Agent("my-agent", api_key="pv_live_xxx")
+agent.action("read_email", {"from": "boss@co.com"})
+agent.action("send_reply", {"to": "boss@co.com", "body": "done"})
+
+chain = agent.chain()       # full verified history
+result = agent.verify()     # cryptographic verification
+```
+
+## @verified Decorator
+
+Automatically record every function call as a verified action.
+
+```python
+import pruv
+
+pruv.init("my-agent", api_key="pv_live_xxx")
+
+@pruv.verified
+def send_email(to, subject, body):
+    smtp.send(to, subject, body)
+
+@pruv.verified(action_type="email.send", sensitive_keys=["body"])
+def send_private(to, subject, body):
+    smtp.send(to, subject, body)
+```
+
+Each call records `action.start` and `action.complete` (or `action.error` on failure).
+
+## LangChain
+
+```bash
+pip install pruv[langchain]
+```
+
+```python
+from pruv.integrations.langchain import PruvCallbackHandler
+
+handler = PruvCallbackHandler(
+    agent_name="my-langchain-agent",
+    api_key="pv_live_xxx",
+)
+
+agent = initialize_agent(tools, llm, callbacks=[handler])
+agent.run("do something")
+
+chain = handler.pruv_agent.chain()
+```
+
+Records all LLM calls, tool usage, chain execution, and agent actions.
+
+## CrewAI
+
+```bash
+pip install pruv[crewai]
+```
+
+```python
+from pruv.integrations.crewai import pruv_wrap_crew
+
+crew = Crew(agents=[...], tasks=[...])
+verified_crew = pruv_wrap_crew(crew, agent_name="my-crew", api_key="pv_live_xxx")
+result = verified_crew.kickoff()
+
+chain = verified_crew._pruv_agent.chain()
+```
+
+Records crew kickoff, individual agent task execution, and results.
+
+## OpenClaw
+
+```python
+from pruv.integrations.openclaw import OpenClawVerifier
+
+verifier = OpenClawVerifier(api_key="pv_live_xxx", agent_name="my-openclaw")
+
+verifier.before_skill("search", {"query": "latest news"})
+verifier.after_skill("search", results, success=True)
+verifier.file_accessed("/app/data.json", "read")
+verifier.api_called("https://api.example.com/v1", "GET", 200)
+
+chain = verifier.get_chain()
+```
+
+Records skill execution, messages, file access, and API calls.
+
+## Sensitive Data
+
+Sensitive fields are automatically hashed (SHA-256) instead of stored raw:
+
+```python
+agent.action("send_email", {"to": "user@co.com", "body": "secret"}, sensitive_keys=["body"])
+# body stored as: {"_redacted": true, "_hash": "a3f8..."}
 ```
 
 ## Features
 
+- **Agent**: Wrap any AI agent with automatic action verification
+- **@verified**: Decorator for automatic function call recording
 - **Scanner**: Scan any project for files, imports, env vars, frameworks, and services
 - **xy_wrap()**: Universal wrapper for any agent, function, or workflow
 - **Checkpoints**: Create snapshots, preview restore diffs, quick undo
 - **Approval Gates**: Webhook-based human approval for high-risk operations
 - **Cloud Sync**: Sync chains to api.pruv.dev
+- **Integrations**: LangChain, CrewAI, OpenClaw
 - **CLI**: `pruv scan`, `pruv verify`, `pruv export`, `pruv undo`, `pruv upload`

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Filter } from "lucide-react";
 import { EntryNode } from "./entry-node";
 import { EntryDetail } from "./entry-detail";
 import type { Entry, EntryValidation } from "@/lib/types";
@@ -11,6 +12,9 @@ interface ChainTimelineProps {
   validations?: EntryValidation[];
   chainId: string;
   isLoading?: boolean;
+  actionFilter?: string;
+  onActionFilterChange?: (filter: string) => void;
+  actionTypes?: string[];
 }
 
 export function ChainTimeline({
@@ -18,6 +22,9 @@ export function ChainTimeline({
   validations = [],
   chainId,
   isLoading = false,
+  actionFilter = "",
+  onActionFilterChange,
+  actionTypes = [],
 }: ChainTimelineProps) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
@@ -57,10 +64,19 @@ export function ChainTimeline({
           <div className="h-3 w-3 rounded-full bg-[var(--text-tertiary)]" />
         </div>
         <p className="text-sm text-[var(--text-secondary)]">
-          no entries in this chain yet
+          {actionFilter ? "no entries match this filter" : "no entries in this chain yet"}
         </p>
         <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-          entries will appear here as state transitions are recorded
+          {actionFilter ? (
+            <button
+              onClick={() => onActionFilterChange?.("")}
+              className="text-pruv-400 hover:text-pruv-300"
+            >
+              clear filter
+            </button>
+          ) : (
+            "entries will appear here as state transitions are recorded"
+          )}
         </p>
       </div>
     );
@@ -69,7 +85,7 @@ export function ChainTimeline({
   return (
     <div className="relative">
       {/* Timeline header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="h-2 w-2 rounded-full bg-pruv-500 animate-pulse" />
           <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
@@ -78,19 +94,43 @@ export function ChainTimeline({
           <span className="rounded-full bg-[var(--surface-tertiary)] px-2 py-0.5 text-[10px] font-mono text-[var(--text-tertiary)]">
             {entries.length} entries
           </span>
+
+          {/* Action type filter */}
+          {actionTypes.length > 1 && onActionFilterChange && (
+            <div className="flex items-center gap-1.5 ml-2">
+              <Filter size={12} className="text-[var(--text-tertiary)]" />
+              <select
+                value={actionFilter}
+                onChange={(e) => onActionFilterChange(e.target.value)}
+                className="rounded-md border border-[var(--border)] bg-[var(--surface-secondary)] px-2 py-1 text-[10px] text-[var(--text-secondary)] focus:border-pruv-500/50 focus:outline-none"
+              >
+                <option value="">all actions</option>
+                {actionTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
+
         <div className="flex items-center gap-4 text-[10px] text-[var(--text-tertiary)]">
           <span className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-pruv-500" />
-            signed
+            <span className="h-2 w-2 rounded-full bg-green-500" />
+            complete
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-blue-500" />
+            start
           </span>
           <span className="flex items-center gap-1">
             <span className="h-2 w-2 rounded-full bg-red-500" />
-            broken
+            error
           </span>
           <span className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-[var(--surface-tertiary)] border border-[var(--border-secondary)]" />
-            unsigned
+            <span className="h-2 w-2 rounded-full bg-pruv-500" />
+            signed
           </span>
         </div>
       </div>

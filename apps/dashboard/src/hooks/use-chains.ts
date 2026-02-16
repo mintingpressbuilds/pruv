@@ -9,6 +9,7 @@ import {
 import { chains } from "@/lib/api";
 import type {
   Chain,
+  ChainAlerts,
   ChainFilters,
   EntryValidation,
   PaginatedResponse,
@@ -25,6 +26,8 @@ export const chainKeys = {
   detail: (id: string) => [...chainKeys.details(), id] as const,
   verification: (id: string) =>
     [...chainKeys.detail(id), "verification"] as const,
+  alerts: (id: string) =>
+    [...chainKeys.detail(id), "alerts"] as const,
 };
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
@@ -59,6 +62,18 @@ export function useChainVerification(
   return useQuery({
     queryKey: chainKeys.verification(id),
     queryFn: () => chains.verify(id),
+    enabled: !!id,
+    ...options,
+  });
+}
+
+export function useChainAlerts(
+  id: string,
+  options?: Partial<UseQueryOptions<ChainAlerts>>
+) {
+  return useQuery({
+    queryKey: chainKeys.alerts(id),
+    queryFn: () => chains.alerts(id),
     enabled: !!id,
     ...options,
   });
