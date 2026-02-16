@@ -430,6 +430,11 @@ class TestOAuthSecurity:
         assert resp.status_code == 501
         assert "not configured" in resp.json()["detail"]
 
+    def test_github_oauth_redirect_unconfigured(self):
+        resp = client.get("/v1/auth/oauth/github", follow_redirects=False)
+        assert resp.status_code == 501
+        assert "not configured" in resp.json()["detail"]
+
     def test_google_oauth_unconfigured(self):
         resp = client.post("/v1/auth/oauth/google?code=testcode1234")
         assert resp.status_code == 501
