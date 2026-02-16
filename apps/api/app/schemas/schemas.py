@@ -300,3 +300,17 @@ class ChainAlertsResponse(BaseModel):
     chain_id: str
     alerts: list[AlertResponse]
     analyzed_at: float
+
+
+# ──── Payment Verification Schemas ────
+
+
+class PaymentVerifyResponse(BaseModel):
+    chain_id: str
+    payment_count: int
+    verified_count: int
+    breaks: list[int] = Field(default_factory=list)
+    all_valid: bool
+    final_balances: dict[str, float] = Field(default_factory=dict)
+    total_volume: float
+    message: str

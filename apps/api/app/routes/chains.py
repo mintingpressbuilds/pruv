@@ -23,6 +23,7 @@ from ..schemas.schemas import (
     EntryListResponse,
     EntryResponse,
     EntryValidationResponse,
+    PaymentVerifyResponse,
 )
 from ..services.alerts import analyze_chain as run_alert_analysis
 from ..services.chain_service import chain_service
@@ -112,6 +113,24 @@ async def verify_chain(
     if not chain:
         raise HTTPException(status_code=404, detail="Chain not found")
     result = chain_service.verify_chain(chain_id)
+    return result
+
+
+@router.get("/{chain_id}/verify-payments", response_model=PaymentVerifyResponse)
+async def verify_payments(
+    chain_id: str,
+    user: dict[str, Any] = Depends(get_current_user),
+    _rl: RateLimitResult = Depends(check_rate_limit),
+):
+    """Verify all payment entries in a chain.
+
+    Walks the chain, finds entries with xy_proof in metadata,
+    recomputes each BalanceProof, and verifies hashes match.
+    """
+    chain = chain_service.get_chain(chain_id, user["id"])
+    if not chain:
+        raise HTTPException(status_code=404, detail="Chain not found")
+    result = chain_service.verify_payments(chain_id)
     return result
 
 
