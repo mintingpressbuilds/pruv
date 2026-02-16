@@ -45,7 +45,7 @@ export function IntegrationTabs() {
           </button>
         ))}
       </div>
-      <CodeBlock code={INTEGRATIONS[active].code} label="python" />
+      <CodeBlock key={INTEGRATIONS[active].name} code={INTEGRATIONS[active].code} label="python" />
       <p className="int-subtext">
         More integrations coming. Any system that performs actions can be verified.
       </p>

@@ -493,6 +493,9 @@ a:hover { text-decoration: underline; }
   white-space: pre;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
 }
 
 .cb-pre::-webkit-scrollbar {
@@ -557,6 +560,8 @@ a:hover { text-decoration: underline; }
   margin-top: -1px;
   border-radius: 0 8px 8px 8px;
   min-height: 180px;
+  display: flex;
+  flex-direction: column;
 }
 
 .int-subtext {
@@ -615,6 +620,8 @@ a:hover { text-decoration: underline; }
   margin-top: -1px;
   border-radius: 0 8px 8px 8px;
   min-height: 200px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── Deeper Payments (mini-section) ── */
