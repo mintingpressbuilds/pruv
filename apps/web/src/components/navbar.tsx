@@ -10,6 +10,8 @@ const links = [
   { href: "/industries", label: "industries" },
   { href: "/security", label: "security" },
   { href: "https://docs.pruv.dev", label: "docs", external: true },
+  { href: "https://app.pruv.dev", label: "dashboard", external: true },
+  { href: "https://github.com/mintingpressbuilds/pruv", label: "github", external: true },
 ];
 
 function SunIcon() {
@@ -96,6 +98,12 @@ export function Navbar() {
           </button>
         </div>
       </nav>
+      {mobileOpen && (
+        <div
+          className="navbar-mobile-backdrop"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
       <div className={`navbar-mobile-menu${mobileOpen ? " open" : ""}`}>
         {links.map((link) =>
           link.external ? (

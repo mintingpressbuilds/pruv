@@ -1,7 +1,23 @@
 import type { Metadata } from "next";
+import { JetBrains_Mono, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--mono",
+  display: "swap",
+});
+
+const instrumentSans = Instrument_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -46,7 +62,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${jetbrainsMono.variable} ${instrumentSans.variable}`}>
       <body>
         <Navbar />
         <main>{children}</main>

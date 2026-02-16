@@ -270,10 +270,6 @@ export const auth = {
     window.location.href = `${API_BASE_URL}/v1/auth/oauth/github`;
   },
 
-  signInWithGoogle(): void {
-    window.location.href = `${API_BASE_URL}/v1/auth/oauth/google`;
-  },
-
   async getMe(): Promise<User> {
     return request<User>("/v1/auth/me");
   },
