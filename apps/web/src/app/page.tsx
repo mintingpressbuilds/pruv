@@ -1,6 +1,7 @@
 import { HeroChainDemo } from "@/components/hero-chain-demo";
 import { CodeBlock } from "@/components/code-block";
 import { UseCaseTabs } from "@/components/use-case-tabs";
+import { DeeperPayments } from "@/components/deeper-payments";
 import { IntegrationTabs } from "@/components/integration-tabs";
 import { AlertDemo } from "@/components/alert-demo";
 import { ReceiptCard } from "@/components/receipt-card";
@@ -59,6 +60,9 @@ export default function HomePage() {
           <UseCaseTabs />
         </div>
       </div>
+
+      {/* ── Deeper where it matters (continuation of S3) ── */}
+      <DeeperPayments />
 
       {/* ── S4: Decorator ── */}
       <div className="section">
