@@ -7,7 +7,7 @@
 
 **Prove what happened.**
 
-Cryptographic verification primitive for any system. Two lines of code. Full proof chain.
+Cryptographic verification protocol for any system. Two lines of code. Full proof chain.
 
 ```
 pip install pruv
@@ -47,7 +47,7 @@ print(result.receipt)
 
 -----
 
-### The primitive
+### The protocol
 
 Every operation transforms state. pruv captures both sides and creates proof.
 
@@ -259,7 +259,7 @@ chain = XYChain(name="local")
 wrapped = xy_wrap(my_agent, api_key="pv_live_...")
 ```
 
-xycore is zero dependencies. Standard library only. Works offline. Works without an account. Works without the cloud. The primitive needs nothing.
+xycore is zero dependencies. Standard library only. Works offline. Works without an account. Works without the cloud. The protocol needs nothing.
 
 The cloud gives you the dashboard, team collaboration, shareable links, embeddable badges, and PDF export. It's optional.
 
@@ -278,7 +278,7 @@ The cloud gives you the dashboard, team collaboration, shareable links, embeddab
 ### Install
 
 ```bash
-pip install xycore    # primitive only, zero deps
+pip install xycore    # protocol only, zero deps
 pip install pruv      # full SDK
 ```
 
@@ -288,7 +288,7 @@ pip install pruv      # full SDK
 - [Dashboard](https://app.pruv.dev) — chain explorer, time travel, receipts
 - [Docs](https://docs.pruv.dev) — full documentation
 - [API Reference](https://api.pruv.dev/docs) — REST API
-- [xycore on PyPI](https://pypi.org/project/xycore/) — zero-dependency primitive
+- [xycore on PyPI](https://pypi.org/project/xycore/) — zero-dependency protocol
 - [pruv on PyPI](https://pypi.org/project/pruv/) — full SDK
 - [Follow on X](https://x.com/pruvxy) — @pruvxy
 
