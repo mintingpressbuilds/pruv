@@ -226,6 +226,68 @@ class ChainService:
             "break_index": break_index,
         }
 
+    def verify_payments(self, chain_id: str) -> dict[str, Any]:
+        """Verify all payment entries in a chain.
+
+        Walks the chain, finds entries with xy_proof data,
+        recomputes each BalanceProof, and verifies hashes match.
+        """
+        from xycore.balance import BalanceProof
+
+        entries_data = self._entries.get(chain_id, [])
+
+        payment_count = 0
+        verified_count = 0
+        breaks: list[int] = []
+        balances: dict[str, float] = {}
+        total_volume = 0.0
+
+        for i, entry in enumerate(entries_data):
+            # xy_proof can be in metadata directly, or nested under
+            # metadata.data (when created via Agent -> PruvClient)
+            meta = entry.get("metadata", {})
+            xy_data = meta.get("xy_proof")
+            if xy_data is None:
+                nested = meta.get("data", {})
+                if isinstance(nested, dict):
+                    xy_data = nested.get("xy_proof")
+            if xy_data is None:
+                continue
+
+            payment_count += 1
+
+            try:
+                valid = BalanceProof.verify_proof(xy_data)
+                if valid:
+                    verified_count += 1
+                    for party, bal in xy_data.get("after", {}).items():
+                        balances[party] = bal
+                    total_volume += xy_data.get("amount", 0)
+                else:
+                    breaks.append(i)
+            except Exception:
+                breaks.append(i)
+
+        all_valid = len(breaks) == 0 and payment_count > 0
+
+        if payment_count == 0:
+            message = "No payment entries found"
+        elif all_valid:
+            message = f"✓ {verified_count}/{payment_count} payments verified"
+        else:
+            message = f"✗ {len(breaks)} payment(s) failed verification"
+
+        return {
+            "chain_id": chain_id,
+            "payment_count": payment_count,
+            "verified_count": verified_count,
+            "breaks": breaks,
+            "all_valid": all_valid,
+            "final_balances": balances,
+            "total_volume": total_volume,
+            "message": message,
+        }
+
     def create_share_link(self, chain_id: str, user_id: str) -> dict[str, Any] | None:
         chain = self.get_chain(chain_id, user_id)
         if not chain:

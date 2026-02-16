@@ -12,6 +12,7 @@ import type {
   ChainAlerts,
   ChainFilters,
   EntryValidation,
+  PaymentVerification,
   PaginatedResponse,
 } from "@/lib/types";
 
@@ -28,6 +29,8 @@ export const chainKeys = {
     [...chainKeys.detail(id), "verification"] as const,
   alerts: (id: string) =>
     [...chainKeys.detail(id), "alerts"] as const,
+  paymentVerification: (id: string) =>
+    [...chainKeys.detail(id), "payment-verification"] as const,
 };
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
@@ -74,6 +77,18 @@ export function useChainAlerts(
   return useQuery({
     queryKey: chainKeys.alerts(id),
     queryFn: () => chains.alerts(id),
+    enabled: !!id,
+    ...options,
+  });
+}
+
+export function usePaymentVerification(
+  id: string,
+  options?: Partial<UseQueryOptions<PaymentVerification>>
+) {
+  return useQuery({
+    queryKey: chainKeys.paymentVerification(id),
+    queryFn: () => chains.verifyPayments(id),
     enabled: !!id,
     ...options,
   });

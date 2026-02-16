@@ -24,6 +24,9 @@ from .client import PruvClient
 from .agent import Agent, ActionError
 from .decorators import init, verified
 
+# Payment
+from .payment import PaymentChain, PaymentReceipt, PaymentVerification
+
 __version__ = "1.0.0"
 
 __all__ = [
@@ -53,4 +56,8 @@ __all__ = [
     "ActionError",
     "init",
     "verified",
+    # Payment
+    "PaymentChain",
+    "PaymentReceipt",
+    "PaymentVerification",
 ]
