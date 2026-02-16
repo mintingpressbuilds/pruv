@@ -295,7 +295,7 @@ async function verifyChain() {{
       if (e.x !== entries[i-1].y) {{ valid = false; breakIdx = i; break; }}
     }}
     // Check proof
-    const raw = e.x + '|' + e.operation + '|' + e.y + '|' + String(e.timestamp);
+    const raw = e.x + ':' + e.operation + ':' + e.y + ':' + String(e.timestamp);
     const hash = await sha256(raw);
     const expected = 'xy_' + hash;
     if (e.xy !== expected) {{ valid = false; breakIdx = i; break; }}

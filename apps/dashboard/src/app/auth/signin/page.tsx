@@ -77,18 +77,6 @@ export default function SignInPage() {
             continue with github
           </motion.button>
 
-          <motion.button
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            onClick={() => auth.signInWithGoogle()}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] px-4 py-3.5 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--surface-tertiary)] hover:border-[var(--border-secondary)] transition-colors duration-200"
-          >
-            <GoogleIcon />
-            continue with google
-          </motion.button>
         </div>
 
         {/* Divider */}

@@ -342,13 +342,27 @@ a:hover { text-decoration: underline; }
 
 .hero-demo-code pre {
   font-family: var(--mono);
-  font-size: 12.5px;
-  line-height: 1.8;
+  font-size: 12px;
+  line-height: 1.7;
   white-space: pre;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: var(--border2) transparent;
+  padding-bottom: 12px;
+}
+
+.hero-demo-code pre::-webkit-scrollbar {
+  height: 6px;
+}
+
+.hero-demo-code pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hero-demo-code pre::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 3px;
 }
 
 /* chain output */
@@ -485,17 +499,14 @@ a:hover { text-decoration: underline; }
 
 .cb-pre {
   font-family: var(--mono);
-  font-size: 13px;
-  line-height: 1.8;
-  padding: 16px 20px 20px;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 14px 20px 18px;
   overflow-x: auto;
   overflow-y: hidden;
   white-space: pre;
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-  flex: 1;
-  display: flex;
-  align-items: flex-start;
+  scrollbar-color: var(--border2) transparent;
 }
 
 .cb-pre::-webkit-scrollbar {
@@ -507,7 +518,7 @@ a:hover { text-decoration: underline; }
 }
 
 .cb-pre::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: var(--border2);
   border-radius: 3px;
 }
 
@@ -559,9 +570,6 @@ a:hover { text-decoration: underline; }
 .int-tabs .cb {
   margin-top: -1px;
   border-radius: 0 8px 8px 8px;
-  min-height: 180px;
-  display: flex;
-  flex-direction: column;
 }
 
 .int-subtext {
@@ -619,9 +627,26 @@ a:hover { text-decoration: underline; }
 .uc-tabs .cb {
   margin-top: -1px;
   border-radius: 0 8px 8px 8px;
-  min-height: 200px;
-  display: flex;
-  flex-direction: column;
+}
+
+.uc-tabs .cb-pre {
+  max-height: 320px;
+  overflow-y: auto;
+  scrollbar-color: var(--border2) transparent;
+}
+
+.uc-tabs .cb-pre::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.uc-tabs .cb-pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.uc-tabs .cb-pre::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 3px;
 }
 
 /* ── Deeper Payments (mini-section) ── */
@@ -1105,13 +1130,28 @@ a:hover { text-decoration: underline; }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 24px;
+  padding: 20px;
   font-family: var(--mono);
-  font-size: 13px;
-  line-height: 1.8;
+  font-size: 12px;
+  line-height: 1.6;
   overflow-x: auto;
   margin: 32px 0;
   white-space: pre;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
+
+.code-block::-webkit-scrollbar {
+  height: 6px;
+}
+
+.code-block::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.code-block::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 3px;
 }
 
 .code-block .kw { color: var(--blue); }

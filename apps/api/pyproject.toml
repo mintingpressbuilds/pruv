@@ -15,6 +15,7 @@ dependencies = [
     "pydantic>=2.0",
     "PyJWT>=2.8",
     "httpx>=0.25.0",
+    "python-multipart>=0.0.6",
     "xycore>=1.0.0",
 ]
 
