@@ -81,6 +81,12 @@ export function Sidebar() {
   const [settingsOpen, setSettingsOpen] = useState(
     pathname.startsWith("/settings")
   );
+  const [hasToken, setHasToken] = useState(false);
+
+  // Check auth token on mount
+  useEffect(() => {
+    setHasToken(!!auth.getToken());
+  }, []);
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -210,13 +216,15 @@ export function Sidebar() {
           </svg>
           {!showCollapsed && <span>follow on x</span>}
         </a>
-        <button
-          onClick={() => auth.signOut()}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-400 transition-all duration-150"
-        >
-          <LogOut size={20} />
-          {!showCollapsed && <span>sign out</span>}
-        </button>
+        {hasToken && (
+          <button
+            onClick={() => auth.signOut()}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-400 transition-all duration-150"
+          >
+            <LogOut size={20} />
+            {!showCollapsed && <span>sign out</span>}
+          </button>
+        )}
       </div>
     </>
   );
