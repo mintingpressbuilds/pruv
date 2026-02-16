@@ -265,6 +265,84 @@ The cloud gives you the dashboard, team collaboration, shareable links, embeddab
 
 -----
 
+### Financial verification chains
+
+Payments are state transformations. Balance before. Balance after. pruv proves the math.
+
+```python
+from pruv import PaymentChain
+
+ledger = PaymentChain("order-7291", api_key="pv_live_...")
+
+# Deposit funds
+ledger.deposit("merchant", 10000.00, source="bank", reference="ACH-4401")
+
+# Record transfers — each one creates a cryptographic balance proof
+ledger.transfer("merchant", "customer_123", 189.00, reference="pi_3abc")
+ledger.transfer("merchant", "customer_456", 64.50, reference="pi_3def")
+```
+
+Every transfer hashes the balances before and after, then links them into the chain. The conservation law is enforced — total in equals total out. No money created. No money destroyed.
+
+```
+Before:  merchant=$10,000.00
+After:   merchant=$9,746.50  customer_123=$189.00  customer_456=$64.50
+
+X  = hash(balances_before)
+Y  = hash(balances_after)
+XY = hash(X + "transfer" + Y + timestamp)   # xy_<sha256>
+```
+
+Each transfer returns a receipt — cryptographic proof that the balance change happened and the books stayed balanced:
+
+```
+┌─────────────────────────────────────────┐
+│                                         │
+│  pruv payment receipt                   │
+│                                         │
+│  Chain:    order-7291                   │
+│  Type:     transfer                     │
+│  Source:   stripe · pi_3abc             │
+│                                         │
+│  Sender:   merchant                     │
+│  Recipient:customer_123                 │
+│  Amount:   $189.00                      │
+│                                         │
+│  Before:   merchant=$10,000.00          │
+│  After:    merchant=$9,811.00           │
+│            customer_123=$189.00         │
+│                                         │
+│  X: 3e7a91c4  (balances before)         │
+│  Y: b8d2f106  (balances after)          │
+│  XY: xy_7c4f8a2e19d3...                │
+│                                         │
+│  Balanced: ✓  Conservation held         │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │  ✓ Verified by pruv             │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+Verify the entire ledger in one call:
+
+```python
+result = ledger.verify_payments()
+
+# payment_count: 2
+# verified_count: 2/2
+# all_valid: True
+# final_balances: {'merchant': 9746.50, 'customer_123': 189.00, 'customer_456': 64.50}
+# total_volume: 253.50
+```
+
+Verification recomputes every hash, checks every link, and confirms conservation at each step. Tamper with a single entry — the proof breaks and reports exactly where. Works with the API endpoint (`/v1/chains/{id}/verify-payments`) or fully offline with xycore's `BalanceProof` primitive.
+
+Built for compliance. SOX, PCI-DSS, MiFID II. Pair with digital signatures for non-repudiation. Pair with approval gates for multi-signer workflows on high-value transfers.
+
+-----
+
 ### Not logging. Proof.
 
 |Approach|What you get                                  |
