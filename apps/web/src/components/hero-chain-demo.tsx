@@ -71,7 +71,7 @@ const ENTRIES: DemoEntry[] = [
   { seq: 3, action: "receipt_issued", time: "12:00:04", hash: "b1c43e7d9a4f", prev: "7d2e9a4f3c8b" },
 ];
 
-function TypedHash({ hash, delay }: { hash: string; delay: number }) {
+function TypedHash({ hash }: { hash: string }) {
   const [visible, setVisible] = useState(0);
 
   useEffect(() => {
@@ -79,11 +79,6 @@ function TypedHash({ hash, delay }: { hash: string; delay: number }) {
     const t = setTimeout(() => setVisible((v) => v + 1), 35);
     return () => clearTimeout(t);
   }, [visible, hash.length]);
-
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(1), delay);
-    return () => clearTimeout(t);
-  }, [delay]);
 
   return <>{hash.slice(0, visible)}{visible < hash.length ? "\u2588" : "\u2026"}</>;
 }
@@ -158,7 +153,7 @@ export function HeroChainDemo() {
                   <span className="hdc-time">{entry.time}</span>
                 </div>
                 <div className="hdc-hash">
-                  hash: <TypedHash hash={entry.hash} delay={i * 800 + 200} />
+                  hash: <TypedHash hash={entry.hash} />
                 </div>
                 {entry.prev && (
                   <div className="hdc-prev">

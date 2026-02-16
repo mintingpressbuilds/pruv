@@ -21,7 +21,7 @@
   --faint: #222235;
   --mono: 'JetBrains Mono', monospace;
   --sans: 'Instrument Sans', sans-serif;
-  --navbar-bg: rgba(4, 4, 8, 0.97);
+  --navbar-bg: #040408;
   --heading: #fff;
 }
 
@@ -42,7 +42,7 @@
   --text: #3a3a4a;
   --dim: #888898;
   --faint: #e8e8ee;
-  --navbar-bg: rgba(245, 245, 247, 0.97);
+  --navbar-bg: #f5f5f7;
   --heading: #1a1a2e;
 }
 
@@ -88,10 +88,7 @@ a:hover { text-decoration: underline; }
   z-index: 100;
   padding: 16px 0;
   background: var(--navbar-bg);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
-  transform: translateZ(0);
 }
 
 .navbar .container {
