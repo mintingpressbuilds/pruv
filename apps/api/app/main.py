@@ -14,7 +14,7 @@ from .core.config import settings
 from .middleware.cors import CORSConfig, SecurityHeadersMiddleware
 from .middleware.logging import RequestLoggingMiddleware
 from .models.database import Base, get_engine
-from .routes import admin, analytics, auth, chains, checkpoints, dashboard, receipts, verify, webhooks
+from .routes import admin, analytics, auth, chains, checkpoints, dashboard, receipts, scans, verify, webhooks
 from .schemas.schemas import HealthResponse
 
 logger = logging.getLogger("pruv.api")
@@ -82,6 +82,7 @@ app.include_router(verify.router)
 app.include_router(webhooks.router)
 app.include_router(analytics.router)
 app.include_router(admin.router)
+app.include_router(scans.router)
 
 
 @app.get("/", response_model=HealthResponse)

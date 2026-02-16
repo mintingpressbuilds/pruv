@@ -300,3 +300,24 @@ class ChainAlertsResponse(BaseModel):
     chain_id: str
     alerts: list[AlertResponse]
     analyzed_at: float
+
+
+# ──── Scan Schemas ────
+
+
+class ScanFindingResponse(BaseModel):
+    severity: str = Field(..., pattern=r"^(critical|warning|info)$")
+    type: str
+    message: str
+    entry_index: int | None = None
+    details: dict[str, Any] | None = None
+
+
+class ScanResponse(BaseModel):
+    id: str
+    status: str = Field(default="completed", pattern=r"^(queued|scanning|completed|failed)$")
+    chain_id: str | None = None
+    started_at: str
+    completed_at: str | None = None
+    findings: list[ScanFindingResponse] = Field(default_factory=list)
+    receipt_id: str | None = None
