@@ -3,52 +3,58 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const CODE_LINES = [
-  { type: "kw", text: "import " },
+  { type: "kw", text: "from " },
   { type: "var", text: "pruv" },
+  { type: "kw", text: " import " },
+  { type: "fn", text: "Chain" },
   { type: "plain", text: "\n\n" },
-  { type: "var", text: "agent" },
+  { type: "var", text: "chain" },
   { type: "plain", text: " = " },
-  { type: "var", text: "pruv" },
-  { type: "plain", text: "." },
-  { type: "fn", text: "Agent" },
+  { type: "fn", text: "Chain" },
   { type: "plain", text: "(" },
-  { type: "str", text: '"email-assistant"' },
+  { type: "str", text: '"invoice-trail"' },
   { type: "plain", text: ")\n\n" },
-  { type: "var", text: "agent" },
+  { type: "var", text: "chain" },
   { type: "plain", text: "." },
-  { type: "fn", text: "action" },
+  { type: "fn", text: "add" },
   { type: "plain", text: "(" },
-  { type: "str", text: '"read_inbox"' },
+  { type: "str", text: '"invoice_created"' },
   { type: "plain", text: ", {" },
-  { type: "str", text: '"count"' },
-  { type: "plain", text: ": 12})\n" },
-  { type: "var", text: "agent" },
+  { type: "str", text: '"id"' },
+  { type: "plain", text: ": " },
+  { type: "str", text: '"INV-0042"' },
+  { type: "plain", text: ", " },
+  { type: "str", text: '"amount"' },
+  { type: "plain", text: ": 240.00})\n" },
+  { type: "var", text: "chain" },
   { type: "plain", text: "." },
-  { type: "fn", text: "action" },
+  { type: "fn", text: "add" },
   { type: "plain", text: "(" },
-  { type: "str", text: '"draft_reply"' },
+  { type: "str", text: '"payment_received"' },
+  { type: "plain", text: ", {" },
+  { type: "str", text: '"method"' },
+  { type: "plain", text: ": " },
+  { type: "str", text: '"ach"' },
+  { type: "plain", text: ", " },
+  { type: "str", text: '"ref"' },
+  { type: "plain", text: ": " },
+  { type: "str", text: '"TXN-8812"' },
+  { type: "plain", text: "})\n" },
+  { type: "var", text: "chain" },
+  { type: "plain", text: "." },
+  { type: "fn", text: "add" },
+  { type: "plain", text: "(" },
+  { type: "str", text: '"receipt_issued"' },
   { type: "plain", text: ", {" },
   { type: "str", text: '"to"' },
   { type: "plain", text: ": " },
-  { type: "str", text: '"sarah@co.com"' },
-  { type: "plain", text: "})\n" },
-  { type: "var", text: "agent" },
-  { type: "plain", text: "." },
-  { type: "fn", text: "action" },
-  { type: "plain", text: "(" },
-  { type: "str", text: '"send_email"' },
-  { type: "plain", text: ", {" },
-  { type: "str", text: '"subject"' },
-  { type: "plain", text: ": " },
-  { type: "str", text: '"Re: Q3"' },
+  { type: "str", text: '"sarah@company.com"' },
   { type: "plain", text: "})\n\n" },
   { type: "var", text: "chain" },
-  { type: "plain", text: " = " },
-  { type: "var", text: "agent" },
   { type: "plain", text: "." },
   { type: "fn", text: "verify" },
   { type: "plain", text: "()\n" },
-  { type: "cm", text: "# \u2713 3 actions \u00b7 all verified \u00b7 chain intact" },
+  { type: "cm", text: "# \u2713 3 entries \u00b7 chain intact \u00b7 tamper-proof" },
 ];
 
 interface DemoEntry {
@@ -60,9 +66,9 @@ interface DemoEntry {
 }
 
 const ENTRIES: DemoEntry[] = [
-  { seq: 1, action: "read_inbox", time: "12:00:01.003", hash: "a3f8c2e1b7d4", prev: null },
-  { seq: 2, action: "draft_reply", time: "12:00:02.847", hash: "7d2e9a4f3c8b", prev: "a3f8c2e1b7d4" },
-  { seq: 3, action: "send_email", time: "12:00:03.201", hash: "b1c43e7d9a4f", prev: "7d2e9a4f3c8b" },
+  { seq: 1, action: "invoice_created", time: "12:00:01", hash: "a3f8c2e1b7d4", prev: null },
+  { seq: 2, action: "payment_received", time: "12:00:03", hash: "7d2e9a4f3c8b", prev: "a3f8c2e1b7d4" },
+  { seq: 3, action: "receipt_issued", time: "12:00:04", hash: "b1c43e7d9a4f", prev: "7d2e9a4f3c8b" },
 ];
 
 function TypedHash({ hash, delay }: { hash: string; delay: number }) {
@@ -136,7 +142,7 @@ export function HeroChainDemo() {
       <div className="hero-demo-chain">
         <div className="hero-demo-label">chain output</div>
         <div className="hdc-header">
-          <span className="hdc-name">email-assistant</span>
+          <span className="hdc-name">invoice-trail</span>
           {verified && <span className="hdc-status">{"\u2713"} verified</span>}
         </div>
 
@@ -167,7 +173,8 @@ export function HeroChainDemo() {
         {verified && (
           <div className="hdc-footer">
             <span className="hdc-check">{"\u2713"}</span>
-            chain intact &middot; each hash includes the previous hash
+            {" "}chain intact &middot; each hash includes the previous hash.
+            <br />change any entry and the chain breaks.
           </div>
         )}
       </div>

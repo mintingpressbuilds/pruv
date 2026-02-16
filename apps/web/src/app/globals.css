@@ -543,6 +543,57 @@ a:hover { text-decoration: underline; }
   border-radius: 0 8px 8px 8px;
 }
 
+.int-subtext {
+  font-family: var(--mono) !important;
+  font-size: 12px !important;
+  color: var(--dim) !important;
+  opacity: 1 !important;
+  margin-top: 12px !important;
+}
+
+/* ── Use Case Tabs ── */
+.uc-tabs {
+  margin-top: 16px;
+}
+
+.uc-tab-bar {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.uc-tab {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 10px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  color: var(--dim);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+
+.uc-tab:hover { color: var(--text); }
+
+.uc-tab.active {
+  color: var(--green);
+  background: var(--surface);
+  border-color: var(--border);
+  border-bottom: 1px solid var(--surface);
+  position: relative;
+  z-index: 1;
+}
+
+.uc-tabs .cb {
+  margin-top: -1px;
+  border-radius: 0 8px 8px 8px;
+}
+
 /* ── Alert Demo ── */
 .alert-demo {
   margin: 32px 0 24px;
@@ -838,6 +889,14 @@ a:hover { text-decoration: underline; }
 }
 
 .footer-links a:hover { color: var(--green); text-decoration: none; }
+
+.footer-built {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--dim);
+  margin-top: 20px;
+  opacity: 0.6;
+}
 
 /* ── Page layout (non-home) ── */
 .page {
@@ -1372,5 +1431,7 @@ a:hover { text-decoration: underline; }
   .spec-key { border-right: none; border-bottom: 1px solid var(--border); }
   .chain-controls { flex-wrap: wrap; }
   .int-tab-bar { flex-wrap: wrap; }
+  .uc-tab-bar { flex-wrap: wrap; }
+  .uc-tab { font-size: 11px; padding: 8px 14px; }
   .hero-actions { flex-direction: column; align-items: flex-start; }
 }

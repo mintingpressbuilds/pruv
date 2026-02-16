@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 
 const ALERTS = [
-  { severity: "critical", message: "Agent accessed .env file", icon: "\u26a0" },
-  { severity: "warning", message: "Error rate exceeded 30%", icon: "\u26a0" },
-  { severity: "warning", message: "Agent contacted unknown API domain", icon: "\u26a0" },
-  { severity: "info", message: "47 actions per minute (unusual volume)", icon: "\u26a0" },
+  { severity: "critical", message: "Agent accessed .env credentials file", icon: "\u26a0", sev: "critical" },
+  { severity: "warning", message: "Error rate exceeded 30% (14 of 41 actions failed)", icon: "\u26a0", sev: "warning" },
+  { severity: "warning", message: "47 actions per minute \u2014 unusual volume detected", icon: "\u26a0", sev: "warning" },
+  { severity: "info", message: "New external API domain contacted: unknown-service.io", icon: "\u2139", sev: "info" },
 ];
 
 export function AlertDemo() {
@@ -33,7 +33,7 @@ export function AlertDemo() {
     if (!started) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
     ALERTS.forEach((_, i) => {
-      timers.push(setTimeout(() => setVisible(i + 1), (i + 1) * 600));
+      timers.push(setTimeout(() => setVisible(i + 1), (i + 1) * 500));
     });
     return () => timers.forEach(clearTimeout);
   }, [started]);
@@ -48,7 +48,7 @@ export function AlertDemo() {
         >
           <span className="alert-icon">{alert.icon}</span>
           <span className="alert-msg">{alert.message}</span>
-          <span className="alert-sev">{alert.severity}</span>
+          <span className="alert-sev">{alert.sev}</span>
         </div>
       ))}
     </div>
