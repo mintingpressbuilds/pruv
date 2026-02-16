@@ -1,288 +1,188 @@
-import { ChainDemo } from "@/components/chain-demo";
+import { HeroChainDemo } from "@/components/hero-chain-demo";
+import { CodeBlock } from "@/components/code-block";
+import { IntegrationTabs } from "@/components/integration-tabs";
+import { AlertDemo } from "@/components/alert-demo";
+import { ReceiptCard } from "@/components/receipt-card";
+import { CopyInstall } from "@/components/copy-install";
 
 export default function HomePage() {
   return (
     <>
-      {/* ── Hero ── */}
+      {/* ── S1: Hero ── */}
       <div className="container">
         <div className="hero">
-          <div className="hero-label">verification primitive</div>
           <h1>
-            Prove what <span className="accent">happened.</span>
+            prove what your
+            <br />
+            AI agent <span className="accent">did.</span>
           </h1>
           <p className="hero-sub">
-            Every operation transforms state. pruv captures the before, the
-            after, and creates cryptographic proof that the transformation
-            happened.
+            Every action. Every tool call. Every message.
+            <br />
+            Cryptographic receipts your agent can&apos;t fake.
           </p>
-          <div className="install-block">
-            <span className="prompt">$</span> pip install{" "}
-            <span className="pkg">pruv</span>
-          </div>
-          <div className="hero-links">
-            <a href="https://docs.pruv.dev" target="_blank" rel="noopener noreferrer">docs</a>
-            <a href="https://app.pruv.dev" target="_blank" rel="noopener noreferrer">dashboard</a>
-            <a href="https://github.com/mintingpressbuilds/pruv" target="_blank" rel="noopener noreferrer">github</a>
+          <div className="hero-actions">
+            <div className="install-block">
+              <span className="prompt">$</span> pip install{" "}
+              <span className="pkg">pruv</span>
+            </div>
+            <a
+              href="https://docs.pruv.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hero-docs-link"
+            >
+              view docs &rarr;
+            </a>
           </div>
         </div>
       </div>
 
-      {/* ── The Primitive ── */}
+      {/* ── S2: The Problem ── */}
       <div className="section">
         <div className="container">
-          <div className="section-label">the primitive</div>
-          <h2>X &rarr; Y &rarr; XY</h2>
+          <p className="problem-text">
+            AI agents read your email, send messages, execute code,
+            and access your files. You have no proof of what they actually did.
+          </p>
+          <p className="problem-contrast">
+            Logs can be edited. Logs can be deleted. Logs lie.
+            <br />
+            pruv receipts are cryptographic. They can&apos;t.
+          </p>
+        </div>
+      </div>
+
+      {/* ── S3: Live Code Demo ── */}
+      <div className="section">
+        <div className="container-wide">
+          <div className="section-label">how it looks</div>
+          <h2>3 lines. Full proof.</h2>
           <p>
-            Hash the state before. Hash the state after. Chain them together.
-            Each entry&apos;s X must equal the previous entry&apos;s Y. Break
-            one entry, the chain breaks. Verification detects exactly where.
+            Wrap any AI agent. Every action gets hashed, chained, and verified.
           </p>
+          <HeroChainDemo />
+        </div>
+      </div>
+
+      {/* ── S4: Decorator ── */}
+      <div className="section">
+        <div className="container">
+          <div className="section-label">even simpler</div>
+          <h2>Or just decorate your functions.</h2>
           <p>
-            This is the entire product. Everything else is built on this rule.
+            Zero code changes to your logic. Every call gets a cryptographic receipt. Automatically.
+          </p>
+          <CodeBlock
+            label="python"
+            code={`@pruv.verified
+def send_email(to, subject, body):
+    smtp.send(to, subject, body)
+
+# Every call to send_email now has
+# a cryptographic receipt. Automatically.`}
+          />
+        </div>
+      </div>
+
+      {/* ── S5: Framework Integrations ── */}
+      <div className="section">
+        <div className="container">
+          <div className="section-label">integrations</div>
+          <h2>Works with the tools you already use.</h2>
+          <IntegrationTabs />
+        </div>
+      </div>
+
+      {/* ── S6: What pruv catches ── */}
+      <div className="section">
+        <div className="container">
+          <div className="section-label">anomaly detection</div>
+          <h2>pruv doesn&apos;t just record. It watches.</h2>
+          <AlertDemo />
+          <p className="alert-subtext">
+            Anomaly detection on the proof chain itself.
+            <br />
+            Your agent can&apos;t hide what it did.
           </p>
         </div>
       </div>
 
-      {/* ── Live Chain ── */}
+      {/* ── S7: Receipt ── */}
       <div className="section">
         <div className="container">
-          <div className="section-label">try it</div>
-          <h2>A chain, running in your browser.</h2>
+          <div className="section-label">the receipt</div>
+          <h2>What a pruv receipt looks like.</h2>
           <p>
-            Click any entry to inspect the state diff. Tamper with one to see
-            verification break. Restore to see it heal.
+            Every action produces a receipt. Every receipt is linked to the one before it.
           </p>
-          <ChainDemo />
+          <ReceiptCard />
         </div>
       </div>
 
-      {/* ── Two Lines ── */}
+      {/* ── S8: How it Works ── */}
       <div className="section">
         <div className="container">
-          <div className="section-label">usage</div>
-          <h2>Two lines. Full proof.</h2>
-          <p>
-            Wrap any agent, any function, any workflow. Every action is captured
-            with cryptographic proof. No configuration. No setup. Two lines.
-          </p>
+          <div className="section-label">under the hood</div>
+          <h2>How pruv works</h2>
 
-          <div className="code-block">
-            <span className="kw">from</span>{" "}
-            <span className="var">pruv</span>{" "}
-            <span className="kw">import</span>{" "}
-            <span className="fn">xy_wrap</span>
-            {"\n\n"}
-            <span className="var">wrapped</span>{" "}
-            <span className="op">=</span>{" "}
-            <span className="fn">xy_wrap</span>(
-            <span className="var">my_agent</span>)
-            {"\n"}
-            <span className="var">result</span>{" "}
-            <span className="op">= await</span>{" "}
-            <span className="var">wrapped</span>.
-            <span className="fn">run</span>(
-            <span className="str">&quot;Fix the login bug&quot;</span>)
-            {"\n\n"}
-            <span className="fn">print</span>(
-            <span className="var">result</span>.
-            <span className="var">receipt</span>.
-            <span className="var">hash</span>)
-            {"\n"}
-            <span className="cm"># xy_a7f3c28e91b4d&hellip;</span>
-            {"\n\n"}
-            <span className="fn">print</span>(
-            <span className="var">result</span>.
-            <span className="var">verified</span>)
-            {"\n"}
-            <span className="cm">
-              # True &mdash; every action independently confirmed
-            </span>
-          </div>
-
-          <div className="receipt-box">
-            <div className="receipt-title">pruv receipt</div>
-            <div className="receipt-row">
-              <span className="receipt-key">task</span>
-              <span className="receipt-val">Fix the login bug</span>
-            </div>
-            <div className="receipt-row">
-              <span className="receipt-key">actions</span>
-              <span className="receipt-val">23</span>
-            </div>
-            <div className="receipt-row">
-              <span className="receipt-key">verified</span>
-              <span className="receipt-val verified">23/23 &#10003;</span>
-            </div>
-            <div className="receipt-row">
-              <span className="receipt-key">duration</span>
-              <span className="receipt-val">3m 42s</span>
-            </div>
-            <div className="receipt-row">
-              <span className="receipt-key">X</span>
-              <span className="receipt-val">8f3a1c2e</span>
-            </div>
-            <div className="receipt-row">
-              <span className="receipt-key">Y</span>
-              <span className="receipt-val">d4e6f71a</span>
-            </div>
-            <div className="receipt-row">
-              <span className="receipt-key">chain</span>
-              <span className="receipt-val verified">
-                47 entries &middot; intact
-              </span>
-            </div>
-            <div className="receipt-badge">
-              <span className="badge-pill">&#10003; verified by pruv</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Not Logging ── */}
-      <div className="section">
-        <div className="container">
-          <div className="section-label">difference</div>
-          <h2>Not logging. Proof.</h2>
-
-          <div className="compare">
-            <div className="compare-row">
-              <div className="compare-label">Logs</div>
-              <div className="compare-val">
-                &ldquo;Here&rsquo;s what happened, trust us&rdquo;
+          <div className="step-list">
+            <div className="step-item">
+              <div className="step-number">1</div>
+              <div className="step-title">Your agent performs an action</div>
+              <div className="step-desc">
+                Read a file, send an email, call an API &mdash; any operation.
               </div>
             </div>
-            <div className="compare-row">
-              <div className="compare-label">Traces</div>
-              <div className="compare-val">
-                &ldquo;Here&rsquo;s the flow, trust our database&rdquo;
+            <div className="step-item">
+              <div className="step-number">2</div>
+              <div className="step-title">The action data is hashed (SHA-256)</div>
+              <div className="step-desc">
+                Before state, after state, operation name, timestamp &mdash; all hashed.
               </div>
             </div>
-            <div className="compare-row">
-              <div className="compare-label pruv-label">pruv</div>
-              <div className="compare-val pruv-val">
-                &ldquo;Here&rsquo;s cryptographic proof &mdash; verify
-                yourself&rdquo;
+            <div className="step-item">
+              <div className="step-number">3</div>
+              <div className="step-title">The hash is chained to the previous hash</div>
+              <div className="step-desc">
+                Each entry&apos;s X must equal the previous entry&apos;s Y. Break one, the chain breaks.
+              </div>
+            </div>
+            <div className="step-item">
+              <div className="step-number">4</div>
+              <div className="step-title">A signed receipt is stored</div>
+              <div className="step-desc">
+                Ed25519 digital signature. Independently verifiable by anyone.
               </div>
             </div>
           </div>
 
-          <p style={{ marginTop: 32 }}>
-            Receipts are independently verifiable. No pruv account needed. The
-            math works with SHA-256 and Ed25519 &mdash; open standards. Anyone
-            can verify a pruv receipt with their own code.
+          <p className="how-note">
+            This is the same principle that secures blockchains &mdash; without the blockchain.
+            <br />
+            No tokens. No mining. No gas fees. Just math.
           </p>
         </div>
       </div>
 
-      {/* ── Works Everywhere ── */}
-      <div className="section">
-        <div className="container">
-          <div className="section-label">domains</div>
-          <h2>Any system that transforms state.</h2>
-
-          <div className="industry-grid">
-            <div className="industry-card">
-              <div className="industry-name">AI Agents</div>
-              <div className="industry-xy">
-                <span className="x-label">X:</span> codebase before agent ran
-                <br />
-                <span className="y-label">Y:</span> codebase after, every
-                change proven
-              </div>
-            </div>
-            <div className="industry-card">
-              <div className="industry-name">Infrastructure</div>
-              <div className="industry-xy">
-                <span className="x-label">X:</span> system state before deploy
-                <br />
-                <span className="y-label">Y:</span> deployed, verified,
-                hash-proven
-              </div>
-            </div>
-            <div className="industry-card">
-              <div className="industry-name">Financial</div>
-              <div className="industry-xy">
-                <span className="x-label">X:</span> account balance before
-                <br />
-                <span className="y-label">Y:</span> transaction settled, proof
-                on chain
-              </div>
-            </div>
-            <div className="industry-card">
-              <div className="industry-name">Compliance</div>
-              <div className="industry-xy">
-                <span className="x-label">X:</span> audit requirements
-                <br />
-                <span className="y-label">Y:</span> controls verified, evidence
-                hashed
-              </div>
-            </div>
-            <div className="industry-card">
-              <div className="industry-name">Healthcare</div>
-              <div className="industry-xy">
-                <span className="x-label">X:</span> patient record state
-                <br />
-                <span className="y-label">Y:</span> treatment administered,
-                chain of custody
-              </div>
-            </div>
-            <div className="industry-card">
-              <div className="industry-name">Supply Chain</div>
-              <div className="industry-xy">
-                <span className="x-label">X:</span> shipment at origin
-                <br />
-                <span className="y-label">Y:</span> delivered, provenance
-                proven
-              </div>
-            </div>
-            <div className="industry-card">
-              <div className="industry-name">Legal</div>
-              <div className="industry-xy">
-                <span className="x-label">X:</span> document version
-                <br />
-                <span className="y-label">Y:</span> signed revision, edit chain
-                intact
-              </div>
-            </div>
-            <div className="industry-card">
-              <div className="industry-name">Government</div>
-              <div className="industry-xy">
-                <span className="x-label">X:</span> public record filed
-                <br />
-                <span className="y-label">Y:</span> immutable, verifiable by
-                anyone
-              </div>
-            </div>
+      {/* ── S9: Install ── */}
+      <div className="section section-install">
+        <div className="container" style={{ textAlign: "center" }}>
+          <CopyInstall />
+          <div className="install-links">
+            <a href="https://docs.pruv.dev" target="_blank" rel="noopener noreferrer">
+              <span className="il-label">docs.pruv.dev</span>
+              <span className="il-desc">documentation</span>
+            </a>
+            <a href="https://app.pruv.dev" target="_blank" rel="noopener noreferrer">
+              <span className="il-label">app.pruv.dev</span>
+              <span className="il-desc">dashboard</span>
+            </a>
+            <a href="https://github.com/mintingpressbuilds/pruv" target="_blank" rel="noopener noreferrer">
+              <span className="il-label">github</span>
+              <span className="il-desc">source code</span>
+            </a>
           </div>
-        </div>
-      </div>
-
-      {/* ── Install ── */}
-      <div className="section">
-        <div className="container">
-          <div className="section-label">install</div>
-
-          <div className="code-block">
-            <span className="cm">
-              # primitive only &mdash; zero dependencies
-            </span>
-            {"\n"}
-            <span className="prompt">$</span> pip install{" "}
-            <span className="pkg">xycore</span>
-            {"\n\n"}
-            <span className="cm">
-              # full SDK &mdash; scanner, wrapper, checkpoints, cloud
-            </span>
-            {"\n"}
-            <span className="prompt">$</span> pip install{" "}
-            <span className="pkg">pruv</span>
-          </div>
-
-          <p>
-            xycore is zero dependencies. Standard library only. Works offline.
-            Works without an account. Works without the cloud. The primitive
-            needs nothing.
-          </p>
         </div>
       </div>
     </>
