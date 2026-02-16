@@ -13,6 +13,7 @@ import {
   Users,
   CreditCard,
   LogOut,
+  LogIn,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -216,7 +217,7 @@ export function Sidebar() {
           </svg>
           {!showCollapsed && <span>follow on x</span>}
         </a>
-        {hasToken && (
+        {hasToken ? (
           <button
             onClick={() => auth.signOut()}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-400 transition-all duration-150"
@@ -224,6 +225,14 @@ export function Sidebar() {
             <LogOut size={20} />
             {!showCollapsed && <span>sign out</span>}
           </button>
+        ) : (
+          <Link
+            href="/auth/signin"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:bg-pruv-600/10 hover:text-pruv-400 transition-all duration-150"
+          >
+            <LogIn size={20} />
+            {!showCollapsed && <span>sign in</span>}
+          </Link>
         )}
       </div>
     </>
