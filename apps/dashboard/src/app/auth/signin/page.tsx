@@ -71,7 +71,7 @@ export default function SignInPage() {
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
             onClick={() => auth.signInWithGitHub()}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] px-4 py-3.5 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--surface-tertiary)] hover:border-[var(--border-secondary)] transition-all duration-200"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] px-4 py-3.5 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--surface-tertiary)] hover:border-[var(--border-secondary)] transition-colors duration-200"
           >
             <GitHubIcon />
             continue with github
@@ -84,7 +84,7 @@ export default function SignInPage() {
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
             onClick={() => auth.signInWithGoogle()}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] px-4 py-3.5 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--surface-tertiary)] hover:border-[var(--border-secondary)] transition-all duration-200"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] px-4 py-3.5 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--surface-tertiary)] hover:border-[var(--border-secondary)] transition-colors duration-200"
           >
             <GoogleIcon />
             continue with google
