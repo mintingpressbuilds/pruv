@@ -20,9 +20,9 @@ export default function HomePage() {
             <span className="pkg">pruv</span>
           </div>
           <div className="hero-links">
-            <a href="https://docs.pruv.dev">docs</a>
-            <a href="https://app.pruv.dev">dashboard</a>
-            <a href="https://github.com/mintingpressbuilds/pruv">github</a>
+            <a href="https://docs.pruv.dev" target="_blank" rel="noopener noreferrer">docs</a>
+            <a href="https://app.pruv.dev" target="_blank" rel="noopener noreferrer">dashboard</a>
+            <a href="https://github.com/mintingpressbuilds/pruv" target="_blank" rel="noopener noreferrer">github</a>
           </div>
         </div>
       </div>

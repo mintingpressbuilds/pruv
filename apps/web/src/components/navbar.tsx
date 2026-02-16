@@ -66,7 +66,7 @@ export function Navbar() {
           <div className="navbar-links">
             {links.map((link) =>
               link.external ? (
-                <a key={link.href} href={link.href}>
+                <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer">
                   {link.label}
                 </a>
               ) : (
@@ -99,7 +99,7 @@ export function Navbar() {
       <div className={`navbar-mobile-menu${mobileOpen ? " open" : ""}`}>
         {links.map((link) =>
           link.external ? (
-            <a key={link.href} href={link.href} onClick={() => setMobileOpen(false)}>
+            <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)}>
               {link.label}
             </a>
           ) : (
