@@ -346,7 +346,9 @@ a:hover { text-decoration: underline; }
   line-height: 1.8;
   white-space: pre;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
 
 /* chain output */
@@ -452,7 +454,7 @@ a:hover { text-decoration: underline; }
   border: 1px solid var(--border);
   border-radius: 8px;
   margin: 32px 0;
-  overflow: hidden;
+  overflow: clip;
 }
 
 .cb-label {
@@ -489,6 +491,21 @@ a:hover { text-decoration: underline; }
   overflow-x: auto;
   overflow-y: hidden;
   white-space: pre;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.cb-pre::-webkit-scrollbar {
+  height: 6px;
+}
+
+.cb-pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cb-pre::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
 }
 
 .cb-kw { color: var(--blue); }
