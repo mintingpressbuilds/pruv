@@ -105,7 +105,7 @@ export function UseCaseTabs() {
           </button>
         ))}
       </div>
-      <CodeBlock code={USE_CASES[active].code} label="python" />
+      <CodeBlock key={USE_CASES[active].name} code={USE_CASES[active].code} label="python" />
     </div>
   );
 }
