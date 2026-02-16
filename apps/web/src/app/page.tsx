@@ -82,12 +82,7 @@ def charge_card(customer_id, amount):
 def send_notification(user, message):
     twilio.messages.create(to=user.phone, body=message)
 
-@pruv.verified
-def update_record(record_id, data):
-    db.records.update(record_id, data)
-
-# every call. every function. automatic receipts.
-# zero changes to your existing logic.`}
+# every call. automatic receipts. zero changes to your logic.`}
           />
         </div>
       </div>
