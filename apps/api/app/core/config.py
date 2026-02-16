@@ -35,6 +35,7 @@ class Settings:
     # OAuth
     github_client_id: str = ""
     github_client_secret: str = ""
+    github_callback_url: str = ""
     google_client_id: str = ""
     google_client_secret: str = ""
 
@@ -73,6 +74,7 @@ class Settings:
             jwt_secret=os.getenv("JWT_SECRET") or secrets.token_hex(32),
             github_client_id=os.getenv("GITHUB_CLIENT_ID", ""),
             github_client_secret=os.getenv("GITHUB_CLIENT_SECRET", ""),
+            github_callback_url=os.getenv("GITHUB_CALLBACK_URL", ""),
             google_client_id=os.getenv("GOOGLE_CLIENT_ID", ""),
             google_client_secret=os.getenv("GOOGLE_CLIENT_SECRET", ""),
             stripe_secret_key=os.getenv("STRIPE_SECRET_KEY", ""),

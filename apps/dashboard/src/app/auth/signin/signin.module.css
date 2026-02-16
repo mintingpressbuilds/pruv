@@ -1,0 +1,133 @@
+.wrapper {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+}
+
+.card {
+  width: 100%;
+  max-width: 24rem;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  animation: fadeIn 0.35s ease-out both;
+}
+
+.brand {
+  text-align: center;
+}
+
+.logo {
+  margin: 0 auto;
+  display: flex;
+  width: 4rem;
+  height: 4rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background: var(--color-pruv-600, #00a858);
+  box-shadow: 0 10px 15px -3px rgba(0, 168, 88, 0.3);
+  animation: scaleIn 0.4s ease-out 0.1s both;
+}
+
+.title {
+  margin-top: 1.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  animation: slideIn 0.35s ease-out 0.15s both;
+}
+
+.githubBtn {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--surface-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.githubBtn:hover {
+  background: var(--surface-tertiary);
+  border-color: var(--border-secondary);
+}
+
+.githubBtn:active {
+  transform: scale(0.99);
+}
+
+.divider {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--border);
+}
+
+.divider span {
+  position: relative;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  background: var(--surface);
+}
+
+.footer {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.footer a {
+  color: var(--color-pruv-400, #00dc73);
+  text-decoration: none;
+}
+
+.footer a:hover {
+  color: var(--color-pruv-300, #4dd88a);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}

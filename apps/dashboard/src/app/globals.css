@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+/* fonts loaded via next/font in layout.tsx — no render-blocking @import */
 
 @theme {
   --color-pruv-50: #e8faf0;

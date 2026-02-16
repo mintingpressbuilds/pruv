@@ -96,9 +96,10 @@ async def github_oauth(
 
     # No code — redirect user to GitHub authorization page
     if code is None:
+        redirect_uri = settings.github_callback_url or str(request.url).split("?")[0]
         params = urllib.parse.urlencode({
             "client_id": settings.github_client_id,
-            "redirect_uri": str(request.url).split("?")[0],
+            "redirect_uri": redirect_uri,
             "scope": "read:user user:email",
         })
         return RedirectResponse(url=f"https://github.com/login/oauth/authorize?{params}")
