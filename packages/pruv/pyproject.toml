@@ -29,6 +29,14 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
 ]
 
+[project.optional-dependencies]
+langchain = ["langchain-core>=0.1.0"]
+crewai = ["crewai>=0.1.0"]
+integrations = [
+    "langchain-core>=0.1.0",
+    "crewai>=0.1.0",
+]
+
 [project.scripts]
 pruv = "pruv.cli.commands:main"
 
