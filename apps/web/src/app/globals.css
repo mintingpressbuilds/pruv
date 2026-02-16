@@ -66,7 +66,7 @@ body::after {
   background-repeat: repeat;
   opacity: 0.02;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 50;
 }
 
 [data-theme="light"] body::after { opacity: 0; }
@@ -487,6 +487,7 @@ a:hover { text-decoration: underline; }
   line-height: 1.8;
   padding: 16px 20px 20px;
   overflow-x: auto;
+  overflow-y: hidden;
   white-space: pre;
 }
 
@@ -538,6 +539,7 @@ a:hover { text-decoration: underline; }
 .int-tabs .cb {
   margin-top: -1px;
   border-radius: 0 8px 8px 8px;
+  min-height: 180px;
 }
 
 .int-subtext {
@@ -558,7 +560,13 @@ a:hover { text-decoration: underline; }
   gap: 2px;
   margin-bottom: 0;
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.uc-tab-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .uc-tab {
@@ -589,6 +597,7 @@ a:hover { text-decoration: underline; }
 .uc-tabs .cb {
   margin-top: -1px;
   border-radius: 0 8px 8px 8px;
+  min-height: 200px;
 }
 
 /* ── Alert Demo ── */
