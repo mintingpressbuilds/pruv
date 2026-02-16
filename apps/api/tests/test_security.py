@@ -426,7 +426,7 @@ class TestOAuthSecurity:
     """OAuth endpoints must validate configuration."""
 
     def test_github_oauth_unconfigured(self):
-        resp = client.post("/v1/auth/oauth/github?code=testcode1234")
+        resp = client.get("/v1/auth/oauth/github?code=testcode1234")
         assert resp.status_code == 501
         assert "not configured" in resp.json()["detail"]
 

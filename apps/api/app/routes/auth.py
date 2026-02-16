@@ -82,7 +82,7 @@ async def get_usage(
 # ──── OAuth Callbacks ────
 
 
-@router.post("/oauth/github")
+@router.get("/oauth/github")
 async def github_oauth_callback(
     code: str = Query(..., min_length=8, max_length=256),
     request: Request = None,
