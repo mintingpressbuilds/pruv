@@ -106,11 +106,11 @@ export default function SignInPage() {
         {/* Footer */}
         <p className="text-center text-xs text-[var(--text-tertiary)]">
           by signing in, you agree to the pruv{" "}
-          <a href="#" className="text-pruv-400 hover:text-pruv-300">
+          <a href="https://pruv.dev/terms" target="_blank" rel="noopener noreferrer" className="text-pruv-400 hover:text-pruv-300">
             terms of service
           </a>{" "}
           and{" "}
-          <a href="#" className="text-pruv-400 hover:text-pruv-300">
+          <a href="https://pruv.dev/privacy" target="_blank" rel="noopener noreferrer" className="text-pruv-400 hover:text-pruv-300">
             privacy policy
           </a>
         </p>

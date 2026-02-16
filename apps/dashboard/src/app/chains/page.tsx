@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Search,
   Link2,
@@ -10,11 +11,13 @@ import {
   ShieldCheck,
   Plus,
   Bot,
+  X,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
-import { useChains } from "@/hooks/use-chains";
+import { useChains, useCreateChain } from "@/hooks/use-chains";
 import type { ChainStatus, ChainFilters } from "@/lib/types";
 
 const statusConfig: Record<
@@ -44,6 +47,7 @@ const statusConfig: Record<
 };
 
 export default function ChainsPage() {
+  const router = useRouter();
   const [filters, setFilters] = useState<ChainFilters>({
     sort_by: "updated_at",
     sort_order: "desc",
@@ -52,12 +56,36 @@ export default function ChainsPage() {
   });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ChainStatus | "">("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newChainName, setNewChainName] = useState("");
+  const [newChainDesc, setNewChainDesc] = useState("");
 
   const { data, isLoading } = useChains({
     ...filters,
     search: search || undefined,
     status: statusFilter || undefined,
   });
+
+  const createChain = useCreateChain();
+
+  const handleCreateChain = async () => {
+    const name = newChainName.trim();
+    if (!name) return;
+
+    try {
+      const chain = await createChain.mutateAsync({
+        name,
+        description: newChainDesc.trim() || undefined,
+      });
+      setShowCreateModal(false);
+      setNewChainName("");
+      setNewChainDesc("");
+      toast.success("chain created");
+      router.push(`/chains/${chain.id}`);
+    } catch {
+      toast.error("failed to create chain");
+    }
+  };
 
   const chains = data?.data ?? [];
 
@@ -68,7 +96,10 @@ export default function ChainsPage() {
         <Header
           title="chains"
           actions={
-            <button className="flex items-center gap-2 rounded-lg bg-pruv-600 px-4 py-2 text-sm font-medium text-white hover:bg-pruv-500 transition-colors">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 rounded-lg bg-pruv-600 px-4 py-2 text-sm font-medium text-white hover:bg-pruv-500 transition-colors"
+            >
               <Plus size={14} />
               new chain
             </button>
@@ -257,6 +288,92 @@ export default function ChainsPage() {
           )}
         </main>
       </div>
+
+      {/* Create chain modal */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCreateModal(false)}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] p-6 shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-semibold text-[var(--text-primary)]">
+                  new chain
+                </h2>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="rounded-md p-1 text-[var(--text-tertiary)] hover:bg-[var(--surface-tertiary)] hover:text-[var(--text-primary)] transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
+                    name
+                  </label>
+                  <input
+                    type="text"
+                    value={newChainName}
+                    onChange={(e) => setNewChainName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleCreateChain()}
+                    placeholder="my-agent-chain"
+                    autoFocus
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-primary)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:border-pruv-500/50 focus:outline-none focus:ring-1 focus:ring-pruv-500/20 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
+                    description{" "}
+                    <span className="text-[var(--text-tertiary)]">
+                      (optional)
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newChainDesc}
+                    onChange={(e) => setNewChainDesc(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleCreateChain()}
+                    placeholder="what this chain tracks"
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-primary)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:border-pruv-500/50 focus:outline-none focus:ring-1 focus:ring-pruv-500/20 transition-all"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    onClick={() => setShowCreateModal(false)}
+                    className="rounded-lg border border-[var(--border)] bg-transparent px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] transition-colors"
+                  >
+                    cancel
+                  </button>
+                  <button
+                    onClick={handleCreateChain}
+                    disabled={
+                      !newChainName.trim() || createChain.isPending
+                    }
+                    className="rounded-lg bg-pruv-600 px-4 py-2 text-sm font-medium text-white hover:bg-pruv-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {createChain.isPending ? "creating..." : "create chain"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -52,12 +52,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* grain overlay */
+/* grain overlay — small tiled SVG (64px) with reduced octaves for performance */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='64' height='64' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 64px 64px;
+  background-repeat: repeat;
   opacity: 0.02;
   pointer-events: none;
   z-index: 9999;
@@ -81,8 +83,10 @@ a:hover { text-decoration: underline; }
   z-index: 100;
   padding: 16px 0;
   background: var(--navbar-bg);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
+  transform: translateZ(0);
 }
 
 .navbar .container {
