@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -10,6 +10,9 @@ import {
   Share2,
   Copy,
   Check,
+  Download,
+  AlertTriangle,
+  Bot,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Sidebar } from "@/components/sidebar";
@@ -19,7 +22,7 @@ import { TimeTravel } from "@/components/time-travel";
 import { ReplayControls } from "@/components/replay-controls";
 import { VerificationBadge } from "@/components/verification-badge";
 import { QuickUndo } from "@/components/quick-undo";
-import { useChain, useChainVerification } from "@/hooks/use-chains";
+import { useChain, useChainVerification, useChainAlerts } from "@/hooks/use-chains";
 import { useEntries, useUndoEntry } from "@/hooks/use-entries";
 import {
   useCheckpoints,
@@ -28,7 +31,28 @@ import {
   useRestoreCheckpoint,
 } from "@/hooks/use-checkpoints";
 import { chains } from "@/lib/api";
-import type { Entry } from "@/lib/types";
+import type { Entry, AlertSeverity } from "@/lib/types";
+
+const severityConfig: Record<
+  AlertSeverity,
+  { label: string; color: string; border: string }
+> = {
+  info: {
+    label: "info",
+    color: "text-blue-400",
+    border: "border-blue-500/20 bg-blue-500/5",
+  },
+  warning: {
+    label: "warning",
+    color: "text-yellow-400",
+    border: "border-yellow-500/20 bg-yellow-500/5",
+  },
+  critical: {
+    label: "critical",
+    color: "text-red-400",
+    border: "border-red-500/20 bg-red-500/5",
+  },
+};
 
 export default function ChainDetailPage() {
   const params = useParams();
@@ -41,6 +65,7 @@ export default function ChainDetailPage() {
     isLoading: isVerifying,
     refetch: runVerification,
   } = useChainVerification(chainId, { enabled: false });
+  const { data: alertsData } = useChainAlerts(chainId);
 
   const undoMutation = useUndoEntry(chainId);
 
@@ -61,13 +86,42 @@ export default function ChainDetailPage() {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copiedShare, setCopiedShare] = useState(false);
 
+  // Filter state
+  const [actionFilter, setActionFilter] = useState("");
+
   const entries: Entry[] = entriesData?.data ?? [];
   const [timeTravelIndex, setTimeTravelIndex] = useState<number>(entries.length - 1);
 
-  const displayEntries =
-    timeTravelIndex >= 0 && timeTravelIndex < entries.length
-      ? entries.slice(0, timeTravelIndex + 1)
-      : entries;
+  // Derive unique action types for the filter dropdown
+  const actionTypes = useMemo(() => {
+    const types = new Set(entries.map((e) => e.action));
+    return Array.from(types).sort();
+  }, [entries]);
+
+  // Apply filters
+  const filteredEntries = useMemo(() => {
+    let result = entries;
+    if (actionFilter) {
+      result = result.filter((e) => e.action === actionFilter);
+    }
+    return result;
+  }, [entries, actionFilter]);
+
+  const displayEntries = useMemo(() => {
+    if (!actionFilter && timeTravelIndex >= 0 && timeTravelIndex < entries.length) {
+      return entries.slice(0, timeTravelIndex + 1);
+    }
+    return filteredEntries;
+  }, [entries, filteredEntries, actionFilter, timeTravelIndex]);
+
+  // Alert summary
+  const alerts = alertsData?.alerts ?? [];
+  const warningCount = alerts.filter((a) => a.severity === "warning").length;
+  const criticalCount = alerts.filter((a) => a.severity === "critical").length;
+
+  // Agent metadata
+  const agentName = chain?.metadata?.agent as string | undefined;
+  const framework = chain?.metadata?.framework as string | undefined;
 
   const handleTimeTravelChange = useCallback(
     (index: number) => {
@@ -116,6 +170,22 @@ export default function ChainDetailPage() {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const html = await chains.exportHtml(chainId);
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${chain?.name ?? chainId}-export.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("chain exported");
+    } catch {
+      toast.error("failed to export chain");
+    }
+  };
+
   const copyShareUrl = () => {
     if (shareUrl) {
       navigator.clipboard.writeText(shareUrl);
@@ -135,6 +205,13 @@ export default function ChainDetailPage() {
           subtitle={chainLoading ? undefined : `${entries.length} entries`}
           actions={
             <div className="flex items-center gap-3">
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                <Download size={14} />
+                export
+              </button>
               <button
                 onClick={() => setShowCheckpoints(!showCheckpoints)}
                 className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
@@ -165,6 +242,56 @@ export default function ChainDetailPage() {
         />
 
         <main className="p-6 space-y-6">
+          {/* Alert summary banner */}
+          {alerts.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] p-4"
+            >
+              <AlertTriangle
+                size={16}
+                className={criticalCount > 0 ? "text-red-400" : "text-yellow-400"}
+              />
+              <div className="flex items-center gap-3 text-xs">
+                {criticalCount > 0 && (
+                  <span className="text-red-400 font-medium">
+                    {criticalCount} critical
+                  </span>
+                )}
+                {warningCount > 0 && (
+                  <span className="text-yellow-400 font-medium">
+                    {warningCount} warning{warningCount !== 1 ? "s" : ""}
+                  </span>
+                )}
+                {alerts.length - criticalCount - warningCount > 0 && (
+                  <span className="text-blue-400 font-medium">
+                    {alerts.length - criticalCount - warningCount} info
+                  </span>
+                )}
+              </div>
+              <div className="flex-1" />
+              <div className="flex flex-wrap gap-2">
+                {alerts.slice(0, 3).map((alert, i) => {
+                  const config = severityConfig[alert.severity];
+                  return (
+                    <span
+                      key={i}
+                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] ${config.border} ${config.color}`}
+                    >
+                      {alert.message}
+                    </span>
+                  );
+                })}
+                {alerts.length > 3 && (
+                  <span className="text-[10px] text-[var(--text-tertiary)]">
+                    +{alerts.length - 3} more
+                  </span>
+                )}
+              </div>
+            </motion.div>
+          )}
+
           {/* Share URL banner */}
           <AnimatePresence>
             {shareUrl && (
@@ -316,9 +443,22 @@ export default function ChainDetailPage() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                    {chain.name}
-                  </h2>
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                      {chain.name}
+                    </h2>
+                    {agentName && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-pruv-500/20 bg-pruv-500/10 px-2 py-0.5 text-[10px] font-medium text-pruv-400">
+                        <Bot size={10} />
+                        {agentName}
+                      </span>
+                    )}
+                    {framework && (
+                      <span className="inline-flex items-center rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400">
+                        {framework}
+                      </span>
+                    )}
+                  </div>
                   {chain.description && (
                     <p className="mt-1 text-sm text-[var(--text-tertiary)]">
                       {chain.description}
@@ -351,7 +491,7 @@ export default function ChainDetailPage() {
           )}
 
           {/* Time travel + replay controls */}
-          {entries.length > 1 && (
+          {entries.length > 1 && !actionFilter && (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <TimeTravel
                 entries={entries}
@@ -374,6 +514,9 @@ export default function ChainDetailPage() {
             validations={validations}
             chainId={chainId}
             isLoading={entriesLoading}
+            actionFilter={actionFilter}
+            onActionFilterChange={setActionFilter}
+            actionTypes={actionTypes}
           />
         </main>
       </div>

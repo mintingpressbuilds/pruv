@@ -270,6 +270,23 @@ export interface CheckpointRestoreResult {
   new_length: number;
 }
 
+// ─── Alert Types ────────────────────────────────────────────────────────────
+
+export type AlertSeverity = "info" | "warning" | "critical";
+
+export interface Alert {
+  rule: string;
+  severity: AlertSeverity;
+  message: string;
+  entry_id?: string;
+}
+
+export interface ChainAlerts {
+  chain_id: string;
+  alerts: Alert[];
+  analyzed_at: number;
+}
+
 // ─── Filter / Sort Types ─────────────────────────────────────────────────────
 
 export interface ChainFilters {

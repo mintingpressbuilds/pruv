@@ -15,6 +15,31 @@ interface EntryNodeProps {
   index: number;
 }
 
+/**
+ * Determine the action category from the entry action string.
+ * Used for color-coding the timeline dots.
+ */
+function getActionCategory(action: string): "error" | "success" | "info" | "default" {
+  const lower = action.toLowerCase();
+  if (lower.includes(".error") || lower.includes("error") || lower.includes("fail")) {
+    return "error";
+  }
+  if (lower.includes(".complete") || lower.includes("success") || lower.includes("finish")) {
+    return "success";
+  }
+  if (lower.includes(".start") || lower.includes("kickoff") || lower.includes("begin")) {
+    return "info";
+  }
+  return "default";
+}
+
+const categoryColors = {
+  error: "bg-red-500 border-red-400 shadow-red-500/30",
+  success: "bg-green-500 border-green-400 shadow-green-500/30",
+  info: "bg-blue-500 border-blue-400 shadow-blue-500/30",
+  default: "bg-[var(--surface-tertiary)] border-[var(--border-secondary)] shadow-none",
+} as const;
+
 export function EntryNode({
   entry,
   validation,
@@ -26,13 +51,14 @@ export function EntryNode({
 }: EntryNodeProps) {
   const isBroken = validation && !validation.valid;
   const isSigned = entry.signed;
+  const category = getActionCategory(entry.action);
 
-  // Determine node color
+  // Determine node color: broken > signed > action category
   const nodeColor = isBroken
     ? "bg-red-500 border-red-400 shadow-red-500/30"
     : isSigned
       ? "bg-pruv-500 border-pruv-400 shadow-pruv-500/30"
-      : "bg-[var(--surface-tertiary)] border-[var(--border-secondary)] shadow-none";
+      : categoryColors[category];
 
   const lineColor = isBroken
     ? "bg-red-500/40"
@@ -60,6 +86,8 @@ export function EntryNode({
             <AlertTriangle size={16} className="text-white" />
           ) : isSigned ? (
             <Lock size={14} className="text-white" />
+          ) : category === "error" ? (
+            <AlertTriangle size={14} className="text-white" />
           ) : (
             <span className="text-xs font-bold text-[var(--text-primary)]">
               {entry.index}
@@ -99,6 +127,11 @@ export function EntryNode({
                 <span className="inline-flex items-center gap-1 rounded-full bg-pruv-500/10 px-2 py-0.5 text-[10px] font-medium text-pruv-400 border border-pruv-500/20">
                   <Lock size={10} />
                   signed
+                </span>
+              )}
+              {category === "error" && !isBroken && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-medium text-red-400 border border-red-500/20">
+                  error
                 </span>
               )}
             </div>

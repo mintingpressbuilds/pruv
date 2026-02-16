@@ -5,12 +5,11 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   Search,
-  SlidersHorizontal,
   Link2,
   AlertTriangle,
   ShieldCheck,
   Plus,
-  ArrowUpDown,
+  Bot,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Sidebar } from "@/components/sidebar";
@@ -160,6 +159,8 @@ export default function ChainsPage() {
             <div className="space-y-2">
               {chains.map((chain, i) => {
                 const status = statusConfig[chain.status];
+                const agentName = chain.metadata?.agent as string | undefined;
+                const framework = chain.metadata?.framework as string | undefined;
                 return (
                   <motion.div
                     key={chain.id}
@@ -182,6 +183,11 @@ export default function ChainsPage() {
                             <span className={`h-1.5 w-1.5 rounded-full ${status.dotColor}`} />
                             {status.label}
                           </span>
+                          {framework && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400">
+                              {framework}
+                            </span>
+                          )}
                         </div>
                         {chain.description && (
                           <p className="mt-1 text-xs text-[var(--text-tertiary)] truncate max-w-md">
@@ -189,6 +195,12 @@ export default function ChainsPage() {
                           </p>
                         )}
                         <div className="mt-2 flex items-center gap-4 text-xs text-[var(--text-tertiary)]">
+                          {agentName && (
+                            <span className="flex items-center gap-1">
+                              <Bot size={12} />
+                              {agentName}
+                            </span>
+                          )}
                           <span>{chain.entry_count} entries</span>
                           {chain.tags.length > 0 && (
                             <div className="flex items-center gap-1">

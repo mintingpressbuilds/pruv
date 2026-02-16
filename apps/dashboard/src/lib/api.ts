@@ -23,6 +23,7 @@ import type {
   Checkpoint,
   CheckpointPreview,
   CheckpointRestoreResult,
+  ChainAlerts,
 } from "./types";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -99,6 +100,7 @@ interface BackendChain {
   created_at: number | string | null;
   updated_at: number | string | null;
   user_id?: string;
+  metadata?: Record<string, unknown>;
 }
 
 function transformChain(raw: BackendChain): Chain {
@@ -116,7 +118,7 @@ function transformChain(raw: BackendChain): Chain {
     status: "valid",
     owner_id: raw.user_id ?? "",
     tags: raw.tags ?? [],
-    metadata: {},
+    metadata: raw.metadata ?? {},
   };
 }
 
@@ -388,6 +390,17 @@ export const chains = {
     return request<{ chain_id: string; share_id: string; share_url: string }>(
       `/v1/chains/${id}/share`
     );
+  },
+
+  async alerts(id: string): Promise<ChainAlerts> {
+    return request<ChainAlerts>(`/v1/chains/${id}/alerts`);
+  },
+
+  async exportHtml(id: string): Promise<string> {
+    const url = `${API_BASE_URL}/v1/chains/${id}/export`;
+    const res = await fetch(url, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error("Failed to export chain");
+    return res.text();
   },
 };
 
