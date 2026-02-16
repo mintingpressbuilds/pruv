@@ -16,16 +16,21 @@ agent.action("send_email", {"to": "sarah@co.com"})
   },
   {
     name: "Payments",
-    code: `chain = Chain("order-7291")
+    code: `from pruv import PaymentChain
 
-chain.add("order_placed", {"items": 3, "total": 189.00})
-chain.add("payment_authorized", {"method": "card", "last4": "4242"})
-chain.add("payment_captured", {"amount": 189.00})
-chain.add("fulfillment_started", {"warehouse": "east"})
-chain.add("shipped", {"carrier": "fedex", "tracking": "FX882910"})
-chain.add("delivered", {"signed_by": "M. Chen"})
+ledger = PaymentChain("order-7291", api_key="pv_live_xxx")
 
-# order-to-delivery. every step proven.`,
+ledger.deposit("merchant", 10000.00, source="bank", reference="ACH-4401")
+ledger.transfer("merchant", "customer_123", 189.00, source="stripe", reference="pi_3abc")
+ledger.transfer("merchant", "customer_456", 64.50, source="stripe", reference="pi_3def")
+
+result = ledger.verify_payments()
+# ✓ 2 payments verified · all XY proofs intact
+# ✓ balances before and after — cryptographically linked
+# ✓ conservation of value confirmed
+# ✓ total volume: $253.50
+
+# balances verified. state transitions proven. every dollar accounted for.`,
   },
   {
     name: "Compliance",
