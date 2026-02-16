@@ -10,29 +10,22 @@ const INTEGRATIONS = [
 
 handler = PruvCallbackHandler(api_key="pv_live_xxx")
 agent = initialize_agent(tools, llm, callbacks=[handler])
-agent.run("Summarize the quarterly report")
-
-# Every LLM call, tool use, and agent action is now verified`,
+# every LLM call, tool use, and chain step — receipted.`,
   },
   {
     name: "CrewAI",
     code: `from pruv.integrations.crewai import pruv_wrap_crew
 
-crew = Crew(agents=[researcher, writer], tasks=[...])
 verified_crew = pruv_wrap_crew(crew, api_key="pv_live_xxx")
 result = verified_crew.kickoff()
-
-# Crew kickoff, agent tasks, and results are all recorded`,
+# every agent task — receipted.`,
   },
   {
     name: "OpenClaw",
     code: `from pruv.integrations.openclaw import OpenClawVerifier
 
 verifier = OpenClawVerifier(api_key="pv_live_xxx")
-verifier.before_skill("search", {"query": "latest news"})
-verifier.after_skill("search", results, success=True)
-
-# Every skill execution is now verified`,
+# every skill execution — receipted.`,
   },
 ];
 
@@ -53,6 +46,9 @@ export function IntegrationTabs() {
         ))}
       </div>
       <CodeBlock code={INTEGRATIONS[active].code} label="python" />
+      <p className="int-subtext">
+        More integrations coming. Any system that performs actions can be verified.
+      </p>
     </div>
   );
 }

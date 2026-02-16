@@ -1,5 +1,6 @@
 import { HeroChainDemo } from "@/components/hero-chain-demo";
 import { CodeBlock } from "@/components/code-block";
+import { UseCaseTabs } from "@/components/use-case-tabs";
 import { IntegrationTabs } from "@/components/integration-tabs";
 import { AlertDemo } from "@/components/alert-demo";
 import { ReceiptCard } from "@/components/receipt-card";
@@ -12,14 +13,14 @@ export default function HomePage() {
       <div className="container">
         <div className="hero">
           <h1>
-            prove what your
+            operational proof
             <br />
-            AI agent <span className="accent">did.</span>
+            for any <span className="accent">system.</span>
           </h1>
           <p className="hero-sub">
-            Every action. Every tool call. Every message.
-            <br />
-            Cryptographic receipts your agent can&apos;t fake.
+            Create a chain. Add entries. Every entry is hashed
+            and linked to the one before it. Tamper with any entry
+            and the chain breaks. That&apos;s it. That&apos;s the protocol.
           </p>
           <div className="hero-actions">
             <div className="install-block">
@@ -38,30 +39,24 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ── S2: The Problem ── */}
+      {/* ── S2: The protocol in 30 seconds ── */}
       <div className="section">
-        <div className="container">
-          <p className="problem-text">
-            AI agents read your email, send messages, execute code,
-            and access your files. You have no proof of what they actually did.
-          </p>
-          <p className="problem-contrast">
-            Logs can be edited. Logs can be deleted. Logs lie.
-            <br />
-            pruv receipts are cryptographic. They can&apos;t.
-          </p>
+        <div className="container-wide">
+          <div className="section-label">the protocol in 30 seconds</div>
+          <h2>Create a chain. Add entries. Verify.</h2>
+          <HeroChainDemo />
         </div>
       </div>
 
-      {/* ── S3: Live Code Demo ── */}
+      {/* ── S3: Works everywhere ── */}
       <div className="section">
         <div className="container-wide">
-          <div className="section-label">how it looks</div>
-          <h2>3 lines. Full proof.</h2>
+          <div className="section-label">works everywhere</div>
+          <h2>One protocol. Every industry.</h2>
           <p>
-            Wrap any AI agent. Every action gets hashed, chained, and verified.
+            Real code for real use cases. pruv is not an AI tool. It&apos;s a verification protocol that works anywhere state changes.
           </p>
-          <HeroChainDemo />
+          <UseCaseTabs />
         </div>
       </div>
 
@@ -69,18 +64,26 @@ export default function HomePage() {
       <div className="section">
         <div className="container">
           <div className="section-label">even simpler</div>
-          <h2>Or just decorate your functions.</h2>
-          <p>
-            Zero code changes to your logic. Every call gets a cryptographic receipt. Automatically.
-          </p>
+          <h2>Already have functions? Just decorate them.</h2>
           <CodeBlock
             label="python"
-            code={`@pruv.verified
-def send_email(to, subject, body):
-    smtp.send(to, subject, body)
+            code={`import pruv
+pruv.init("my-system", api_key="pv_live_xxx")
 
-# Every call to send_email now has
-# a cryptographic receipt. Automatically.`}
+@pruv.verified
+def charge_card(customer_id, amount):
+    stripe.charges.create(customer=customer_id, amount=amount)
+
+@pruv.verified
+def send_notification(user, message):
+    twilio.messages.create(to=user.phone, body=message)
+
+@pruv.verified
+def update_record(record_id, data):
+    db.records.update(record_id, data)
+
+# every call. every function. automatic receipts.
+# zero changes to your existing logic.`}
           />
         </div>
       </div>
@@ -89,21 +92,23 @@ def send_email(to, subject, body):
       <div className="section">
         <div className="container">
           <div className="section-label">integrations</div>
-          <h2>Works with the tools you already use.</h2>
+          <h2>Plugs into what you already use.</h2>
           <IntegrationTabs />
         </div>
       </div>
 
-      {/* ── S6: What pruv catches ── */}
+      {/* ── S6: What happens when something goes wrong ── */}
       <div className="section">
         <div className="container">
           <div className="section-label">anomaly detection</div>
           <h2>pruv doesn&apos;t just record. It watches.</h2>
           <AlertDemo />
           <p className="alert-subtext">
-            Anomaly detection on the proof chain itself.
+            Anomaly detection runs on the proof chain itself.
             <br />
-            Your agent can&apos;t hide what it did.
+            Set severity thresholds. Get webhook alerts.
+            <br />
+            Your systems can&apos;t hide what they did.
           </p>
         </div>
       </div>
@@ -114,7 +119,7 @@ def send_email(to, subject, body):
           <div className="section-label">the receipt</div>
           <h2>What a pruv receipt looks like.</h2>
           <p>
-            Every action produces a receipt. Every receipt is linked to the one before it.
+            Every entry produces a receipt. Every receipt is linked to the one before it.
           </p>
           <ReceiptCard />
         </div>
@@ -123,29 +128,29 @@ def send_email(to, subject, body):
       {/* ── S8: How it Works ── */}
       <div className="section">
         <div className="container">
-          <div className="section-label">under the hood</div>
-          <h2>How pruv works</h2>
+          <div className="section-label">how it works</div>
+          <h2>how pruv works</h2>
 
           <div className="step-list">
             <div className="step-item">
               <div className="step-number">1</div>
-              <div className="step-title">Your agent performs an action</div>
+              <div className="step-title">Something happens in your system</div>
               <div className="step-desc">
-                Read a file, send an email, call an API &mdash; any operation.
+                A payment, a deployment, an agent action &mdash; any event.
               </div>
             </div>
             <div className="step-item">
               <div className="step-number">2</div>
-              <div className="step-title">The action data is hashed (SHA-256)</div>
+              <div className="step-title">The event data is hashed (SHA-256)</div>
               <div className="step-desc">
-                Before state, after state, operation name, timestamp &mdash; all hashed.
+                Before state, after state, operation, timestamp &mdash; all hashed.
               </div>
             </div>
             <div className="step-item">
               <div className="step-number">3</div>
-              <div className="step-title">The hash is chained to the previous hash</div>
+              <div className="step-title">The hash includes the previous entry&apos;s hash</div>
               <div className="step-desc">
-                Each entry&apos;s X must equal the previous entry&apos;s Y. Break one, the chain breaks.
+                Each receipt is linked to every receipt before it. Break one, the chain breaks.
               </div>
             </div>
             <div className="step-item">
@@ -158,9 +163,14 @@ def send_email(to, subject, body):
           </div>
 
           <p className="how-note">
-            This is the same principle that secures blockchains &mdash; without the blockchain.
+            Same principle that secures blockchains.
             <br />
-            No tokens. No mining. No gas fees. Just math.
+            <strong>Without the blockchain.</strong>
+          </p>
+          <p className="how-note">
+            No tokens. No mining. No gas fees. No consensus.
+            <br />
+            Just math.
           </p>
         </div>
       </div>
@@ -180,7 +190,7 @@ def send_email(to, subject, body):
             </a>
             <a href="https://github.com/mintingpressbuilds/pruv" target="_blank" rel="noopener noreferrer">
               <span className="il-label">github</span>
-              <span className="il-desc">source code</span>
+              <span className="il-desc">source</span>
             </a>
           </div>
         </div>

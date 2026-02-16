@@ -1,4 +1,4 @@
-# pruv — Homepage + Dashboard + Docs Audit
+# pruv — Homepage Rewrite
 
 ## Step 0: AUDIT FIRST
 
@@ -7,373 +7,494 @@ Before changing anything, check what currently exists:
 ### Dashboard audit
 
 1. Open `apps/dashboard` and read through every page/component
-1. Answer these questions:
-- Does the chain explorer timeline exist? (from PRUV_AGENT_BUILD.md Section 3)
-- Does it show agent actions as a visual timeline?
-- Does it show alerts/anomalies?
-- Does it show verification status with a checkmark?
-- Can you click an action to expand details?
-- Can you export a chain?
-- Is there an API keys management page?
-- What pages/routes currently exist?
+1. Answer: Does the chain explorer timeline exist? Does it show alerts? Can you export? What pages exist?
 1. List every existing dashboard page and what it shows
 
 ### Docs audit
 
-1. Check if `docs/` folder has content about:
-- The Agent class and @pruv.verified decorator
-- LangChain / CrewAI / OpenClaw integrations
-- The alerting system
-- Chain explorer usage
-1. List what docs exist and what's missing
+1. Check if `docs/` has content about the Agent class, integrations, alerting, API reference
+1. List what exists and what's missing
 
 ### API audit
 
-1. Check `apps/api/app/routes/` for:
-- Chain alerts endpoint (/v1/chains/{id}/alerts)
-- Agent-related endpoints
-1. List what routes exist
+1. Check `apps/api/app/routes/` for all existing routes
+1. List them
 
-**Report findings before proceeding to Step 1.** Tell me exactly what exists and what's missing so we know what the homepage can honestly claim.
+**Report findings before proceeding.** Tell me what exists and what's missing.
 
 -----
 
-## Step 1: HOMEPAGE REWRITE
+## Step 1: HOMEPAGE
 
 Location: `apps/web`
-
-The homepage must communicate one thing instantly: **pruv proves what your AI agent did.**
-
-Not "verification API." Not "cryptographic chain." Not technical jargon. A developer lands on this page and understands in 5 seconds what pruv does and why they need it.
 
 ### Design language
 
 - Dark. Protocol-spec aesthetic.
-- No gradient heroes. No feature cards with icons. No testimonial carousels.
-- Code is the hero. Show real code that works.
-- Monospace for code and hashes. Instrument Sans or similar for body.
-- The vibe is: technical, minimal, trustworthy, serious.
+- No gradient heroes. No feature cards with icons. No testimonial carousels. No stock images.
+- Code is the hero. Real code that works.
+- Monospace for code and hashes. Clean sans-serif for body.
+- The vibe: technical, minimal, trustworthy, inevitable.
+- Reference the existing design in `apps/web` or any `pruv-site.html` in the repo. Match what exists.
 
-### Page structure
+-----
 
-**Section 1: Hero**
+### Section 1: Hero
 
 ```
 pruv
 
-prove what your AI agent did.
+operational proof for any system.
 
-Every action. Every tool call. Every message.
-Cryptographic receipts your agent can't fake.
+Create a chain. Add entries. Every entry is hashed
+and linked to the one before it. Tamper with any entry
+and the chain breaks. That's it. That's the protocol.
 
-[pip install pruv]                    [view docs →]
+pip install pruv                              view docs →
 ```
 
-No image. No illustration. Just the statement. The code install command IS the call to action.
+No image. No illustration. The statement IS the product. The `pip install` is a copyable code block. "view docs" links to docs.pruv.dev.
 
-**Section 2: The problem (2 sentences max)**
+-----
 
-```
-AI agents read your email, send messages, execute code,
-and access your files. You have no proof of what they actually did.
+### Section 2: The protocol in 30 seconds
 
-Logs can be edited. Logs can be deleted. Logs lie.
-Pruv receipts are cryptographic. They can't.
-```
+Live interactive demo. Left side: Python code. Right side: chain building in real-time.
 
-**Section 3: Live code demo**
-
-The centerpiece of the homepage. Real Python code that actually works. Not pseudocode.
-
-Left side: the code. Right side: the chain output (animated, entries appear one by one).
+Left:
 
 ```python
-import pruv
+from pruv import Chain
 
-agent = pruv.Agent("email-assistant", api_key="pv_live_xxx")
+chain = Chain("invoice-trail")
 
-agent.action("read_inbox", {"account": "work", "count": 12})
-agent.action("draft_reply", {"to": "sarah@company.com"})
-agent.action("send_email", {"to": "sarah@company.com", "subject": "Re: Q3"})
+chain.add("invoice_created", {"id": "INV-0042", "amount": 240.00})
+chain.add("payment_received", {"method": "ach", "ref": "TXN-8812"})
+chain.add("receipt_issued", {"to": "sarah@company.com"})
 
-chain = agent.verify()
-# ✓ 3 actions · all verified · chain intact
+chain.verify()
+# ✓ 3 entries · chain intact · tamper-proof
 ```
 
-Right side shows the chain building in real-time:
+Right side animates — entries appear one by one with a slight delay:
 
 ```
-CHAIN: email-assistant-1739644800
+CHAIN: invoice-trail
 STATUS: ✓ verified
 
-#1  read_inbox           12:00:01.003
+#1  invoice_created        12:00:01
     hash: a3f8c2e1...
 
-#2  draft_reply          12:00:02.847
+#2  payment_received       12:00:03
     hash: 7d2e9a4f...
     prev: a3f8c2e1...
 
-#3  send_email           12:00:03.201
+#3  receipt_issued         12:00:04
     hash: b1c43e7d...
     prev: 7d2e9a4f...
 
-Chain integrity: ✓ intact
-Each hash includes the previous hash.
-Tamper with any entry and the chain breaks.
+✓ chain intact
+   each hash includes the previous hash.
+   change any entry and the chain breaks.
 ```
 
-This should be an interactive React component. The code appears with a typing effect or is static. The chain output animates — entries appear one by one with a slight delay, hashes fade in, the verification checkmark appears at the end.
+This is a React client component. Entries appear with 800ms delay between each. Hashes type out character by character. The verification checkmark pulses once when it appears. The connecting lines (│) draw downward.
 
-**Section 4: The decorator (even simpler)**
+**Important:** This demo shows a generic business use case (invoicing), NOT an AI agent use case. The protocol is universal. That's the point.
+
+-----
+
+### Section 3: Works everywhere
+
+Show pruv applied across completely different domains. Each one gets a small code snippet showing how natural it is. This is NOT a feature grid with icons. It's real code for real use cases.
+
+Layout: tabbed interface or vertical stack. Each use case is a tab with a code example.
+
+**AI Agents**
+
+```python
+agent = pruv.Agent("email-assistant", api_key="pv_live_xxx")
+
+agent.action("read_inbox", {"count": 12})
+agent.action("draft_reply", {"to": "sarah@co.com"})
+agent.action("send_email", {"to": "sarah@co.com"})
+
+# every action receipted. prove what your agent did.
+```
+
+**Payments**
+
+```python
+chain = Chain("order-7291")
+
+chain.add("order_placed", {"items": 3, "total": 189.00})
+chain.add("payment_authorized", {"method": "card", "last4": "4242"})
+chain.add("payment_captured", {"amount": 189.00})
+chain.add("fulfillment_started", {"warehouse": "east"})
+chain.add("shipped", {"carrier": "fedex", "tracking": "FX882910"})
+chain.add("delivered", {"signed_by": "M. Chen"})
+
+# order-to-delivery. every step proven.
+```
+
+**Compliance & Audit**
+
+```python
+chain = Chain("access-log-2026-02")
+
+chain.add("record_accessed", {
+    "user": "dr.patel",
+    "record": "patient-8827",
+    "reason": "scheduled-appointment"
+})
+
+chain.add("record_updated", {
+    "user": "dr.patel",
+    "field": "prescription",
+    "change_hash": "e7f2a1..."  # redacted content, hashed
+})
+
+# HIPAA audit trail. cryptographic. immutable.
+```
+
+**CI/CD & DevOps**
+
+```python
+chain = Chain("deploy-main-4481")
+
+chain.add("commit", {"sha": "a3f8c2e", "author": "kai"})
+chain.add("tests_passed", {"suite": "unit", "count": 847, "failures": 0})
+chain.add("tests_passed", {"suite": "integration", "count": 124, "failures": 0})
+chain.add("build_complete", {"artifact": "app-v2.4.1.tar.gz"})
+chain.add("deployed", {"env": "production", "region": "us-east-1"})
+
+# prove the build that went to production. every step.
+```
+
+**Supply Chain**
+
+```python
+chain = Chain("shipment-LOT-29174")
+
+chain.add("manufactured", {"facility": "shenzhen-03", "batch": "B-441"})
+chain.add("qa_passed", {"inspector": "lin.wang", "specs": "ISO-9001"})
+chain.add("shipped", {"port": "shenzhen", "vessel": "ever-forward"})
+chain.add("customs_cleared", {"port": "long-beach", "docs": "BOL-8827"})
+chain.add("received", {"warehouse": "dallas-07", "condition": "intact"})
+
+# field to shelf. every handoff proven.
+```
+
+**Legal & Contracts**
+
+```python
+chain = Chain("contract-NDA-2026-041")
+
+chain.add("drafted", {"by": "legal@acme.com", "version": 1})
+chain.add("reviewed", {"by": "counsel@partner.com", "comments": 3})
+chain.add("revised", {"by": "legal@acme.com", "version": 2})
+chain.add("signed", {"by": "ceo@acme.com", "method": "docusign"})
+chain.add("countersigned", {"by": "ceo@partner.com", "method": "docusign"})
+chain.add("executed", {"effective_date": "2026-03-01"})
+
+# chain of custody. every revision. every signature.
+```
+
+Each tab/section has a one-line description below the code (the comment at the bottom of each snippet serves this purpose). No paragraph explanations. The code speaks.
+
+-----
+
+### Section 4: The decorator
 
 ```
-Or just decorate your existing functions.
-Zero code changes to your logic.
+Already have functions? Just decorate them.
+
+import pruv
+pruv.init("my-system", api_key="pv_live_xxx")
 
 @pruv.verified
-def send_email(to, subject, body):
-    smtp.send(to, subject, body)
+def charge_card(customer_id, amount):
+    stripe.charges.create(customer=customer_id, amount=amount)
 
-# Every call to send_email now has
-# a cryptographic receipt. Automatically.
+@pruv.verified
+def send_notification(user, message):
+    twilio.messages.create(to=user.phone, body=message)
+
+@pruv.verified
+def update_record(record_id, data):
+    db.records.update(record_id, data)
+
+# every call. every function. automatic receipts.
+# zero changes to your existing logic.
 ```
 
-**Section 5: Framework integrations**
+-----
+
+### Section 5: Framework integrations
 
 ```
-Works with the tools you already use.
-
-LangChain    CrewAI    OpenClaw
+Plugs into what you already use.
 ```
 
-Each one shows a 3-line code snippet:
+Three columns or tabs:
 
-LangChain:
+**LangChain**
 
 ```python
 from pruv.integrations.langchain import PruvCallbackHandler
+
 handler = PruvCallbackHandler(api_key="pv_live_xxx")
 agent = initialize_agent(tools, llm, callbacks=[handler])
+# every LLM call, tool use, and chain step — receipted.
 ```
 
-CrewAI:
+**CrewAI**
 
 ```python
 from pruv.integrations.crewai import pruv_wrap_crew
-crew = pruv_wrap_crew(crew, api_key="pv_live_xxx")
-result = crew.kickoff()
+
+verified_crew = pruv_wrap_crew(crew, api_key="pv_live_xxx")
+result = verified_crew.kickoff()
+# every agent task — receipted.
 ```
 
-OpenClaw:
+**OpenClaw**
 
 ```python
 from pruv.integrations.openclaw import OpenClawVerifier
+
 verifier = OpenClawVerifier(api_key="pv_live_xxx")
-# Every skill execution is now verified
+# every skill execution — receipted.
 ```
 
-Three tabs or three columns. Click to switch between them.
+Small text below: `More integrations coming. Any system that performs actions can be verified.`
 
-**Section 6: What pruv catches**
+-----
+
+### Section 6: What happens when something goes wrong
 
 ```
 Pruv doesn't just record. It watches.
-
-⚠ Agent accessed .env file
-⚠ Error rate exceeded 30%
-⚠ Agent contacted unknown API domain
-⚠ 47 actions per minute (unusual volume)
-
-Anomaly detection on the proof chain itself.
-Your agent can't hide what it did.
 ```
 
-Show these as alert-style entries, maybe with a subtle animation where they appear one by one.
-
-**Section 7: The receipt**
-
-Show what a pruv receipt actually looks like. A single receipt card:
+Show alert entries appearing one by one (animated):
 
 ```
-┌─────────────────────────────────────┐
-│  RECEIPT                            │
-│                                     │
-│  Action:    send_email              │
-│  Sequence:  #3 of 47               │
-│  Timestamp: 2026-02-15T12:00:03Z   │
-│                                     │
-│  Hash:                              │
-│  b1c43e7d9a4f2b8c1d5e6f7a8b9c0d1e │
-│                                     │
-│  Previous:                          │
-│  7d2e9a4f3c8b1d6e5f2a7c4b9d0e8f1a │
-│                                     │
-│  ✓ Verified                         │
-│  This receipt is cryptographically  │
-│  linked to every action before it.  │
-│  Tamper with any entry and this     │
-│  receipt becomes invalid.           │
-└─────────────────────────────────────┘
+⚠  CRITICAL    Agent accessed .env credentials file
+⚠  WARNING     Error rate exceeded 30% (14 of 41 actions failed)
+⚠  WARNING     47 actions per minute — unusual volume detected
+ℹ  INFO        New external API domain contacted: unknown-service.io
 ```
 
-This could be an interactive element — hover over the hash and it highlights the connection to the previous entry. Or just a static, beautiful card.
-
-**Section 8: How it works (technical, for the curious)**
+Below:
 
 ```
-How pruv works
+Anomaly detection runs on the proof chain itself.
+Set severity thresholds. Get webhook alerts.
+Your systems can't hide what they did.
+```
 
-1. Your agent performs an action
-2. The action data is hashed (SHA-256)
-3. The hash is chained to the previous hash
+-----
+
+### Section 7: The receipt
+
+Show a single receipt. This is what pruv produces. Make it feel real and tangible.
+
+```
+┌─────────────────────────────────────────────┐
+│                                             │
+│  RECEIPT                                    │
+│                                             │
+│  Action:     payment_captured               │
+│  Chain:      order-7291                     │
+│  Sequence:   #3 of 6                        │
+│  Timestamp:  2026-02-15T12:00:03.201Z       │
+│                                             │
+│  Hash:                                      │
+│  b1c43e7d9a4f2b8c1d5e6f7a8b9c0d1e          │
+│                                             │
+│  Previous:                                  │
+│  7d2e9a4f3c8b1d6e5f2a7c4b9d0e8f1a          │
+│                                             │
+│  ✓ Verified                                 │
+│                                             │
+│  This receipt is cryptographically linked    │
+│  to every entry before it. Tamper with any   │
+│  entry and this receipt becomes invalid.     │
+│                                             │
+└─────────────────────────────────────────────┘
+```
+
+Render this as a styled card component. Dark background, subtle border, monospace hashes. The checkmark is green. Optionally: hover the hash and a tooltip shows "SHA-256 of action data + previous hash."
+
+-----
+
+### Section 8: How it works
+
+```
+how pruv works
+
+1. Something happens in your system
+2. The event data is hashed (SHA-256)
+3. The hash includes the previous entry's hash
 4. A signed receipt is stored
 
-Each receipt contains the hash of the previous receipt.
-Change any action in the history and every receipt after it breaks.
-This is the same principle that secures blockchains —
-without the blockchain.
+Each receipt is linked to every receipt before it.
+Change any entry in the history and every receipt
+after it breaks. Instantly detectable. Unfakeable.
 
-No tokens. No mining. No gas fees. Just math.
+Same principle that secures blockchains.
+Without the blockchain.
+
+No tokens. No mining. No gas fees. No consensus.
+Just math.
 ```
 
-Short. Technical but accessible. The "without the blockchain" line is important — it preempts the "why not just use a blockchain" question.
+This section is text-only. No code. Clean typography. Each numbered step could have a subtle animation or just be static.
 
-**Section 9: Install**
+The line "Same principle that secures blockchains. Without the blockchain." is the most important line on the entire page. It positions pruv correctly — serious cryptography, not crypto hype.
+
+-----
+
+### Section 9: Install
+
+Centered. Large. Monospace.
 
 ```
 pip install pruv
 ```
 
-Big. Centered. Monospace. That's the entire section. Maybe a copy button.
+Copy button. That's the entire section.
 
-Below it:
-
-```
-docs.pruv.dev          app.pruv.dev          github.com/xxx/pruv
-documentation          dashboard              source code
-```
-
-**Section 10: Footer**
+Below, three links in a row:
 
 ```
-pruv — prove what your AI agent did.
-
-Built on xycore. Open source.
-```
-
-Minimal. Link to GitHub. Link to docs.
-
------
-
-### Interactive chain demo component
-
-Location: `apps/web/src/components/ChainDemo.tsx`
-
-This is the hero component. A React client component that shows a simulated chain building.
-
-```tsx
-// ChainDemo.tsx
-
-// State: array of chain entries that appear one by one
-// On mount (or when scrolled into view): start the animation
-// Each entry appears after 800ms delay
-// Entry animation: fade in + slide up
-// Hash text types out character by character (fast, 50ms per char)
-// After all entries: verification checkmark appears with a subtle pulse
-// The chain lines (│) connecting entries animate downward
-
-// Data (hardcoded — this is a demo, not a live API call):
-const DEMO_ENTRIES = [
-  { seq: 1, action: "read_inbox", time: "12:00:01", hash: "a3f8c2e1b7d4..." },
-  { seq: 2, action: "draft_reply", time: "12:00:02", hash: "7d2e9a4f3c8b..." },
-  { seq: 3, action: "send_email", time: "12:00:03", hash: "b1c43e7d9a4f..." },
-];
-
-// Style: dark card with subtle border, monospace text
-// Green dots for each entry
-// Muted gray for timestamps and hashes
-// White for action names
-// Green checkmark at the end
-```
-
-### Code block component
-
-Reusable component for showing Python code with syntax highlighting:
-
-```tsx
-// CodeBlock.tsx
-
-// Dark background (#0a0a10)
-// Subtle border (#1a1a24)
-// Python syntax highlighting (keywords, strings, comments in different colors)
-// Copy button top-right
-// Language label top-left ("python")
-// Monospace font (JetBrains Mono or similar)
-```
-
-### Alert demo component
-
-For Section 6:
-
-```tsx
-// AlertDemo.tsx
-
-// Shows 4 alert entries appearing one by one
-// Each has a warning icon (⚠) in yellow/red
-// Slight delay between each (600ms)
-// Fade in + slide right animation
-// Color-coded: yellow for warning, red for critical
+docs.pruv.dev              app.pruv.dev              github
+documentation              dashboard                 source
 ```
 
 -----
 
-## Step 2: DASHBOARD UPDATES (if needed)
+### Section 10: Footer
 
-Based on the audit in Step 0, update the dashboard to include anything missing:
+```
+pruv — operational proof for any system.
+```
 
-### Chain explorer (if not built yet)
+Links: docs · dashboard · github · api reference · status
 
-- Add `/chains/[id]` page with visual timeline
-- See PRUV_AGENT_BUILD.md Section 3 for full spec
-
-### Alerts panel (if not built yet)
-
-- Show alerts inline on chain explorer
-- Summary badge at top of chain page
-
-### API keys page (if not built yet)
-
-- Create/revoke API keys
-- Show usage stats per key
-- Copy key to clipboard
-
-### Navigation
-
-Sidebar or top nav should include:
-
-- Chains (list all chains)
-- API Keys
-- Docs link (external → docs.pruv.dev)
-- Account/settings
+Small text: `Built on xycore. Open source.`
 
 -----
 
-## Step 3: DOCS UPDATES (if needed)
+## Interactive chain demo component
 
-Based on the audit in Step 0, add any missing documentation:
+Location: `apps/web/src/components/ChainDemo.tsx` (or wherever components live)
 
-### Required doc pages:
+This is the hero interactive element in Section 2.
 
-1. **Quickstart** — pip install, create agent, record 3 actions, verify. Under 20 lines of code.
-1. **Agent class reference** — all methods, parameters, return types.
-1. **Decorator reference** — @pruv.verified usage, with and without options.
-1. **LangChain integration** — install, setup, what gets recorded, example.
-1. **CrewAI integration** — same format.
-1. **OpenClaw integration** — same format.
-1. **Chain explorer** — how to use the dashboard to view chains.
-1. **Alerting** — what rules exist, how to configure webhooks, severity levels.
-1. **Security** — how redaction works, what data is stored, what's hashed.
-1. **API reference** — all endpoints, request/response formats.
+```tsx
+// State machine:
+// 1. Show empty chain panel
+// 2. After 500ms: first entry fades in, hash types out
+// 3. After 800ms: second entry fades in, "prev" hash connects to first
+// 4. After 800ms: third entry fades in
+// 5. After 600ms: "✓ chain intact" fades in with green checkmark pulse
+// 6. Stay static. User can hover entries to see connections highlighted.
+
+// Each entry card:
+// - Sequence number (#1, #2, #3)
+// - Action name (bold, white)
+// - Timestamp (muted)
+// - Hash (monospace, truncated, muted)
+// - Prev hash (monospace, truncated, muted) — highlighted same color as previous entry's hash
+
+// The vertical connecting line between entries draws downward during animation
+
+// Colors:
+// Background: #0a0a12
+// Border: #1a1a24
+// Entry dot: white or green
+// Action name: #ffffff
+// Timestamp: #55556a
+// Hash: #55556a, monospace
+// Verified checkmark: #22c55e (green)
+```
+
+## Use case tabs component
+
+Location: `apps/web/src/components/UseCaseTabs.tsx`
+
+```tsx
+// Tab bar with use case names:
+// AI Agents | Payments | Compliance | CI/CD | Supply Chain | Legal
+
+// Each tab shows a code block with the relevant snippet
+// Code blocks have:
+//   - Dark background (#0a0a10)
+//   - Subtle border (#1a1a24)
+//   - Python syntax highlighting
+//   - Copy button top-right
+//   - Comment at bottom serves as description (slightly different color)
+
+// Tab transitions: crossfade, 200ms
+// Active tab: white text, subtle underline
+// Inactive tabs: muted text (#55556a)
+
+// On mobile: horizontal scroll for tabs, or vertical stack
+```
+
+## Alert demo component
+
+Location: `apps/web/src/components/AlertDemo.tsx`
+
+```tsx
+// 4 alert entries, appear one by one when scrolled into view
+// IntersectionObserver triggers the animation
+// 500ms delay between each alert appearing
+// Animation: fade in + slide from left (12px)
+
+// Alert styling:
+// CRITICAL: red icon (⚠), red-tinted text
+// WARNING: yellow icon (⚠), yellow-tinted text
+// INFO: blue icon (ℹ), blue-tinted text
+
+// Background: transparent or very subtle dark card
+// Border-left: 2px solid in alert color
+// Monospace for any technical content
+```
+
+-----
+
+## Step 2: DASHBOARD FIXES (if needed after audit)
+
+Based on Step 0 findings, add anything missing:
+
+- Chain explorer timeline
+- Alerts on chain pages
+- API key management
+- Navigation updates
+
+Only build what doesn't exist yet.
+
+-----
+
+## Step 3: DOCS UPDATES (if needed after audit)
+
+Add missing doc pages:
+
+1. Quickstart (20 lines to get started)
+1. Chain class reference
+1. Agent class reference
+1. Decorator reference
+1. LangChain integration
+1. CrewAI integration
+1. OpenClaw integration
+1. Alerting & webhooks
+1. API reference
+1. Security & redaction
+
+Only write what doesn't exist yet.
 
 -----
 
@@ -381,38 +502,38 @@ Based on the audit in Step 0, add any missing documentation:
 
 ### Homepage
 
-- [ ] Hero communicates "prove what your AI agent did" in under 5 seconds
-- [ ] Live chain demo animates correctly (entries appear, hashes type out, verification appears)
-- [ ] Code examples are real, working Python code
-- [ ] All three framework integrations shown with code snippets
+- [ ] Hero says "operational proof for any system" — not AI-specific
+- [ ] Interactive chain demo shows a generic use case (invoicing), animates correctly
+- [ ] 6 use cases shown with real code: AI Agents, Payments, Compliance, CI/CD, Supply Chain, Legal
+- [ ] AI Agents is ONE tab among many, not the headline
+- [ ] Decorator section shows wrapping regular functions (not just AI)
+- [ ] Framework integrations shown (LangChain, CrewAI, OpenClaw)
 - [ ] Alert demo shows anomaly detection
 - [ ] Receipt card shows what a receipt looks like
-- [ ] "How it works" explains the chain without jargon
+- [ ] "How it works" explains chaining simply — mentions "without the blockchain"
 - [ ] `pip install pruv` is prominent and copyable
-- [ ] Page is fully responsive on mobile
-- [ ] Dark theme, protocol-spec aesthetic, no generic SaaS design
-- [ ] No stock photos, no illustrations, no gradient heroes
+- [ ] Dark theme, protocol-spec aesthetic
+- [ ] No stock photos, no illustrations, no gradient heroes, no feature cards with icons
+- [ ] Fully responsive on mobile
 - [ ] Page loads under 1 second
-- [ ] Design matches the existing pruv design language (check the reference HTML if it exists)
+- [ ] No use of the word "primitive" anywhere on the page
 
 ### Dashboard
 
-- [ ] Chain explorer shows visual timeline (if it was missing)
-- [ ] Alerts display on chain pages (if they were missing)
-- [ ] API keys manageable from dashboard
+- [ ] Chain explorer works (if it was missing)
+- [ ] Alerts display (if they were missing)
 
 ### Docs
 
-- [ ] Quickstart exists and works in under 20 lines
+- [ ] Quickstart exists
 - [ ] All integrations documented
-- [ ] Alerting documented
 - [ ] API reference complete
 
 ## Build order
 
 1. Run the audit (Step 0). Report what exists.
-1. Homepage rewrite (Step 1). This is the priority.
+1. Homepage rewrite (Step 1). Priority.
 1. Dashboard fixes (Step 2, only what's missing).
 1. Docs updates (Step 3, only what's missing).
 
-Execute Step 0 now. Report findings before building anything.
+Execute Step 0 now.

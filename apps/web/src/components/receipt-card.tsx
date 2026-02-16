@@ -8,15 +8,19 @@ export function ReceiptCard() {
       <div className="rc-rows">
         <div className="rc-row">
           <span className="rc-key">action</span>
-          <span className="rc-val">send_email</span>
+          <span className="rc-val">payment_captured</span>
+        </div>
+        <div className="rc-row">
+          <span className="rc-key">chain</span>
+          <span className="rc-val">order-7291</span>
         </div>
         <div className="rc-row">
           <span className="rc-key">sequence</span>
-          <span className="rc-val">#3 of 47</span>
+          <span className="rc-val">#3 of 6</span>
         </div>
         <div className="rc-row">
           <span className="rc-key">timestamp</span>
-          <span className="rc-val">2026-02-15T12:00:03Z</span>
+          <span className="rc-val">2026-02-15T12:00:03.201Z</span>
         </div>
       </div>
 
@@ -33,7 +37,7 @@ export function ReceiptCard() {
       <div className="rc-verified">
         <span className="rc-check">{"\u2713"} verified</span>
         <p>
-          This receipt is cryptographically linked to every action before it.
+          This receipt is cryptographically linked to every entry before it.
           Tamper with any entry and this receipt becomes invalid.
         </p>
       </div>
