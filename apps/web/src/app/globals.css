@@ -156,6 +156,13 @@ a:hover { text-decoration: underline; }
   padding: 4px;
 }
 
+.navbar-mobile-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 98;
+  background: transparent;
+}
+
 .navbar-mobile-menu {
   display: none;
   position: fixed;
@@ -990,11 +997,20 @@ a:hover { text-decoration: underline; }
 }
 
 .install-links a {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
   text-decoration: none !important;
+  width: fit-content;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.install-links a:hover {
+  border-color: var(--border);
 }
 
 .il-label {
