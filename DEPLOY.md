@@ -48,6 +48,7 @@ JWT_ALGORITHM=HS256
 # ─── OAuth ───
 GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
+GITHUB_CALLBACK_URL=https://api.pruv.dev/v1/auth/oauth/github
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 
@@ -287,6 +288,7 @@ Turn off Cloudflare proxy (orange cloud) for Vercel and Railway domains — they
 3. Callback URL: `https://api.pruv.dev/v1/auth/oauth/github`
 4. Copy Client ID → `GITHUB_CLIENT_ID`
 5. Generate secret → `GITHUB_CLIENT_SECRET`
+6. Set `GITHUB_CALLBACK_URL=https://api.pruv.dev/v1/auth/oauth/github` (must match step 3)
 
 ### Google
 
