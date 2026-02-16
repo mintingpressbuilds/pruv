@@ -24,6 +24,7 @@ import type {
   CheckpointPreview,
   CheckpointRestoreResult,
   ChainAlerts,
+  PaymentVerification,
 } from "./types";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -394,6 +395,10 @@ export const chains = {
 
   async alerts(id: string): Promise<ChainAlerts> {
     return request<ChainAlerts>(`/v1/chains/${id}/alerts`);
+  },
+
+  async verifyPayments(id: string): Promise<PaymentVerification> {
+    return request<PaymentVerification>(`/v1/chains/${id}/verify-payments`);
   },
 
   async exportHtml(id: string): Promise<string> {

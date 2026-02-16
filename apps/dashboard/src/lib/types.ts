@@ -287,6 +287,35 @@ export interface ChainAlerts {
   analyzed_at: number;
 }
 
+// ─── Payment Types ──────────────────────────────────────────────────────────
+
+export interface PaymentVerification {
+  chain_id: string;
+  payment_count: number;
+  verified_count: number;
+  breaks: number[];
+  all_valid: boolean;
+  final_balances: Record<string, number>;
+  total_volume: number;
+  message: string;
+}
+
+export interface XYProofData {
+  x: string;
+  y: string;
+  xy: string;
+  operation: string;
+  timestamp: number;
+  before: Record<string, number>;
+  after: Record<string, number>;
+  sender: string;
+  recipient: string;
+  amount: number;
+  valid: boolean;
+  balanced: boolean;
+  memo?: string;
+}
+
 // ─── Filter / Sort Types ─────────────────────────────────────────────────────
 
 export interface ChainFilters {

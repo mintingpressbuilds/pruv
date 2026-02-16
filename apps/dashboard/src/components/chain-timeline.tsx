@@ -132,6 +132,10 @@ export function ChainTimeline({
             <span className="h-2 w-2 rounded-full bg-pruv-500" />
             signed
           </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rotate-45 rounded-sm bg-emerald-500" />
+            payment
+          </span>
         </div>
       </div>
 

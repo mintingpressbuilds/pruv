@@ -13,6 +13,7 @@ import {
   Download,
   AlertTriangle,
   Bot,
+  DollarSign,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Sidebar } from "@/components/sidebar";
@@ -22,7 +23,7 @@ import { TimeTravel } from "@/components/time-travel";
 import { ReplayControls } from "@/components/replay-controls";
 import { VerificationBadge } from "@/components/verification-badge";
 import { QuickUndo } from "@/components/quick-undo";
-import { useChain, useChainVerification, useChainAlerts } from "@/hooks/use-chains";
+import { useChain, useChainVerification, useChainAlerts, usePaymentVerification } from "@/hooks/use-chains";
 import { useEntries, useUndoEntry } from "@/hooks/use-entries";
 import {
   useCheckpoints,
@@ -31,6 +32,7 @@ import {
   useRestoreCheckpoint,
 } from "@/hooks/use-checkpoints";
 import { chains } from "@/lib/api";
+import { isPaymentEntry } from "@/components/entry-node";
 import type { Entry, AlertSeverity } from "@/lib/types";
 
 const severityConfig: Record<
@@ -66,6 +68,11 @@ export default function ChainDetailPage() {
     refetch: runVerification,
   } = useChainVerification(chainId, { enabled: false });
   const { data: alertsData } = useChainAlerts(chainId);
+  const {
+    data: paymentVerification,
+    isLoading: isVerifyingPayments,
+    refetch: runPaymentVerification,
+  } = usePaymentVerification(chainId, { enabled: false });
 
   const undoMutation = useUndoEntry(chainId);
 
@@ -123,6 +130,13 @@ export default function ChainDetailPage() {
   const agentName = chain?.metadata?.agent as string | undefined;
   const framework = chain?.metadata?.framework as string | undefined;
 
+  // Payment summary
+  const paymentEntryCount = useMemo(
+    () => entries.filter(isPaymentEntry).length,
+    [entries]
+  );
+  const hasPayments = paymentEntryCount > 0;
+
   const handleTimeTravelChange = useCallback(
     (index: number) => {
       if (index === -1) {
@@ -136,6 +150,10 @@ export default function ChainDetailPage() {
 
   const handleVerify = () => {
     runVerification();
+  };
+
+  const handleVerifyPayments = () => {
+    runPaymentVerification();
   };
 
   const handleUndo = () => {
@@ -237,6 +255,20 @@ export default function ChainDetailPage() {
                 isVerifying={isVerifying}
                 onVerify={handleVerify}
               />
+              {hasPayments && (
+                <button
+                  onClick={handleVerifyPayments}
+                  disabled={isVerifyingPayments}
+                  className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                >
+                  {isVerifyingPayments ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <DollarSign size={14} />
+                  )}
+                  verify payments
+                </button>
+              )}
             </div>
           }
         />
@@ -487,8 +519,82 @@ export default function ChainDetailPage() {
                   ))}
                 </div>
               )}
+
+              {/* Payment summary */}
+              {hasPayments && (
+                <div className="mt-4 flex items-center gap-6 border-t border-[var(--border)] pt-3">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rotate-45 rounded-sm bg-emerald-500" />
+                    <span className="text-xs text-[var(--text-secondary)]">
+                      <span className="font-medium text-[var(--text-primary)]">{paymentEntryCount}</span> payment{paymentEntryCount !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  {paymentVerification && (
+                    <>
+                      <span className="text-xs text-[var(--text-secondary)]">
+                        <span className="font-medium text-[var(--text-primary)]">{paymentVerification.verified_count}</span> verified
+                      </span>
+                      <span className="text-xs font-mono text-[var(--text-secondary)]">
+                        $<span className="font-medium text-[var(--text-primary)]">
+                          {paymentVerification.total_volume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span> volume
+                      </span>
+                      {paymentVerification.all_valid ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-green-400">
+                          <Check size={10} />
+                          all valid
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-400">
+                          <AlertTriangle size={10} />
+                          {paymentVerification.breaks.length} break{paymentVerification.breaks.length !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </>
+                  )}
+                  <span className="text-xs text-[var(--text-secondary)]">
+                    <span className="font-medium text-[var(--text-primary)]">{entries.length - paymentEntryCount}</span> operation{entries.length - paymentEntryCount !== 1 ? "s" : ""}
+                  </span>
+                </div>
+              )}
             </motion.div>
           )}
+
+          {/* Payment verification result banner */}
+          <AnimatePresence>
+            {paymentVerification && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className={`flex items-center gap-4 rounded-xl border p-4 ${
+                  paymentVerification.all_valid
+                    ? "border-green-500/30 bg-green-500/5"
+                    : "border-red-500/30 bg-red-500/5"
+                }`}
+              >
+                <DollarSign
+                  size={16}
+                  className={paymentVerification.all_valid ? "text-green-400" : "text-red-400"}
+                />
+                <span className={`text-sm ${paymentVerification.all_valid ? "text-green-400" : "text-red-400"}`}>
+                  {paymentVerification.message}
+                </span>
+                {paymentVerification.final_balances && Object.keys(paymentVerification.final_balances).length > 0 && (
+                  <div className="ml-auto flex items-center gap-3 text-xs text-[var(--text-tertiary)]">
+                    {Object.entries(paymentVerification.final_balances).slice(0, 4).map(([account, balance]) => (
+                      <span key={account} className="font-mono">
+                        {account}: ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    ))}
+                    {Object.keys(paymentVerification.final_balances).length > 4 && (
+                      <span>+{Object.keys(paymentVerification.final_balances).length - 4} more</span>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Time travel + replay controls */}
           {entries.length > 1 && !actionFilter && (
