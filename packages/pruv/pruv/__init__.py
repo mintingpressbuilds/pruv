@@ -19,6 +19,11 @@ from .approval import ApprovalGate
 # Cloud
 from .cloud import CloudClient, CloudStorage
 
+# Agent
+from .client import PruvClient
+from .agent import Agent, ActionError
+from .decorators import init, verified
+
 __version__ = "1.0.0"
 
 __all__ = [
@@ -42,4 +47,10 @@ __all__ = [
     # Cloud
     "CloudClient",
     "CloudStorage",
+    # Agent
+    "PruvClient",
+    "Agent",
+    "ActionError",
+    "init",
+    "verified",
 ]
