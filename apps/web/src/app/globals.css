@@ -257,8 +257,8 @@ a:hover { text-decoration: underline; }
 
 .hero-docs-link:hover { color: var(--green) !important; text-decoration: none !important; }
 
-/* ── Sections ── */
-.section {
+/* ── Sections (homepage only) ── */
+.home > .section {
   padding: 100px 0;
   border-top: 1px solid var(--border);
 }
@@ -272,7 +272,7 @@ a:hover { text-decoration: underline; }
   margin-bottom: 32px;
 }
 
-.section h2 {
+.home > .section h2 {
   font-family: var(--mono);
   font-size: 28px;
   font-weight: 600;
@@ -280,7 +280,7 @@ a:hover { text-decoration: underline; }
   margin-bottom: 16px;
 }
 
-.section p {
+.home > .section p {
   color: var(--text);
   font-size: 16px;
   max-width: 560px;
@@ -733,7 +733,7 @@ a:hover { text-decoration: underline; }
 }
 
 /* ── S9: Big Install ── */
-.section-install {
+.home > .section-install {
   padding: 120px 0;
 }
 

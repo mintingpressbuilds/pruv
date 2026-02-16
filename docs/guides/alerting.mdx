@@ -1,0 +1,180 @@
+---
+title: "Alerting"
+description: "pruv automatically detects anomalies in your verification chains. Five built-in rules monitor for suspicious agent behavior."
+---
+
+# Alerting
+
+pruv analyzes verification chains for suspicious patterns and anomalies. Five rule-based detection rules run on-demand when you request alerts for a chain. Alerts with warning or critical severity automatically trigger webhook notifications.
+
+## Getting Alerts
+
+### Via API
+
+```bash
+curl -H "Authorization: Bearer pv_live_xxx" \
+  https://api.pruv.dev/v1/chains/{chain_id}/alerts
+```
+
+### Via Dashboard
+
+Alerts appear as a summary banner at the top of any chain detail page in the [dashboard](https://app.pruv.dev). Critical alerts show in red, warnings in yellow, and informational alerts in blue.
+
+### Via SDK
+
+```python
+import pruv
+
+agent = pruv.Agent("my-agent", api_key="pv_live_xxx")
+# ... record actions ...
+
+# Alerts are analyzed when you view the chain in the dashboard
+# or call the /alerts endpoint directly
+```
+
+## Detection Rules
+
+### 1. High Error Rate
+
+| | |
+|---|---|
+| **Severity** | WARNING |
+| **Trigger** | More than 30% of actions resulted in errors |
+| **Minimum** | Chain must have 5+ entries |
+| **Detection** | Counts operations containing `.error` |
+
+An agent with a high error rate may be malfunctioning, misconfigured, or encountering unexpected conditions.
+
+### 2. High Action Rate
+
+| | |
+|---|---|
+| **Severity** | WARNING |
+| **Trigger** | Agent performing more than 30 actions per minute |
+| **Minimum** | Chain must have 100+ entries |
+| **Detection** | Calculates rate from first to last entry timestamps |
+
+Unusually high action rates may indicate a runaway loop, retry storm, or compromised agent.
+
+### 3. New Tool Usage
+
+| | |
+|---|---|
+| **Severity** | INFO |
+| **Trigger** | A new tool or skill is used after 3+ established tools |
+| **Detection** | Monitors `tool.start` and `skill.start` operations |
+
+An agent using a tool it hasn't used before may have been given new capabilities or may be behaving unexpectedly.
+
+### 4. Sensitive File Access
+
+| | |
+|---|---|
+| **Severity** | CRITICAL |
+| **Trigger** | Agent accessed a sensitive file path |
+| **Detection** | Monitors `file.access` operations |
+
+**Sensitive paths include:**
+- `.env`
+- `credentials`
+- `secrets`
+- `.ssh`
+- `private`
+- `password`
+- `/etc/shadow`
+
+An agent accessing credential files or secret stores should always be investigated.
+
+### 5. New API Domain
+
+| | |
+|---|---|
+| **Severity** | INFO |
+| **Trigger** | Agent contacted a new domain after 2+ established domains |
+| **Detection** | Monitors `api.call` operations and extracts domains from URLs |
+
+An agent reaching out to unfamiliar domains may be exfiltrating data or interacting with unauthorized services.
+
+## Alert Response
+
+```json
+{
+  "chain_id": "chain_abc123",
+  "alerts": [
+    {
+      "rule": "sensitive_file_access",
+      "severity": "critical",
+      "message": "Agent accessed sensitive file: .env",
+      "entry_id": "xy_8f3a2b1c..."
+    },
+    {
+      "rule": "high_error_rate",
+      "severity": "warning",
+      "message": "Error rate is 45% (9 of 20 actions)",
+      "entry_id": null
+    }
+  ],
+  "analyzed_at": 1739644800.0
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `chain_id` | `string` | Chain that was analyzed. |
+| `alerts` | `array` | List of detected alerts. |
+| `alerts[].rule` | `string` | Rule identifier (e.g., `high_error_rate`, `sensitive_file_access`). |
+| `alerts[].severity` | `string` | `info`, `warning`, or `critical`. |
+| `alerts[].message` | `string` | Human-readable alert description. |
+| `alerts[].entry_id` | `string \| null` | Entry that triggered the alert, if applicable. |
+| `analyzed_at` | `number` | Unix timestamp of when the analysis ran. |
+
+## Webhooks
+
+Alerts with `warning` or `critical` severity automatically trigger webhook notifications if you have a webhook configured. The webhook event type is `alert.triggered`.
+
+### Webhook Payload
+
+```json
+{
+  "event": "alert.triggered",
+  "data": {
+    "chain_id": "chain_abc123",
+    "alert_count": 2,
+    "alerts": [
+      {
+        "rule": "sensitive_file_access",
+        "severity": "critical",
+        "message": "Agent accessed sensitive file: .env"
+      }
+    ]
+  },
+  "user_id": "user_xyz"
+}
+```
+
+Configure webhooks in your [dashboard settings](https://app.pruv.dev/settings) or via the API.
+
+## Severity Levels
+
+| Severity | Color | Action |
+|----------|-------|--------|
+| **CRITICAL** | Red | Immediate investigation required. Triggers webhook. |
+| **WARNING** | Yellow | Review recommended. Triggers webhook. |
+| **INFO** | Blue | For awareness. No webhook. |
+
+## Analysis Scope
+
+- Alert analysis runs **on-demand** when the `/alerts` endpoint is called or when you view a chain in the dashboard.
+- Analysis covers up to **10,000 entries** per chain.
+- Analysis is **stateless and deterministic** — the same chain data always produces the same alerts.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Chain Explorer" icon="timeline" href="/guides/chain-explorer">
+    View alerts in the dashboard chain explorer.
+  </Card>
+  <Card title="Approval Gates" icon="shield-check" href="/guides/approval-gates">
+    Require human approval for high-risk operations.
+  </Card>
+</CardGroup>

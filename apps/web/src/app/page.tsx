@@ -7,7 +7,7 @@ import { CopyInstall } from "@/components/copy-install";
 
 export default function HomePage() {
   return (
-    <>
+    <div className="home">
       {/* ── S1: Hero ── */}
       <div className="container">
         <div className="hero">
@@ -185,6 +185,6 @@ def send_email(to, subject, body):
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

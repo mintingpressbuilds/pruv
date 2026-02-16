@@ -83,7 +83,14 @@
     {
       "group": "Guides",
       "pages": [
+        "guides/agent-class",
+        "guides/verified-decorator",
         "guides/wrapping-agents",
+        "guides/langchain",
+        "guides/crewai",
+        "guides/openclaw",
+        "guides/alerting",
+        "guides/chain-explorer",
         "guides/scanning-projects",
         "guides/checkpoint-restore",
         "guides/approval-gates",
