@@ -197,8 +197,8 @@ class TestRateLimitingCoverage:
         # OAuth routes should respond (even if unconfigured) without letting
         # unlimited requests through
         for i in range(65):
-            client.post("/v1/auth/oauth/github?code=testcode1234")
-        resp = client.post("/v1/auth/oauth/github?code=testcode1234")
+            client.get("/v1/auth/oauth/github?code=testcode1234")
+        resp = client.get("/v1/auth/oauth/github?code=testcode1234")
         # Should eventually hit 429 or 501 (unconfigured)
         assert resp.status_code in (429, 501)
 
