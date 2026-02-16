@@ -21,7 +21,7 @@
   --faint: #222235;
   --mono: 'JetBrains Mono', monospace;
   --sans: 'Instrument Sans', sans-serif;
-  --navbar-bg: rgba(4, 4, 8, 0.85);
+  --navbar-bg: rgba(4, 4, 8, 0.97);
   --heading: #fff;
 }
 
@@ -42,7 +42,7 @@
   --text: #3a3a4a;
   --dim: #888898;
   --faint: #e8e8ee;
-  --navbar-bg: rgba(245, 245, 247, 0.85);
+  --navbar-bg: rgba(245, 245, 247, 0.97);
   --heading: #1a1a2e;
 }
 
@@ -316,7 +316,6 @@ a:hover { text-decoration: underline; }
   margin: 40px 0 0;
   background: var(--border);
   border-radius: 10px;
-  overflow: hidden;
 }
 
 .hero-demo-code,
@@ -324,6 +323,15 @@ a:hover { text-decoration: underline; }
   background: var(--surface);
   padding: 28px;
   position: relative;
+  min-width: 0;
+}
+
+.hero-demo-code {
+  border-radius: 10px 0 0 10px;
+}
+
+.hero-demo-chain {
+  border-radius: 0 10px 10px 0;
 }
 
 .hero-demo-label {
@@ -341,6 +349,7 @@ a:hover { text-decoration: underline; }
   line-height: 1.8;
   white-space: pre;
   overflow-x: auto;
+  overflow-y: visible;
 }
 
 /* chain output */
@@ -1349,6 +1358,8 @@ a:hover { text-decoration: underline; }
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .hero-demo { grid-template-columns: 1fr; }
+  .hero-demo-code { border-radius: 10px 10px 0 0; }
+  .hero-demo-chain { border-radius: 0 0 10px 10px; }
   .install-links { flex-direction: column; gap: 24px; }
 }
 
