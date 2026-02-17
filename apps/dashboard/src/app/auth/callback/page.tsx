@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { auth } from "@/lib/api";
 
-export default function AuthCallbackPage() {
+function CallbackHandler() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -18,8 +18,15 @@ export default function AuthCallbackPage() {
     }
   }, [searchParams, router]);
 
+  return null;
+}
+
+export default function AuthCallbackPage() {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", color: "#999", fontFamily: "var(--font-mono, monospace)" }}>
+      <Suspense fallback="signing in...">
+        <CallbackHandler />
+      </Suspense>
       signing in...
     </div>
   );
