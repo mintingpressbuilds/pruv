@@ -11,15 +11,10 @@ export default function HowItWorksPage() {
     <div className="page">
       <div className="container">
         <div className="page-header">
-          <div className="section-label">how it works</div>
           <h1>How pruv works</h1>
           <p>
-            Every system transforms state. Something was one way, then something
-            happened, and now it&apos;s another way.
-          </p>
-          <p>
-            pruv captures the before, the after, and generates cryptographic
-            proof that the transition occurred.
+            Every system transforms state. pruv captures the before, the after,
+            and generates cryptographic proof that the transition occurred.
           </p>
           <p>
             No blockchain. No consensus. Just math.
