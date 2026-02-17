@@ -5,7 +5,7 @@ export function Footer() {
     <footer className="footer">
       <div className="container">
         <div className="footer-primitive">
-          pruv &mdash; operational proof for any system.
+          pruv &mdash; verifiable proof for any system.
         </div>
         <div className="footer-links">
           <a href="https://docs.pruv.dev" target="_blank" rel="noopener noreferrer">docs</a>
