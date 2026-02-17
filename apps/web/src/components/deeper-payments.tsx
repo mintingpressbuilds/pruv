@@ -30,15 +30,15 @@ export function DeeperPayments() {
       className={`deeper-payments ${visible ? "visible" : ""}`}
     >
       <div className="container">
+        <div className="section-label">payment verification</div>
         <p className="deeper-text">
-          Some operations need more than a record. They need proof
-          that the math is right.
+          Some operations need more than a record.
+          They need proof that the math is right.
         </p>
         <p className="deeper-text">
-          Payment verification in pruv doesn&apos;t just log transfers.
-          It hashes the balance state before, hashes the balance
-          state after, and chains them together. If a number is wrong
-          anywhere in the history, the proof breaks.
+          pruv hashes the balance state before and after every transfer,
+          then chains them together. If a number is wrong anywhere in the
+          history, the proof breaks.
         </p>
 
         <div className="deeper-card">
@@ -69,10 +69,10 @@ export function DeeperPayments() {
 
           <div className="deeper-rule">
             <span className="deeper-mono">
-              Entry[N].x == Entry[N-1].y
+              Conservation enforced cryptographically.
             </span>
             <span className="deeper-mono deeper-dim">
-              Break one entry, the chain breaks.
+              Total in must equal total out. No money created. No money destroyed.
             </span>
           </div>
         </div>
