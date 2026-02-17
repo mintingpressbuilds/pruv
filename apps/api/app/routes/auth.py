@@ -117,7 +117,9 @@ async def github_oauth(
         name=f"GitHub User {code[:8]}",
     )
     token = create_jwt_token(user["id"])
-    return {"token": token, "user": user}
+    # Redirect to dashboard with token so the frontend can store it
+    callback_url = f"{settings.dashboard_url}/auth/callback?token={urllib.parse.quote(token)}"
+    return RedirectResponse(url=callback_url)
 
 
 @router.post("/oauth/google")
@@ -141,4 +143,6 @@ async def google_oauth_callback(
         name=f"Google User {code[:8]}",
     )
     token = create_jwt_token(user["id"])
-    return {"token": token, "user": user}
+    # Redirect to dashboard with token so the frontend can store it
+    callback_url = f"{settings.dashboard_url}/auth/callback?token={urllib.parse.quote(token)}"
+    return RedirectResponse(url=callback_url)
