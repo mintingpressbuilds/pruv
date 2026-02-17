@@ -38,6 +38,7 @@ class Settings:
     github_callback_url: str = ""
     google_client_id: str = ""
     google_client_secret: str = ""
+    dashboard_url: str = "https://app.pruv.dev"
 
     # Rate limiting
     rate_limit_free: int = 60  # requests per minute
@@ -77,6 +78,7 @@ class Settings:
             github_callback_url=os.getenv("GITHUB_CALLBACK_URL", ""),
             google_client_id=os.getenv("GOOGLE_CLIENT_ID", ""),
             google_client_secret=os.getenv("GOOGLE_CLIENT_SECRET", ""),
+            dashboard_url=os.getenv("DASHBOARD_URL", "https://app.pruv.dev"),
             stripe_secret_key=os.getenv("STRIPE_SECRET_KEY", ""),
             stripe_webhook_secret=os.getenv("STRIPE_WEBHOOK_SECRET", ""),
             r2_bucket=os.getenv("R2_BUCKET", ""),
