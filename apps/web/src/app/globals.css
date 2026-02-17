@@ -1505,6 +1505,72 @@ a:hover { text-decoration: underline; }
 
 .spec-val .highlight { color: var(--green); }
 
+/* ── How It Works: extras ── */
+.hiw-list {
+  margin: 20px 0 32px;
+  padding-left: 0;
+  list-style: none;
+}
+
+.hiw-list li {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.8;
+  padding-left: 16px;
+  position: relative;
+}
+
+.hiw-list li::before {
+  content: "\2022";
+  color: var(--green);
+  position: absolute;
+  left: 0;
+}
+
+.hiw-list li strong {
+  color: var(--heading);
+}
+
+.chain-diagram-block {
+  white-space: pre;
+  overflow-x: auto;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  color: var(--dim) !important;
+}
+
+.properties-list {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.property-item {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.property-item:last-child {
+  border-bottom: none;
+}
+
+.property-name {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--heading);
+  margin-bottom: 6px;
+}
+
+.property-desc {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--dim);
+  line-height: 1.7;
+}
+
 /* ── Live Chain (legacy) ── */
 .chain-demo {
   margin: 48px 0;

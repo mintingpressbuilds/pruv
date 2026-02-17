@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "How It Works",
   description:
-    "The XY primitive. Capture the before, the after, create cryptographic proof. No blockchain. No consensus. Just math.",
+    "Every system transforms state. pruv captures both sides and generates cryptographic proof. No blockchain. No consensus. Just math.",
 };
 
 export default function HowItWorksPage() {
@@ -12,35 +12,101 @@ export default function HowItWorksPage() {
       <div className="container">
         <div className="page-header">
           <div className="section-label">how it works</div>
-          <h1>The XY primitive.</h1>
+          <h1>How pruv works</h1>
           <p>
-            Every system transforms state. pruv captures the before, the after,
-            and generates cryptographic proof that the transition occurred. No
-            blockchain. No consensus. Just math.
+            Every system transforms state. Something was one way, then something
+            happened, and now it&apos;s another way.
+          </p>
+          <p>
+            pruv captures the before, the after, and generates cryptographic
+            proof that the transition occurred.
+          </p>
+          <p>
+            No blockchain. No consensus. Just math.
           </p>
         </div>
 
         <div className="page-body">
-          <h2>The core idea</h2>
+          <h2>The idea in one sentence</h2>
+          <p>
+            Your system does work. pruv proves the work happened.
+          </p>
           <div className="spec-table">
             <div className="spec-row">
-              <div className="spec-key">f(X) = Y</div>
+              <div className="spec-key">Your function</div>
               <div className="spec-val">
-                Every function transforms state
+                <span className="highlight">f(X) = Y</span>
               </div>
             </div>
             <div className="spec-row">
-              <div className="spec-key">pruv(f)(X)</div>
+              <div className="spec-key">With pruv</div>
               <div className="spec-val">
-                = Y + <span className="highlight">XY</span> &mdash; pruv adds
-                proof to every transition
+                <span className="highlight">pruv(f)(X) = Y + XY</span>
               </div>
             </div>
           </div>
           <p>
-            XY is a cryptographic record containing hashes of both X and Y, a
-            timestamp, an optional Ed25519 signature, and a link to the previous
-            record in the chain.
+            X is the state before. Y is the state after. XY is the proof.
+          </p>
+          <p>
+            That&apos;s the entire protocol.
+          </p>
+
+          <h2>What&apos;s inside an XY record</h2>
+          <p>
+            XY is a single verifiable record that contains everything needed
+            to prove a state transition occurred:
+          </p>
+          <ul className="hiw-list">
+            <li><strong>X hash</strong> &mdash; SHA-256 of the state before</li>
+            <li><strong>Y hash</strong> &mdash; SHA-256 of the state after</li>
+            <li><strong>Timestamp</strong> &mdash; when the transition happened</li>
+            <li><strong>Signature</strong> &mdash; optional Ed25519, proving who performed it</li>
+            <li><strong>Previous entry</strong> &mdash; link to the last XY record in the chain</li>
+          </ul>
+          <div className="code-block">
+            <span className="cm">{`// Simplified XY record structure`}</span>
+            {"\n"}
+            {`{`}
+            {"\n"}
+            {`  `}<span className="str">&quot;id&quot;</span>{`: `}<span className="str">&quot;xy_8f3a2b1c&quot;</span>{`,`}
+            {"\n"}
+            {`  `}<span className="str">&quot;x_hash&quot;</span>{`: `}<span className="str">&quot;sha256:a1b2c3d4...&quot;</span>{`,`}
+            {"\n"}
+            {`  `}<span className="str">&quot;y_hash&quot;</span>{`: `}<span className="str">&quot;sha256:e5f6a7b8...&quot;</span>{`,`}
+            {"\n"}
+            {`  `}<span className="str">&quot;timestamp&quot;</span>{`: `}<span className="str">&quot;2025-01-15T10:30:00Z&quot;</span>{`,`}
+            {"\n"}
+            {`  `}<span className="str">&quot;signature&quot;</span>{`: `}<span className="str">&quot;ed25519:...&quot;</span>{`,`}
+            {"\n"}
+            {`  `}<span className="str">&quot;prev_entry&quot;</span>{`: `}<span className="str">&quot;xy_7e2f1a0b&quot;</span>{`,`}
+            {"\n"}
+            {`  `}<span className="str">&quot;chain_id&quot;</span>{`: `}<span className="str">&quot;order_processing&quot;</span>
+            {"\n"}
+            {`}`}
+          </div>
+          <p>
+            Anyone with this record and the original data can recompute the hashes
+            and confirm the proof. No special tools. No pruv account. Standard crypto
+            libraries in any language.
+          </p>
+
+          <h2>How a chain forms</h2>
+          <p>
+            When Y of one transition becomes X of the next, pruv links them automatically.
+          </p>
+          <div className="code-block chain-diagram-block">
+{`Entry 0          Entry 1          Entry 2
+┌──────────┐     ┌──────────┐     ┌──────────┐
+│ X: -      │────▶│ X: Y₀    │────▶│ X: Y₁    │
+│ Y: Y₀    │     │ Y: Y₁    │     │ Y: Y₂    │
+│ XY: h₀   │     │ XY: h₁   │     │ XY: h₂   │
+└──────────┘     └──────────┘     └──────────┘`}
+          </div>
+          <p>
+            Each entry includes the previous entry&apos;s hash. Change one entry
+            anywhere in the chain and every entry after it becomes invalid.
+            Verification walks the chain and tells you exactly where it broke.
           </p>
 
           <h2>Step by step</h2>
@@ -48,134 +114,51 @@ export default function HowItWorksPage() {
           <div className="step-list">
             <div className="step-item">
               <div className="step-number">1</div>
-              <div className="step-title">Capture X (before state)</div>
+              <div className="step-title">Capture X</div>
               <div className="step-desc">
-                When a state transition begins, pruv snapshots the current state.
-                This becomes X &mdash; a SHA-256 hash of the before state. X can
-                be anything: a database record, a configuration file, an API
-                payload.
+                When a state transition begins, pruv snapshots the current state
+                and hashes it. This becomes X. It can be anything &mdash; a database
+                record, a file, a balance, an API payload, a configuration.
               </div>
             </div>
 
             <div className="step-item">
               <div className="step-number">2</div>
-              <div className="step-title">Execute transition</div>
+              <div className="step-title">Your code runs</div>
               <div className="step-desc">
-                Your code runs exactly as it normally would. pruv does not modify
-                your business logic, intercept calls, or add middleware. It
-                observes the input and the output. Zero performance overhead on
-                your hot path.
+                pruv does not modify your logic, intercept calls, or add middleware.
+                Your function executes exactly as it normally would.
               </div>
             </div>
 
             <div className="step-item">
               <div className="step-number">3</div>
-              <div className="step-title">Capture Y (after state)</div>
+              <div className="step-title">Capture Y</div>
               <div className="step-desc">
-                When the function returns, pruv captures the result as Y &mdash;
-                the after state, hashed the same way as X. Now pruv has both
-                endpoints of the transition.
+                When the function returns, pruv captures the result and hashes it.
+                Now it has both endpoints of the transition.
               </div>
             </div>
 
             <div className="step-item">
               <div className="step-number">4</div>
-              <div className="step-title">Generate XY (proof)</div>
+              <div className="step-title">Generate XY</div>
               <div className="step-desc">
-                pruv combines X and Y into a single verifiable record: XY. This
-                includes hashes of both states, a timestamp, an optional Ed25519
-                signature, and a link to the previous entry. The result is a
-                tamper-evident proof that the transition occurred.
+                pruv combines X and Y into a single verifiable record &mdash; the XY proof.
+                It links this record to the previous entry in the chain.
+                If signing is enabled, it applies an Ed25519 signature.
               </div>
             </div>
           </div>
 
-          <h2>The XY record</h2>
-          <div className="code-block">
-            <span className="cm">
-              {`// Simplified XY record structure`}
-            </span>
-            {"\n"}
-            {`{`}
-            {"\n"}
-            {`  `}
-            <span className="str">&quot;id&quot;</span>
-            {`: `}
-            <span className="str">&quot;xy_8f3a2b1c&quot;</span>
-            {`,`}
-            {"\n"}
-            {`  `}
-            <span className="str">&quot;x_hash&quot;</span>
-            {`: `}
-            <span className="str">&quot;sha256:a1b2c3d4...&quot;</span>
-            {`,`}
-            {"\n"}
-            {`  `}
-            <span className="str">&quot;y_hash&quot;</span>
-            {`: `}
-            <span className="str">&quot;sha256:e5f6a7b8...&quot;</span>
-            {`,`}
-            {"\n"}
-            {`  `}
-            <span className="str">&quot;timestamp&quot;</span>
-            {`: `}
-            <span className="str">&quot;2025-01-15T10:30:00Z&quot;</span>
-            {`,`}
-            {"\n"}
-            {`  `}
-            <span className="str">&quot;signature&quot;</span>
-            {`: `}
-            <span className="str">&quot;ed25519:...&quot;</span>
-            {`,`}
-            {"\n"}
-            {`  `}
-            <span className="str">&quot;prev_entry&quot;</span>
-            {`: `}
-            <span className="str">&quot;xy_7e2f1a0b&quot;</span>
-            {`,`}
-            {"\n"}
-            {`  `}
-            <span className="str">&quot;chain_id&quot;</span>
-            {`: `}
-            <span className="str">&quot;order_processing&quot;</span>
-            {"\n"}
-            {`}`}
-          </div>
-
-          <h2>The chain rule</h2>
-          <p>
-            When Y of one transition becomes X of the next, pruv links them into
-            an unbreakable chain. Each XY record references the previous one.
+          <p className="how-note">
+            One proof per state transition. Chained to everything before it.
           </p>
-
-          <div className="spec-table">
-            <div className="spec-row">
-              <div className="spec-key">Entry[0].x</div>
-              <div className="spec-val">
-                <span className="highlight">GENESIS</span>
-              </div>
-            </div>
-            <div className="spec-row">
-              <div className="spec-key">Entry[N].x</div>
-              <div className="spec-val">
-                <span className="highlight">== Entry[N-1].y</span>
-              </div>
-            </div>
-            <div className="spec-row">
-              <div className="spec-key">Break one</div>
-              <div className="spec-val">
-                Chain breaks. Verification detects exactly where.
-              </div>
-            </div>
-          </div>
 
           <h2>Verification</h2>
           <p>
-            Anyone with the XY records can independently verify the proof. No
-            special tools, no vendor lock-in, no trust required. Walk the chain,
-            recompute every hash, check every link.
+            Anyone can verify. Walk the chain, recompute every hash, check every link.
           </p>
-
           <div className="code-block">
             <span className="kw">from</span>{" "}
             <span className="var">pruv</span>{" "}
@@ -205,57 +188,63 @@ export default function HowItWorksPage() {
             {"\n"}
             <span className="fn">print</span>(
             <span className="var">chain</span>.length)
-            {"      "}
+            {"       "}
             <span className="cm"># 1,247 entries</span>
             {"\n"}
             <span className="fn">print</span>(
             <span className="var">chain</span>.valid)
-            {"       "}
-            <span className="cm"># True &mdash; every link verified</span>
+            {"        "}
+            <span className="cm"># True &mdash; every link intact</span>
           </div>
+          <p>
+            No proprietary tools. No vendor dependency. SHA-256 and Ed25519
+            are implemented in every language on every platform.
+            If you can compute a hash, you can verify a pruv chain.
+          </p>
 
           <h2>Properties</h2>
-          <div className="spec-table">
-            <div className="spec-row">
-              <div className="spec-key">Tamper-evident</div>
-              <div className="spec-val">
-                Any modification invalidates the hash chain. Tampering is
-                mathematically detectable.
+
+          <div className="properties-list">
+            <div className="property-item">
+              <div className="property-name">Tamper-evident</div>
+              <div className="property-desc">
+                Any modification invalidates the hash chain.
+                Tampering is mathematically detectable.
               </div>
             </div>
-            <div className="spec-row">
-              <div className="spec-key">Verifiable</div>
-              <div className="spec-val">
-                Anyone can verify using standard crypto libraries. No proprietary
-                tools required.
+            <div className="property-item">
+              <div className="property-name">Independently verifiable</div>
+              <div className="property-desc">
+                Anyone can verify using standard crypto libraries.
+                No proprietary tools. No pruv account required.
               </div>
             </div>
-            <div className="spec-row">
-              <div className="spec-key">Local-first</div>
-              <div className="spec-val">
-                Proofs generated locally, synced asynchronously. Works offline.
-                Works air-gapped.
+            <div className="property-item">
+              <div className="property-name">Local-first</div>
+              <div className="property-desc">
+                Proofs generated on your machine, synced asynchronously.
+                Works offline. Works air-gapped.
               </div>
             </div>
-            <div className="spec-row">
-              <div className="spec-key">Redaction-safe</div>
-              <div className="spec-val">
-                Sensitive data redacted while preserving cryptographic proof.
-                Hash still verifies.
+            <div className="property-item">
+              <div className="property-name">Append-only</div>
+              <div className="property-desc">
+                Records can only be added, never modified.
+                The chain is a permanent, ordered record of state transitions.
               </div>
             </div>
-            <div className="spec-row">
-              <div className="spec-key">Append-only</div>
-              <div className="spec-val">
-                Records can only be added. The chain is a permanent, ordered log
-                of state transitions.
+            <div className="property-item">
+              <div className="property-name">Redaction-safe</div>
+              <div className="property-desc">
+                Sensitive data can be redacted while preserving cryptographic proof.
+                The hash still verifies.
               </div>
             </div>
-            <div className="spec-row">
-              <div className="spec-key">Language-agnostic</div>
-              <div className="spec-val">
-                Simple JSON schema. Implement in any language. SHA-256 + Ed25519
-                are universal.
+            <div className="property-item">
+              <div className="property-name">Language-agnostic</div>
+              <div className="property-desc">
+                Simple JSON schema. SHA-256 + Ed25519 are universal.
+                Implement in any language.
               </div>
             </div>
           </div>
