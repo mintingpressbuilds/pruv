@@ -18,7 +18,7 @@ from sqlalchemy import (
     create_engine,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSON, UUID
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
@@ -32,7 +32,7 @@ def gen_uuid():
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    id = Column(String(36), primary_key=True, default=gen_uuid)
     email = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255))
     avatar_url = Column(Text)
@@ -56,8 +56,8 @@ class User(Base):
 class ApiKey(Base):
     __tablename__ = "api_keys"
 
-    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
-    user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     name = Column(String(255), default="Default")
     key_hash = Column(String(64), unique=True, nullable=False, index=True)
     key_prefix = Column(String(20), nullable=False)  # pv_live_ or pv_test_
@@ -72,7 +72,7 @@ class Chain(Base):
     __tablename__ = "chains"
 
     id = Column(String(36), primary_key=True, default=gen_uuid)
-    user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     tags = Column(JSON, default=[])
@@ -100,7 +100,7 @@ class Chain(Base):
 class Entry(Base):
     __tablename__ = "entries"
 
-    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    id = Column(String(36), primary_key=True, default=gen_uuid)
     chain_id = Column(String(36), ForeignKey("chains.id"), nullable=False)
     index = Column(Integer, nullable=False)
     timestamp = Column(Float, nullable=False)
@@ -128,7 +128,7 @@ class Entry(Base):
 class ChainCheckpoint(Base):
     __tablename__ = "checkpoints"
 
-    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    id = Column(String(36), primary_key=True, default=gen_uuid)
     chain_id = Column(String(36), ForeignKey("chains.id"), nullable=False)
     name = Column(String(255), nullable=False)
     entry_index = Column(Integer, nullable=False)
@@ -146,7 +146,7 @@ class Receipt(Base):
     __tablename__ = "receipts"
 
     id = Column(String(36), primary_key=True, default=gen_uuid)
-    user_id = Column(UUID(as_uuid=False), nullable=True)
+    user_id = Column(String(36), nullable=True)
     chain_id = Column(String(36), ForeignKey("chains.id"), nullable=False)
     task = Column(Text, nullable=False)
     started = Column(Float)
@@ -174,8 +174,8 @@ class Receipt(Base):
 class Webhook(Base):
     __tablename__ = "webhooks"
 
-    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
-    user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     url = Column(Text, nullable=False)
     events = Column(JSON, default=["chain.created", "entry.appended"])
     secret = Column(String(64))
@@ -193,7 +193,7 @@ class ScanResult(Base):
     __tablename__ = "scan_results"
 
     id = Column(String(36), primary_key=True, default=gen_uuid)
-    user_id = Column(UUID(as_uuid=False), nullable=True)
+    user_id = Column(String(36), nullable=True)
     status = Column(String(20), default="completed")
     chain_id = Column(String(36), nullable=True)
     started_at = Column(DateTime, nullable=False)

@@ -23,21 +23,23 @@ logger = logging.getLogger("pruv.api")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Create database tables on startup and initialize services."""
-    if settings.database_url:
-        try:
-            engine = get_engine(settings.database_url)
-            Base.metadata.create_all(bind=engine)
-            logger.info("Database tables verified/created.")
+    db_url = settings.database_url or "sqlite:///pruv_dev.db"
+    try:
+        engine = get_engine(db_url)
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables verified/created (%s).", "PostgreSQL" if settings.database_url else "SQLite fallback")
 
-            # Initialize PostgreSQL-backed services
-            from .services.chain_service import chain_service
-            from .services.receipt_service import receipt_service
+        # Initialize services
+        from .services.auth_service import auth_service
+        from .services.chain_service import chain_service
+        from .services.receipt_service import receipt_service
 
-            chain_service.init_db(settings.database_url)
-            receipt_service.init_db(settings.database_url)
-            logger.info("Services initialized with PostgreSQL.")
-        except Exception:
-            logger.exception("Failed to initialize database.")
+        auth_service.init_db(db_url)
+        chain_service.init_db(db_url)
+        receipt_service.init_db(db_url)
+        logger.info("Services initialized.")
+    except Exception:
+        logger.exception("Failed to initialize database.")
     yield
 
 

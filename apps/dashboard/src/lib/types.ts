@@ -183,13 +183,25 @@ export interface ScanRequest {
   };
 }
 
+export interface ScanEntry {
+  path: string;
+  hash: string;
+  index: number;
+  verified: boolean;
+  file_type: string;
+  size: number;
+}
+
 export interface ScanResult {
   id: string;
   status: "queued" | "scanning" | "completed" | "failed";
   chain_id?: string;
+  source?: string;
   started_at: string;
   completed_at?: string;
   findings: ScanFinding[];
+  entries: ScanEntry[];
+  summary?: string;
   receipt_id?: string;
 }
 
