@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from fastapi import Depends, Header, HTTPException, Request
@@ -10,39 +11,57 @@ from .rate_limit import rate_limiter, RateLimitResult
 from .security import (
     decode_jwt_token,
     extract_bearer_token,
-    hash_api_key,
     verify_api_key_format,
 )
 
+logger = logging.getLogger("pruv.api.dependencies")
+
 
 async def get_current_user(authorization: str | None = Header(None)) -> dict[str, Any]:
-    """Extract and verify the current user from auth header."""
+    """Extract and verify the current user from auth header.
+
+    For API keys: look up in database. Auto-provision on first use.
+    For JWT tokens: decode and verify signature.
+    """
     token = extract_bearer_token(authorization)
     if not token:
         raise HTTPException(status_code=401, detail="Missing authorization")
 
-    # Check if it's an API key
+    # Check if it's an API key (pv_live_ or pv_test_ prefix)
     if verify_api_key_format(token):
-        key_hash = hash_api_key(token)
-        # In production, look up key_hash in database
-        return {
-            "id": f"apikey_{key_hash[:12]}",
-            "type": "api_key",
-            "key_hash": key_hash,
-            "plan": "free",
-            "scopes": ["read", "write"],
-        }
+        from ..services.auth_service import auth_service
+
+        # Look up in database
+        user = auth_service.get_user_by_api_key(token)
+        if user:
+            return user
+
+        # Auto-provision: create user + key record on first use
+        try:
+            return auth_service.auto_provision_api_key(token)
+        except Exception:
+            logger.exception("Failed to auto-provision API key")
+            raise HTTPException(status_code=401, detail="Invalid API key")
 
     # Try JWT
     payload = decode_jwt_token(token)
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+    user_id = payload["sub"]
+
+    # Ensure JWT user exists in database
+    try:
+        from ..services.auth_service import auth_service
+        auth_service.ensure_user(user_id)
+    except Exception:
+        pass  # Non-fatal — user may already exist
+
     return {
-        "id": payload["sub"],
+        "id": user_id,
         "type": "jwt",
         "plan": payload.get("plan", "free"),
-        "scopes": payload.get("scopes", ["read"]),
+        "scopes": payload.get("scopes", ["read", "write"]),
     }
 
 

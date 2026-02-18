@@ -103,13 +103,13 @@ def _get_session():
     global _session_factory
     if _session_factory is None:
         from ..core.config import settings
-        if settings.database_url:
-            engine = get_engine(settings.database_url)
-            _session_factory = sessionmaker(
-                autocommit=False, autoflush=False, bind=engine
-            )
-    if _session_factory is None:
-        raise RuntimeError("Database not initialized for scans")
+        db_url = settings.database_url or "sqlite:///pruv_dev.db"
+        engine = get_engine(db_url)
+        from ..models.database import Base
+        Base.metadata.create_all(bind=engine)
+        _session_factory = sessionmaker(
+            autocommit=False, autoflush=False, bind=engine
+        )
     return _session_factory()
 
 
@@ -744,6 +744,41 @@ async def scan_url(
         user_id=user["id"], entries=[entry],
         source=f"url:{url}",
     )
+
+
+@router.get("/{scan_id}/receipt")
+async def get_scan_receipt(
+    scan_id: str,
+    user: dict[str, Any] = Depends(get_current_user),
+    _rl: RateLimitResult = Depends(check_rate_limit),
+):
+    """Generate a self-contained HTML receipt for a scan.
+
+    The receipt includes embedded verification JavaScript that works offline.
+    """
+    from fastapi.responses import HTMLResponse
+    from ..services.receipt_html import generate_receipt_html
+
+    try:
+        with _get_session() as session:
+            scan = session.query(ScanResultModel).filter(ScanResultModel.id == scan_id).first()
+            if not scan:
+                raise HTTPException(status_code=404, detail="Scan not found")
+
+            html_content = generate_receipt_html(
+                scan_id=scan.id,
+                source=None,
+                started_at=scan.started_at.strftime("%Y-%m-%dT%H:%M:%SZ") if scan.started_at else "",
+                completed_at=scan.completed_at.strftime("%Y-%m-%dT%H:%M:%SZ") if scan.completed_at else None,
+                entries=[],  # DB scans don't store entry data — receipt will show findings only
+                findings=scan.findings or [],
+                summary=None,
+            )
+            return HTMLResponse(content=html_content, media_type="text/html")
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=404, detail="Scan not found")
 
 
 @router.get("/{scan_id}", response_model=ScanResponse)

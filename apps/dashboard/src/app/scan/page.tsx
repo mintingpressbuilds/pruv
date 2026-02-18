@@ -18,11 +18,13 @@ import {
   Link,
   ArrowRight,
   Archive,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
 import { scans } from "@/lib/api";
+import { downloadReceipt } from "@/lib/receipt";
 import type { ScanResult, ScanFinding, ScanEntry } from "@/lib/types";
 
 const severityConfig: Record<
@@ -420,14 +422,26 @@ export default function ScanPage() {
                         </span>
                       )}
                     </div>
-                    {result.receipt_id && (
-                      <a
-                        href={`/receipts/${result.receipt_id}`}
-                        className="text-xs text-pruv-400 hover:text-pruv-300"
+                    <div className="flex items-center gap-3">
+                      {result.receipt_id && (
+                        <a
+                          href={`/receipts/${result.receipt_id}`}
+                          className="text-xs text-pruv-400 hover:text-pruv-300"
+                        >
+                          view receipt
+                        </a>
+                      )}
+                      <button
+                        onClick={() => {
+                          downloadReceipt(result);
+                          toast.success("receipt downloaded");
+                        }}
+                        className="flex items-center gap-1.5 text-xs text-pruv-400 hover:text-pruv-300 transition-colors"
                       >
-                        view receipt
-                      </a>
-                    )}
+                        <Download size={12} />
+                        export receipt
+                      </button>
+                    </div>
                   </div>
 
                   {/* Summary bar */}
@@ -557,6 +571,20 @@ export default function ScanPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Export receipt button */}
+                <div className="flex justify-center">
+                  <button
+                    onClick={() => {
+                      downloadReceipt(result);
+                      toast.success("receipt downloaded");
+                    }}
+                    className="flex items-center gap-2 rounded-lg border border-pruv-500/30 bg-pruv-500/10 px-6 py-3 text-sm font-medium text-pruv-400 hover:bg-pruv-500/20 transition-colors"
+                  >
+                    <Download size={16} />
+                    export receipt as HTML
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
