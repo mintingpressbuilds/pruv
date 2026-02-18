@@ -618,6 +618,37 @@ export const scans = {
     });
   },
 
+  async uploadZip(file: File): Promise<ScanResult> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const url = `${API_BASE_URL}/v1/scans/upload`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw err;
+    }
+    return res.json();
+  },
+
+  async scanGitHub(repoUrl: string, branch?: string): Promise<ScanResult> {
+    return request<ScanResult>("/v1/scans/github", {
+      method: "POST",
+      body: JSON.stringify({ url: repoUrl, branch: branch || "main" }),
+    });
+  },
+
+  async scanUrl(url: string): Promise<ScanResult> {
+    return request<ScanResult>("/v1/scans/url", {
+      method: "POST",
+      body: JSON.stringify({ url }),
+    });
+  },
+
   async getStatus(id: string): Promise<ScanResult> {
     return request<ScanResult>(`/v1/scans/${id}`);
   },
