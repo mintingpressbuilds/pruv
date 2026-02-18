@@ -92,6 +92,7 @@ interface BackendChain {
   name: string;
   description?: string;
   tags?: string[];
+  chain_type?: string;
   length: number;
   root_xy: string | null;
   head_xy: string | null;
@@ -109,6 +110,7 @@ function transformChain(raw: BackendChain): Chain {
     id: raw.id,
     name: raw.name,
     description: raw.description,
+    chain_type: (raw.chain_type as Chain["chain_type"]) ?? "custom",
     created_at: typeof raw.created_at === "number"
       ? new Date(raw.created_at * 1000).toISOString()
       : raw.created_at ?? new Date().toISOString(),
@@ -355,6 +357,7 @@ export const chains = {
     name: string;
     description?: string;
     tags?: string[];
+    chain_type?: string;
   }): Promise<Chain> {
     const raw = await request<BackendChain>("/v1/chains", {
       method: "POST",

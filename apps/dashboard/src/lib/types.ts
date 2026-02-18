@@ -1,9 +1,12 @@
 // ─── Core Domain Types ───────────────────────────────────────────────────────
 
+export type ChainType = "operations" | "payments" | "custom";
+
 export interface Chain {
   id: string;
   name: string;
   description?: string;
+  chain_type: ChainType;
   created_at: string;
   updated_at: string;
   entry_count: number;

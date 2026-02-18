@@ -45,6 +45,7 @@ async def create_chain(
         description=body.description,
         tags=body.tags,
         auto_redact=body.auto_redact,
+        chain_type=body.chain_type,
     )
     return chain
 

@@ -104,6 +104,7 @@ export function useCreateChain() {
       name: string;
       description?: string;
       tags?: string[];
+      chain_type?: string;
     }) => chains.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: chainKeys.lists() });
