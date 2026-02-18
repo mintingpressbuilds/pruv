@@ -1,21 +1,67 @@
-"""Receipt service — create, retrieve, and export receipts."""
+"""Receipt service — create, retrieve, and export receipts.
+
+PostgreSQL-backed via SQLAlchemy.
+"""
 
 from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import time
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 
+from sqlalchemy.orm import Session, sessionmaker
+
+from ..models.database import Base, Receipt, get_engine
 from .chain_service import chain_service
+
+logger = logging.getLogger("pruv.api.receipt_service")
+
+
+def _receipt_to_dict(receipt: Receipt) -> dict[str, Any]:
+    """Convert a Receipt ORM model to the dict format routes expect."""
+    return {
+        "id": receipt.id,
+        "user_id": str(receipt.user_id) if receipt.user_id else None,
+        "chain_id": receipt.chain_id,
+        "task": receipt.task,
+        "started": receipt.started,
+        "completed": receipt.completed,
+        "duration": receipt.duration,
+        "entry_count": receipt.entry_count,
+        "first_x": receipt.first_x,
+        "final_y": receipt.final_y,
+        "root_xy": receipt.root_xy,
+        "head_xy": receipt.head_xy,
+        "all_verified": receipt.all_verified if receipt.all_verified is not None else True,
+        "all_signatures_valid": receipt.all_signatures_valid if receipt.all_signatures_valid is not None else True,
+        "receipt_hash": receipt.receipt_hash,
+        "agent_type": receipt.agent_type,
+        "created_at": receipt.created_at.timestamp() if receipt.created_at else time.time(),
+    }
 
 
 class ReceiptService:
-    """In-memory receipt service."""
+    """PostgreSQL-backed receipt service."""
 
     def __init__(self) -> None:
-        self._receipts: dict[str, dict[str, Any]] = {}
+        self._session_factory: sessionmaker | None = None
+
+    def init_db(self, database_url: str) -> None:
+        """Initialize the database connection."""
+        engine = get_engine(database_url)
+        self._session_factory = sessionmaker(
+            autocommit=False, autoflush=False, bind=engine
+        )
+        logger.info("ReceiptService database initialized.")
+
+    def _session(self) -> Session:
+        if not self._session_factory:
+            raise RuntimeError("Database not initialized. Call init_db() first.")
+        return self._session_factory()
 
     def create_receipt(
         self,
@@ -50,43 +96,64 @@ class ReceiptService:
         receipt_hash = hashlib.sha256(canonical.encode()).hexdigest()
 
         receipt_id = uuid.uuid4().hex[:12]
-        receipt = {
-            "id": receipt_id,
-            "user_id": user_id,
-            "chain_id": chain_id,
-            "task": task,
-            "started": entries[0]["timestamp"] if entries else now,
-            "completed": entries[-1]["timestamp"] if entries else now,
-            "duration": (entries[-1]["timestamp"] - entries[0]["timestamp"]) if len(entries) > 1 else 0,
-            "entry_count": len(entries),
-            "first_x": first_x,
-            "final_y": final_y,
-            "root_xy": chain.get("root_xy"),
-            "head_xy": chain.get("head_xy"),
-            "all_verified": verification["valid"],
-            "all_signatures_valid": True,
-            "receipt_hash": receipt_hash,
-            "agent_type": agent_type,
-            "created_at": now,
-        }
 
-        self._receipts[receipt_id] = receipt
-        return receipt
+        receipt = Receipt(
+            id=receipt_id,
+            user_id=user_id,
+            chain_id=chain_id,
+            task=task,
+            started=entries[0]["timestamp"] if entries else now,
+            completed=entries[-1]["timestamp"] if entries else now,
+            duration=(entries[-1]["timestamp"] - entries[0]["timestamp"]) if len(entries) > 1 else 0,
+            entry_count=len(entries),
+            first_x=first_x,
+            final_y=final_y,
+            root_xy=chain.get("root_xy"),
+            head_xy=chain.get("head_xy"),
+            all_verified=verification["valid"],
+            all_signatures_valid=True,
+            receipt_hash=receipt_hash,
+            agent_type=agent_type,
+            created_at=datetime.now(timezone.utc),
+        )
+
+        with self._session() as session:
+            session.add(receipt)
+            session.commit()
+            session.refresh(receipt)
+            return _receipt_to_dict(receipt)
 
     def get_receipt(self, receipt_id: str) -> dict[str, Any] | None:
-        return self._receipts.get(receipt_id)
+        with self._session() as session:
+            receipt = session.query(Receipt).filter(Receipt.id == receipt_id).first()
+            if not receipt:
+                return None
+            return _receipt_to_dict(receipt)
 
     def get_receipt_for_user(self, receipt_id: str, user_id: str) -> dict[str, Any] | None:
-        receipt = self._receipts.get(receipt_id)
-        if not receipt or receipt.get("user_id") != user_id:
-            return None
-        return receipt
+        with self._session() as session:
+            receipt = (
+                session.query(Receipt)
+                .filter(Receipt.id == receipt_id, Receipt.user_id == user_id)
+                .first()
+            )
+            if not receipt:
+                return None
+            return _receipt_to_dict(receipt)
 
     def list_receipts(self, user_id: str) -> list[dict[str, Any]]:
-        return [r for r in self._receipts.values() if r.get("user_id") == user_id]
+        with self._session() as session:
+            receipts = (
+                session.query(Receipt)
+                .filter(Receipt.user_id == user_id)
+                .order_by(Receipt.created_at.desc())
+                .all()
+            )
+            return [_receipt_to_dict(r) for r in receipts]
 
     def get_receipt_count(self, user_id: str) -> int:
-        return len([r for r in self._receipts.values() if r.get("user_id") == user_id])
+        with self._session() as session:
+            return session.query(Receipt).filter(Receipt.user_id == user_id).count()
 
     def get_receipt_pdf_data(self, receipt_id: str) -> dict[str, Any] | None:
         receipt = self.get_receipt(receipt_id)

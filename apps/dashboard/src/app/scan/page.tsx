@@ -10,7 +10,12 @@ import {
   AlertTriangle,
   Info,
   Terminal,
+  FileText,
+  XCircle,
+  CheckCircle2,
+  Copy,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
 import { scans } from "@/lib/api";
@@ -34,6 +39,37 @@ const severityConfig: Record<
   },
 };
 
+interface FileEntry {
+  path: string;
+  hash: string;
+  index: number;
+  verified: boolean;
+}
+
+function parseFileEntries(result: ScanResult, uploadedData: Record<string, unknown> | null): FileEntry[] {
+  if (!uploadedData) return [];
+  const entries = (uploadedData as { entries?: Array<Record<string, unknown>> }).entries ?? [];
+  const brokenIndices = new Set(
+    result.findings
+      .filter((f) => f.entry_index !== undefined)
+      .map((f) => f.entry_index)
+  );
+
+  return entries.map((entry, i) => {
+    const yState = entry.y_state as Record<string, unknown> | undefined;
+    const path = (yState?.path as string) ??
+                 (entry.operation as string) ??
+                 `entry-${i}`;
+    const hash = (entry.y as string) ?? "";
+    return {
+      path,
+      hash,
+      index: entry.index !== undefined ? (entry.index as number) : i,
+      verified: !brokenIndices.has(i),
+    };
+  });
+}
+
 export default function ScanPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -43,10 +79,24 @@ export default function ScanPage() {
   const [checkSignatures, setCheckSignatures] = useState(true);
   const [generateReceipt, setGenerateReceipt] = useState(true);
   const [dragOver, setDragOver] = useState(false);
+  const [uploadedData, setUploadedData] = useState<Record<string, unknown> | null>(null);
+  const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
 
   const handleScan = async (file?: File) => {
     setIsScanning(true);
     setResult(null);
+    setUploadedData(null);
+
+    if (file) {
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        setUploadedData(parsed);
+      } catch {
+        // not valid JSON, API will handle the error
+      }
+    }
+
     try {
       const scanResult = await scans.trigger({
         chain_id: chainId || undefined,
@@ -77,6 +127,17 @@ export default function ScanPage() {
     if (file) handleScan(file);
   };
 
+  const handleCopyCmd = (cmd: string, label: string) => {
+    navigator.clipboard.writeText(cmd);
+    setCopiedCmd(label);
+    toast.success("copied");
+    setTimeout(() => setCopiedCmd(null), 2000);
+  };
+
+  const fileEntries = result ? parseFileEntries(result, uploadedData) : [];
+  const verifiedCount = fileEntries.filter((e) => e.verified).length;
+  const brokenCount = fileEntries.filter((e) => !e.verified).length;
+
   return (
     <div className="flex min-h-screen">
       <Sidebar />
@@ -84,6 +145,89 @@ export default function ScanPage() {
         <Header title="scan" subtitle="verify chain integrity" />
 
         <main className="p-6 space-y-6 max-w-3xl">
+          {/* Step-by-step instructions */}
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Terminal size={14} className="text-pruv-400" />
+              <h3 className="text-sm font-medium text-[var(--text-primary)]">
+                how to generate a scan file
+              </h3>
+            </div>
+            <div className="space-y-4">
+              {/* Step 1 */}
+              <div className="flex gap-3">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-pruv-500/10 text-[10px] font-bold text-pruv-400">
+                  1
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-[var(--text-secondary)] mb-1.5">
+                    install
+                  </p>
+                  <div className="flex items-center justify-between rounded-lg bg-[var(--surface)] p-3 border border-[var(--border)]">
+                    <code className="text-xs text-pruv-400 font-mono">
+                      pip install pruv
+                    </code>
+                    <button
+                      onClick={() => handleCopyCmd("pip install pruv", "install")}
+                      className="text-[var(--text-tertiary)] hover:text-pruv-400 transition-colors"
+                    >
+                      {copiedCmd === "install" ? <Check size={12} /> : <Copy size={12} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              <div className="flex gap-3">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-pruv-500/10 text-[10px] font-bold text-pruv-400">
+                  2
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-[var(--text-secondary)] mb-1.5">
+                    scan your project
+                  </p>
+                  <div className="flex items-center justify-between rounded-lg bg-[var(--surface)] p-3 border border-[var(--border)]">
+                    <code className="text-xs text-pruv-400 font-mono">
+                      pruv scan ./my-project --json-output &gt; scan.json
+                    </code>
+                    <button
+                      onClick={() => handleCopyCmd("pruv scan ./my-project --json-output > scan.json", "scan")}
+                      className="text-[var(--text-tertiary)] hover:text-pruv-400 transition-colors"
+                    >
+                      {copiedCmd === "scan" ? <Check size={12} /> : <Copy size={12} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="flex gap-3">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-pruv-500/10 text-[10px] font-bold text-pruv-400">
+                  3
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-[var(--text-secondary)] mb-1.5">
+                    upload here
+                  </p>
+                  <p className="text-xs text-[var(--text-tertiary)]">
+                    drag the scan.json file below, or use the CLI:
+                  </p>
+                  <div className="flex items-center justify-between rounded-lg bg-[var(--surface)] p-3 border border-[var(--border)] mt-1.5">
+                    <code className="text-xs text-pruv-400 font-mono">
+                      pruv upload scan.json --api-key pv_live_xxx
+                    </code>
+                    <button
+                      onClick={() => handleCopyCmd("pruv upload scan.json --api-key pv_live_xxx", "upload")}
+                      className="text-[var(--text-tertiary)] hover:text-pruv-400 transition-colors"
+                    >
+                      {copiedCmd === "upload" ? <Check size={12} /> : <Copy size={12} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Scan by chain id */}
           <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] p-5">
             <h3 className="text-sm font-medium text-[var(--text-primary)] mb-1">
@@ -181,28 +325,6 @@ export default function ScanPage() {
             </p>
           </div>
 
-          {/* CLI instructions */}
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Terminal size={14} className="text-pruv-400" />
-              <h3 className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-                cli usage
-              </h3>
-            </div>
-            <div className="space-y-3">
-              <div className="rounded-lg bg-[var(--surface)] p-3 border border-[var(--border)]">
-                <code className="text-xs text-pruv-400 font-mono">
-                  pruv scan ./my-project --json-output &gt; scan.json
-                </code>
-              </div>
-              <div className="rounded-lg bg-[var(--surface)] p-3 border border-[var(--border)]">
-                <code className="text-xs text-pruv-400 font-mono">
-                  pruv upload ./my-project --api-key pv_live_...
-                </code>
-              </div>
-            </div>
-          </div>
-
           {/* Scan result */}
           <AnimatePresence>
             {result && (
@@ -210,65 +332,125 @@ export default function ScanPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] p-5"
+                className="space-y-4"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    {result.status === "completed" ? (
-                      <Check size={16} className="text-green-400" />
-                    ) : (
-                      <Loader2 size={16} className="text-pruv-400 animate-spin" />
+                {/* Summary + findings */}
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      {result.status === "completed" ? (
+                        <Check size={16} className="text-green-400" />
+                      ) : (
+                        <Loader2 size={16} className="text-pruv-400 animate-spin" />
+                      )}
+                      <h3 className="text-sm font-medium text-[var(--text-primary)]">
+                        scan {result.status}
+                      </h3>
+                    </div>
+                    {result.receipt_id && (
+                      <a
+                        href={`/receipts/${result.receipt_id}`}
+                        className="text-xs text-pruv-400 hover:text-pruv-300"
+                      >
+                        view receipt
+                      </a>
                     )}
-                    <h3 className="text-sm font-medium text-[var(--text-primary)]">
-                      scan {result.status}
-                    </h3>
                   </div>
-                  {result.receipt_id && (
-                    <a
-                      href={`/receipts/${result.receipt_id}`}
-                      className="text-xs text-pruv-400 hover:text-pruv-300"
-                    >
-                      view receipt
-                    </a>
+
+                  {/* Summary bar */}
+                  {fileEntries.length > 0 && (
+                    <div className="flex items-center gap-3 mb-4 rounded-lg bg-[var(--surface)] border border-[var(--border)] px-4 py-3">
+                      <FileText size={14} className="text-[var(--text-tertiary)]" />
+                      <span className="text-xs text-[var(--text-secondary)]">
+                        {fileEntries.length} files scanned
+                      </span>
+                      <span className="text-[var(--border)]">|</span>
+                      {brokenCount === 0 ? (
+                        <span className="flex items-center gap-1 text-xs text-green-400">
+                          <CheckCircle2 size={12} />
+                          all verified
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-xs text-red-400">
+                          <XCircle size={12} />
+                          {brokenCount} integrity failure{brokenCount !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {result.findings.length > 0 ? (
+                    <div className="space-y-2">
+                      {result.findings.map((finding, i) => {
+                        const config = severityConfig[finding.severity];
+                        return (
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, x: -5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.05 }}
+                            className={`flex items-start gap-3 rounded-lg border p-3 ${config.color}`}
+                          >
+                            {config.icon}
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium">
+                                  {finding.type}
+                                </span>
+                                {finding.entry_index !== undefined && (
+                                  <span className="text-[10px] font-mono opacity-70">
+                                    entry #{finding.entry_index}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs opacity-80 mt-0.5">
+                                {finding.message}
+                              </p>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm text-green-400">
+                      <Check size={14} />
+                      no issues found — chain integrity verified
+                    </div>
                   )}
                 </div>
 
-                {result.findings.length > 0 ? (
-                  <div className="space-y-2">
-                    {result.findings.map((finding, i) => {
-                      const config = severityConfig[finding.severity];
-                      return (
+                {/* File timeline */}
+                {fileEntries.length > 0 && (
+                  <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] p-5">
+                    <h3 className="text-sm font-medium text-[var(--text-primary)] mb-3">
+                      file timeline
+                    </h3>
+                    <div className="space-y-1">
+                      {fileEntries.map((entry, i) => (
                         <motion.div
                           key={i}
                           initial={{ opacity: 0, x: -5 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.05 }}
-                          className={`flex items-start gap-3 rounded-lg border p-3 ${config.color}`}
+                          transition={{ delay: i * 0.02 }}
+                          className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-[var(--surface)] transition-colors"
                         >
-                          {config.icon}
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-medium">
-                                {finding.type}
-                              </span>
-                              {finding.entry_index !== undefined && (
-                                <span className="text-[10px] font-mono opacity-70">
-                                  entry #{finding.entry_index}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs opacity-80 mt-0.5">
-                              {finding.message}
-                            </p>
-                          </div>
+                          {entry.verified ? (
+                            <CheckCircle2 size={14} className="shrink-0 text-green-400" />
+                          ) : (
+                            <XCircle size={14} className="shrink-0 text-red-400" />
+                          )}
+                          <span className="text-xs text-[var(--text-tertiary)] font-mono w-8 shrink-0">
+                            #{entry.index}
+                          </span>
+                          <span className="text-xs text-[var(--text-primary)] font-mono truncate flex-1">
+                            {entry.path}
+                          </span>
+                          <span className="text-[10px] text-[var(--text-tertiary)] font-mono shrink-0">
+                            {entry.hash.slice(0, 12)}...
+                          </span>
                         </motion.div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-sm text-green-400">
-                    <Check size={14} />
-                    no issues found — chain integrity verified
+                      ))}
+                    </div>
                   </div>
                 )}
               </motion.div>

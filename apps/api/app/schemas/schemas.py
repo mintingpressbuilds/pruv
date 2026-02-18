@@ -11,11 +11,15 @@ from pydantic import BaseModel, Field, field_validator
 # ──── Chain Schemas ────
 
 
+VALID_CHAIN_TYPES = {"operations", "payments", "custom"}
+
+
 class ChainCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=2000)
     tags: list[str] = Field(default_factory=list, max_length=20)
     auto_redact: bool = True
+    chain_type: str = Field(default="custom", pattern=r"^(operations|payments|custom)$")
 
 
 class ChainUpdate(BaseModel):
@@ -30,6 +34,7 @@ class ChainResponse(BaseModel):
     name: str
     description: str | None = None
     tags: list[str] = Field(default_factory=list)
+    chain_type: str = "custom"
     length: int
     root_xy: str | None = None
     head_xy: str | None = None

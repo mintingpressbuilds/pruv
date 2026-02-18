@@ -74,6 +74,9 @@ class Chain(Base):
     id = Column(String(36), primary_key=True, default=gen_uuid)
     user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
     name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    tags = Column(JSON, default=[])
+    chain_type = Column(String(50), default="custom")
     length = Column(Integer, default=0)
     root_xy = Column(String(67))
     head_xy = Column(String(67))
@@ -143,6 +146,7 @@ class Receipt(Base):
     __tablename__ = "receipts"
 
     id = Column(String(36), primary_key=True, default=gen_uuid)
+    user_id = Column(UUID(as_uuid=False), nullable=True)
     chain_id = Column(String(36), ForeignKey("chains.id"), nullable=False)
     task = Column(Text, nullable=False)
     started = Column(Float)
@@ -182,6 +186,24 @@ class Webhook(Base):
 
     __table_args__ = (
         Index("idx_webhooks_user_id", "user_id"),
+    )
+
+
+class ScanResult(Base):
+    __tablename__ = "scan_results"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    user_id = Column(UUID(as_uuid=False), nullable=True)
+    status = Column(String(20), default="completed")
+    chain_id = Column(String(36), nullable=True)
+    started_at = Column(DateTime, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+    findings = Column(JSON, default=[])
+    receipt_id = Column(String(36), nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("idx_scan_results_user_id", "user_id"),
     )
 
 
