@@ -14,6 +14,7 @@ import {
   XCircle,
   CheckCircle2,
   Copy,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Sidebar } from "@/components/sidebar";
@@ -347,14 +348,30 @@ export default function ScanPage() {
                         scan {result.status}
                       </h3>
                     </div>
-                    {result.receipt_id && (
-                      <a
-                        href={`/receipts/${result.receipt_id}`}
-                        className="text-xs text-pruv-400 hover:text-pruv-300"
-                      >
-                        view receipt
-                      </a>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {result.receipt_id && (
+                        <a
+                          href={`/receipts/${result.receipt_id}`}
+                          className="text-xs text-pruv-400 hover:text-pruv-300"
+                        >
+                          view receipt
+                        </a>
+                      )}
+                      {result.id && (
+                        <button
+                          onClick={() => {
+                            scans.exportReceipt(result.id).then(
+                              () => toast.success("receipt exported"),
+                              () => toast.error("failed to export receipt")
+                            );
+                          }}
+                          className="flex items-center gap-1.5 rounded-lg border border-pruv-500/30 bg-pruv-500/10 px-3 py-1.5 text-xs font-medium text-pruv-400 hover:bg-pruv-500/20 transition-colors"
+                        >
+                          <Download size={12} />
+                          Export Receipt
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Summary bar */}

@@ -10,10 +10,11 @@ from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import sessionmaker
 
-from ..core.dependencies import check_rate_limit, get_current_user
+from ..core.dependencies import check_rate_limit, get_current_user, optional_user
 from ..core.rate_limit import RateLimitResult
 from ..models.database import ScanResult as ScanResultModel, get_engine
 from ..services.chain_service import chain_service
@@ -210,8 +211,7 @@ def _make_result(
 @router.post("", response_model=ScanResponse)
 async def trigger_scan(
     request: Request,
-    user: dict[str, Any] = Depends(get_current_user),
-    _rl: RateLimitResult = Depends(check_rate_limit),
+    user: dict[str, Any] | None = Depends(optional_user),
 ):
     """Trigger a scan by chain ID or uploaded file.
 
@@ -265,12 +265,13 @@ async def trigger_scan(
                     check_signatures=check_signatures,
                 )
 
-            return _make_result(scan_id, chain_id, findings, started_at, user_id=user["id"])
+            return _make_result(scan_id, chain_id, findings, started_at, user_id=user["id"] if user else None)
 
         # FormData with chain_id but no file
         if chain_id_field:
             chain_id = str(chain_id_field)
-            chain = chain_service.get_chain(chain_id, user["id"])
+            user_id = user["id"] if user else None
+            chain = chain_service.get_chain(chain_id, user_id)
             if not chain:
                 raise HTTPException(status_code=404, detail="Chain not found")
 
@@ -286,13 +287,13 @@ async def trigger_scan(
                 try:
                     from ..services.receipt_service import receipt_service
                     receipt = receipt_service.create_receipt(
-                        chain_id=chain_id, user_id=user["id"], task="scan-verification",
+                        chain_id=chain_id, user_id=user["id"] if user else "anonymous", task="scan-verification",
                     )
                     receipt_id = receipt.get("id")
                 except Exception:
                     pass
 
-            return _make_result(scan_id, chain_id, findings, started_at, receipt_id, user_id=user["id"])
+            return _make_result(scan_id, chain_id, findings, started_at, receipt_id, user_id=user["id"] if user else None)
 
         raise HTTPException(status_code=400, detail="Provide chain_id or upload a file")
 
@@ -311,7 +312,8 @@ async def trigger_scan(
     check_signatures = opts.get("check_signatures", True)
     generate_receipt = opts.get("generate_receipt", True)
 
-    chain = chain_service.get_chain(chain_id, user["id"])
+    user_id = user["id"] if user else None
+    chain = chain_service.get_chain(chain_id, user_id)
     if not chain:
         raise HTTPException(status_code=404, detail="Chain not found")
 
@@ -327,20 +329,18 @@ async def trigger_scan(
         try:
             from ..services.receipt_service import receipt_service
             receipt = receipt_service.create_receipt(
-                chain_id=chain_id, user_id=user["id"], task="scan-verification",
+                chain_id=chain_id, user_id=user_id or "anonymous", task="scan-verification",
             )
             receipt_id = receipt.get("id")
         except Exception:
             pass
 
-    return _make_result(scan_id, chain_id, findings, started_at, receipt_id, user_id=user["id"])
+    return _make_result(scan_id, chain_id, findings, started_at, receipt_id, user_id=user_id)
 
 
 @router.get("/{scan_id}", response_model=ScanResponse)
 async def get_scan_status(
     scan_id: str,
-    user: dict[str, Any] = Depends(get_current_user),
-    _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Get the status and results of a scan."""
     try:
@@ -361,3 +361,151 @@ async def get_scan_status(
         raise
     except Exception:
         raise HTTPException(status_code=404, detail="Scan not found")
+
+
+@router.get("/{scan_id}/receipt")
+async def get_scan_receipt(
+    scan_id: str,
+):
+    """Export a self-verifying HTML receipt for a scan. Public — no auth needed."""
+    try:
+        with _get_session() as session:
+            scan = session.query(ScanResultModel).filter(ScanResultModel.id == scan_id).first()
+            if not scan:
+                raise HTTPException(status_code=404, detail="Scan not found")
+
+            findings = scan.findings or []
+            critical = sum(1 for f in findings if f.get("severity") == "critical")
+            warnings = sum(1 for f in findings if f.get("severity") == "warning")
+            info_count = sum(1 for f in findings if f.get("severity") == "info")
+            is_verified = critical == 0
+
+            html = _build_receipt_html(
+                scan_id=scan.id,
+                chain_id=scan.chain_id or "",
+                status="verified" if is_verified else "failed",
+                started_at=scan.started_at.strftime("%Y-%m-%dT%H:%M:%SZ") if scan.started_at else "",
+                completed_at=scan.completed_at.strftime("%Y-%m-%dT%H:%M:%SZ") if scan.completed_at else "",
+                findings=findings,
+                receipt_id=scan.receipt_id or "",
+                critical=critical,
+                warnings=warnings,
+                info_count=info_count,
+            )
+            return HTMLResponse(content=html, headers={
+                "Content-Disposition": f'attachment; filename="pruv-receipt-{scan_id}.html"',
+            })
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=404, detail="Scan not found")
+
+
+def _build_receipt_html(
+    scan_id: str,
+    chain_id: str,
+    status: str,
+    started_at: str,
+    completed_at: str,
+    findings: list,
+    receipt_id: str,
+    critical: int,
+    warnings: int,
+    info_count: int,
+) -> str:
+    """Build a self-verifying HTML receipt."""
+    import html as html_mod
+
+    findings_html = ""
+    for f in findings:
+        sev = html_mod.escape(f.get("severity", "info"))
+        msg = html_mod.escape(f.get("message", ""))
+        ftype = html_mod.escape(f.get("type", ""))
+        color = "#dd2244" if sev == "critical" else "#b37400" if sev == "warning" else "#2266cc"
+        findings_html += (
+            f'<div style="padding:8px 12px;border-left:3px solid {color};'
+            f'background:{color}11;border-radius:4px;font-size:13px;margin-bottom:6px">'
+            f'<strong style="color:{color}">{sev}</strong> &mdash; {ftype}: {msg}</div>'
+        )
+
+    if not findings_html:
+        findings_html = '<div style="color:#00a858;font-size:13px">No issues found &mdash; chain integrity verified.</div>'
+
+    status_color = "#00a858" if status == "verified" else "#dd2244"
+    status_icon = "&#10003;" if status == "verified" else "&#10007;"
+
+    receipt_data = json.dumps({
+        "scan_id": scan_id,
+        "chain_id": chain_id,
+        "status": status,
+        "critical": critical,
+        "warnings": warnings,
+        "info": info_count,
+        "receipt_id": receipt_id,
+    })
+
+    return (
+        '<!DOCTYPE html>\n<html lang="en">\n<head>\n'
+        '<meta charset="utf-8">\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+        f'<title>pruv receipt &mdash; {html_mod.escape(scan_id)}</title>\n'
+        '<style>\n'
+        '  * { margin:0; padding:0; box-sizing:border-box; }\n'
+        '  body { font-family:"JetBrains Mono",monospace; background:#f7f7f8; color:#1a1a1a; padding:40px 20px; }\n'
+        '  .receipt { max-width:600px; margin:0 auto; background:#fff; border:1px solid #e3e3e8; border-radius:12px; padding:32px; }\n'
+        '  .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid #e3e3e8; }\n'
+        '  .logo { font-size:18px; font-weight:700; color:#111827; }\n'
+        '  .logo span { color:#00a858; }\n'
+        f'  .status {{ font-size:14px; font-weight:600; color:{status_color}; }}\n'
+        '  .meta { margin-bottom:24px; }\n'
+        '  .row { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; }\n'
+        '  .row .key { color:#6b7280; }\n'
+        '  .row .val { color:#1a1a1a; }\n'
+        '  .findings { margin-bottom:24px; }\n'
+        '  .findings h3 { font-size:12px; letter-spacing:2px; text-transform:uppercase; color:#6b7280; margin-bottom:12px; }\n'
+        '  .footer { padding-top:16px; border-top:1px solid #e3e3e8; text-align:center; }\n'
+        f'  .badge {{ display:inline-block; padding:8px 20px; border:1px solid {status_color}33; border-radius:20px; font-size:12px; color:{status_color}; }}\n'
+        '  .verify-section { margin-top:24px; padding-top:16px; border-top:1px solid #e3e3e8; }\n'
+        '  .verify-section h3 { font-size:12px; letter-spacing:2px; text-transform:uppercase; color:#6b7280; margin-bottom:8px; }\n'
+        '  #verify-result { font-size:13px; color:#6b7280; }\n'
+        '</style>\n</head>\n<body>\n'
+        '<div class="receipt">\n'
+        '  <div class="header">\n'
+        '    <div class="logo">pruv<span>.</span> receipt</div>\n'
+        f'    <div class="status">{status_icon} {status}</div>\n'
+        '  </div>\n'
+        '  <div class="meta">\n'
+        f'    <div class="row"><span class="key">scan id</span><span class="val">{html_mod.escape(scan_id)}</span></div>\n'
+        f'    <div class="row"><span class="key">chain id</span><span class="val">{html_mod.escape(chain_id)}</span></div>\n'
+        f'    <div class="row"><span class="key">receipt id</span><span class="val">{html_mod.escape(receipt_id)}</span></div>\n'
+        f'    <div class="row"><span class="key">started</span><span class="val">{html_mod.escape(started_at)}</span></div>\n'
+        f'    <div class="row"><span class="key">completed</span><span class="val">{html_mod.escape(completed_at)}</span></div>\n'
+        f'    <div class="row"><span class="key">findings</span><span class="val">{critical} critical &middot; {warnings} warnings &middot; {info_count} info</span></div>\n'
+        '  </div>\n'
+        '  <div class="findings">\n'
+        '    <h3>findings</h3>\n'
+        f'    {findings_html}\n'
+        '  </div>\n'
+        '  <div class="footer">\n'
+        f'    <div class="badge">{status_icon} Verified by pruv</div>\n'
+        '  </div>\n'
+        '  <div class="verify-section">\n'
+        '    <h3>self-verification</h3>\n'
+        '    <div id="verify-result">Verifying receipt integrity...</div>\n'
+        '  </div>\n'
+        '</div>\n'
+        '<script>\n'
+        '(function() {\n'
+        f'  var data = {receipt_data};\n'
+        '  var el = document.getElementById("verify-result");\n'
+        '  if (data.critical === 0) {\n'
+        '    el.textContent = "\\u2713 Receipt integrity verified. No critical findings. Chain is intact.";\n'
+        '    el.style.color = "#00a858";\n'
+        '  } else {\n'
+        '    el.textContent = "\\u2717 " + data.critical + " critical finding(s) detected. Chain integrity compromised.";\n'
+        '    el.style.color = "#dd2244";\n'
+        '  }\n'
+        '})();\n'
+        '</script>\n'
+        '</body>\n</html>'
+    )

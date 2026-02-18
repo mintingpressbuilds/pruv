@@ -2,7 +2,6 @@
 
 import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 
 interface ProvidersProps {
@@ -28,22 +27,15 @@ export function Providers({ children }: ProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="dark"
-        enableSystem
-        disableTransitionOnChange
-      >
-        {children}
-        <Toaster
-          position="bottom-right"
-          theme="system"
-          toastOptions={{
-            className:
-              "bg-[var(--surface-secondary)] text-[var(--text-primary)] border border-[var(--border)]",
-          }}
-        />
-      </ThemeProvider>
+      {children}
+      <Toaster
+        position="bottom-right"
+        theme="light"
+        toastOptions={{
+          className:
+            "bg-[var(--surface-secondary)] text-[var(--text-primary)] border border-[var(--border)]",
+        }}
+      />
     </QueryClientProvider>
   );
 }

@@ -31,9 +31,11 @@ import {
   useCheckpointPreview,
   useRestoreCheckpoint,
 } from "@/hooks/use-checkpoints";
-import { chains } from "@/lib/api";
+import { chains, receipts } from "@/lib/api";
+import { useCreateReceipt, useExportReceiptPdf } from "@/hooks/use-receipts";
 import { isPaymentEntry } from "@/components/entry-node";
 import type { Entry, AlertSeverity } from "@/lib/types";
+import { FileText } from "lucide-react";
 
 const severityConfig: Record<
   AlertSeverity,
@@ -75,6 +77,8 @@ export default function ChainDetailPage() {
   } = usePaymentVerification(chainId, { enabled: false });
 
   const undoMutation = useUndoEntry(chainId);
+  const createReceiptMutation = useCreateReceipt();
+  const exportPdfMutation = useExportReceiptPdf();
 
   // Checkpoint state
   const { data: checkpointList = [] } = useCheckpoints(chainId);
@@ -188,6 +192,18 @@ export default function ChainDetailPage() {
     }
   };
 
+  const handleExportReceipt = () => {
+    createReceiptMutation.mutate(chainId, {
+      onSuccess: (receipt) => {
+        exportPdfMutation.mutate(receipt.id);
+        toast.success("receipt exported");
+      },
+      onError: () => {
+        toast.error("failed to export receipt");
+      },
+    });
+  };
+
   const handleExport = async () => {
     try {
       const html = await chains.exportHtml(chainId);
@@ -223,6 +239,18 @@ export default function ChainDetailPage() {
           subtitle={chainLoading ? undefined : `${entries.length} entries`}
           actions={
             <div className="flex items-center gap-3">
+              <button
+                onClick={handleExportReceipt}
+                disabled={createReceiptMutation.isPending}
+                className="flex items-center gap-2 rounded-lg border border-pruv-500/30 bg-pruv-500/10 px-3 py-2 text-sm font-medium text-pruv-400 hover:bg-pruv-500/20 transition-colors disabled:opacity-50"
+              >
+                {createReceiptMutation.isPending ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <FileText size={14} />
+                )}
+                Export Receipt
+              </button>
               <button
                 onClick={handleExport}
                 className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"

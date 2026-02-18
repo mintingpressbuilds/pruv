@@ -26,27 +26,12 @@
   --text-tertiary: #9ca3af;
 }
 
-.dark {
-  --surface: #0f1117;
-  --surface-secondary: #1a1d27;
-  --surface-tertiary: #242836;
-  --border: #2a2e3a;
-  --border-secondary: #3a3f4f;
-  --text-primary: #f3f4f6;
-  --text-secondary: #9ca3af;
-  --text-tertiary: #6b7280;
-}
-
 * {
   box-sizing: border-box;
 }
 
 html {
   color-scheme: light;
-}
-
-html.dark {
-  color-scheme: dark;
 }
 
 body {
