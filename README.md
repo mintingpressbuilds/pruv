@@ -5,27 +5,15 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://pypi.org/project/pruv/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-**Prove what happened.**
-
-A deploy pipeline pushed to production at 2am. A payment moved between three accounts. A config change cascaded through 14 services. A workflow touched customer data across two organizations.
-
-Your logs say "completed successfully."
-
-Your auditor asks for proof. Your client asks for proof. Your regulator asks for proof.
-
-Logs aren't proof.
+**The digital verification layer.**
 
 -----
 
-### Logs vs. proof
+The digital world has no verification layer.
 
-|Approach|What you get                                     |
-|--------|-------------------------------------------------|
-|Logs    |"Here's what happened, trust us"                 |
-|Traces  |"Here's the flow, trust our database"            |
-|**pruv**|"Here's cryptographic proof — verify it yourself"|
+Every system — every pipeline, every payment, every agent, every workflow — runs on trust. Trust in logs. Trust in databases. Trust in whoever ran the process. That trust is manufactured. There is no way to prove a digital operation happened — in a specific sequence, without tampering — that anyone can verify independently, without trusting the system that produced the record.
 
-pruv captures every operation in a system — every state change, every file touched, every transaction, every handoff — and chains them into a cryptographic proof that anyone can independently verify. No pruv account needed. No trust required.
+pruv is that layer.
 
 ```
 pip install pruv
@@ -33,9 +21,40 @@ pip install pruv
 
 -----
 
+### The protocol
+
+Every operation transforms state. Something exists before. Something exists after. pruv captures both and creates proof.
+
+```
+  X                    Y
+(before)             (after)
+  │                    │
+  └────────┬───────────┘
+           │
+          XY
+    (cryptographic proof)
+```
+
+Chain them together. Each entry's X must match the previous entry's Y. Break one link — the chain breaks. Verification detects exactly where.
+
+```
+Entry 0       Entry 1       Entry 2       Entry 3
+┌──────┐      ┌──────┐      ┌──────┐      ┌──────┐
+│ X: ø │─────▶│ X:Y₀ │─────▶│ X:Y₁ │─────▶│ X:Y₂ │
+│ Y:Y₀ │      │ Y:Y₁ │      │ Y:Y₂ │      │ Y:Y₃ │
+│XY:h₀ │      │XY:h₁ │      │XY:h₂ │      │XY:h₃ │
+└──────┘      └──────┘      └──────┘      └──────┘
+```
+
+This is xycore — the open verification protocol. Zero dependencies. Standard library only. Works offline. Works without an account. Works forever. Anyone can implement it. Anyone can verify against it.
+
+pruv is the layer built on xycore. The dashboard, the API, the receipts, the tooling. The protocol belongs to nobody. The layer is the product.
+
+-----
+
 ### What proof looks like
 
-This is a pruv receipt. Every operation produces one.
+Every operation produces a receipt. This one is from an AI agent that modified a codebase.
 
 ```
 ┌─────────────────────────────────────────┐
@@ -43,7 +62,7 @@ This is a pruv receipt. Every operation produces one.
 │  pruv receipt                           │
 │                                         │
 │  Task:     Fix the login bug            │
-│  Agent:    claude-sonnet-4-20250514              │
+│  Agent:    claude-sonnet-4-20250514     │
 │  Duration: 3m 42s                       │
 │                                         │
 │  Actions:  23                           │
@@ -64,7 +83,7 @@ This is a pruv receipt. Every operation produces one.
 
 Export as PDF. Embed as badge. Share via link. The recipient verifies independently — no account, no login, no trust required.
 
-It took two lines of code to generate this:
+Two lines of code.
 
 ```python
 from pruv import xy_wrap
@@ -75,80 +94,82 @@ result = await wrapped.run("Fix the login bug")
 
 -----
 
-### Something broke at 2am
+### Logs are not proof
 
-An automated process ran overnight. Production is down. Everyone's asking what happened.
+|        |What you get                                     |What it requires     |
+|--------|-------------------------------------------------|---------------------|
+|Logs    |"Here's what happened, trust us"                 |Trust in the operator|
+|Traces  |"Here's the flow, trust our database"            |Trust in the platform|
+|**pruv**|"Here's cryptographic proof — verify it yourself"|Trust in math        |
 
-Open the dashboard. Grab the timeline slider. Drag backward.
+Logs are assertions. A log entry is a system telling you what it chose to record. It can be modified, deleted, or never written in the first place. A pruv chain cannot be silently altered — any modification breaks verification and reports exactly where.
 
-The system state reconstructs at any point in the chain. Not a log entry — the actual state as it existed at that moment. Click any entry. See state before on the left, state after on the right. Syntax-highlighted diff. The exact change.
+-----
 
-Compare any two points. Entry 12 vs entry 187. What changed between those moments? Everything, laid out visually.
+### Two lines wrap anything
 
-Find the exact moment it went wrong. See the state before. Click restore. One click. Back to the verified checkpoint. Done.
+```python
+from pruv import xy_wrap
+
+# Any function
+@xy_wrap
+async def my_workflow(task: str):
+    pass
+
+# Any class
+wrapped = xy_wrap(my_service)
+
+# Any agent framework
+wrapped = xy_wrap(langchain_agent)     # LangChain
+wrapped = xy_wrap(crew)                # CrewAI
+wrapped = xy_wrap(openai_agent)        # OpenAI Agents
+```
+
+No framework opinions. No special integrations. One function wraps anything callable.
+
+-----
+
+### Time travel
+
+Every entry in a pruv chain captures actual state — not what the system logged, not what it reported, but what it cryptographically was at the moment of the operation. The chain is a complete reconstruction of your system at every point it was touched.
+Any entry can be opened. State before on the left. State after on the right. The exact change, at the exact moment, syntax-diffed.
+Any state can be restored. Not approximately — to the verified cryptographic state as it existed at that entry. If the chain is intact, the restored state is provably identical to the original.
 
 ```python
 from pruv import CheckpointManager
 
 manager = CheckpointManager(chain, project_dir="./my-project")
 
-# Snapshot current state
 checkpoint = manager.create("before-refactor")
 
-# System does its thing...
-
-# Something went wrong? Preview what changes before restoring
+# Preview before committing
 preview = manager.preview_restore(checkpoint.id)
 
-# Restore to checkpoint
+# Restore to verified state
 manager.restore(checkpoint.id)
 
-# Or just undo the last action
+# Or undo the last action
 manager.quick_undo()
 ```
 
------
-
-### Who needs this
-
-Any system where something changes state and someone eventually asks "what happened?" — that's where pruv lives. It's a verification protocol for operations.
-
-**Operations & Infrastructure** — A deploy pipeline pushes to production. A config change cascades through 14 services. A database migration runs at 3am. Something breaks. The postmortem starts with "we think what happened was…" — pruv replaces that with cryptographic proof of exactly what changed, when, and in what order. Rollback to any verified checkpoint.
-
-**Financial Systems** — Money moves between accounts, platforms, and entities. Reconciliation is a manual nightmare. Auditors ask for proof that the books balance. pruv enforces conservation cryptographically — total in equals total out, verified at every step. Built for SOX, PCI-DSS, MiFID II. Not a log that says the math worked. Proof that it did.
-
-**Healthcare & Compliance** — A patient record gets modified. A prescription gets filled. A prior auth gets submitted. Regulators don't want to hear what your system logged — they want to verify independently. pruv gives every state change in a regulated workflow a cryptographic receipt that a third party can audit without access to your systems.
-
-**AI Agents & Automation** — An agent modifies 40 files, makes 12 API calls, and deploys to production. A multi-agent pipeline hands off between three systems. An automated workflow touches customer data. When something goes wrong — or when someone just needs to know what happened — "check the logs" isn't an answer. Every action is captured with before-and-after state hashes, chained and independently verifiable.
-
-**Supply Chain & Logistics** — Goods move through suppliers, warehouses, customs, carriers, and retailers. Each handoff is a state change. Each participant has their own system. pruv gives every handoff a cryptographic proof that both parties can verify. Disputes become trivial — the chain shows exactly where state diverged.
-
-**Legal & Contracts** — A contract moves through drafts, reviews, approvals, and signatures. Who changed what, and when? Version history in Google Docs isn't evidence. A pruv chain over a document's lifecycle is a tamper-evident record of every modification, every approval gate, every signature — exportable as proof in a dispute.
-
-**Multi-Party Workflows** — Any process where work crosses organizational boundaries. Agency does work, client reviews, vendor fulfills, auditor inspects. Each handoff is a trust gap. pruv closes it — every party can independently verify what the other parties did without trusting their systems.
-
-If state changes and accountability matters, you need proof, not logs.
+This changes the economics of mistakes. Recovery is no longer expensive, imprecise, or uncertain. You go back to a verified state you can prove is what you think it is.
 
 -----
 
 ### Financial verification
 
-Payments are state transformations. Balance before. Balance after. pruv proves the math.
+Payments are state transformations. Balance before. Balance after. The conservation law must hold — total in equals total out. pruv enforces this cryptographically at every step.
 
 ```python
 from pruv import PaymentChain
 
 ledger = PaymentChain("order-7291", api_key="pv_live_...")
 
-# Deposit funds
 ledger.deposit("merchant", 10000.00, source="bank", reference="ACH-4401")
 
-# Each transfer creates a cryptographic balance proof
 ledger.transfer("merchant", "customer_123", 189.00, reference="pi_3abc")
 ledger.transfer("merchant", "customer_456", 64.50, reference="pi_3def")
 ```
-
-Every transfer hashes the balances before and after, then links them into the chain. The conservation law is enforced cryptographically — total in must equal total out. No money created. No money destroyed.
 
 ```
 Before:  merchant=$10,000.00
@@ -185,51 +206,24 @@ XY = hash(X + "transfer" + Y + timestamp)
 └─────────────────────────────────────────┘
 ```
 
+Tamper with a single entry — the chain breaks and reports exactly where. Money cannot be created or destroyed silently inside a pruv-wrapped payment system.
+
 Verify the entire ledger in one call:
 
 ```python
 result = ledger.verify_payments()
-
-# payment_count: 2
 # verified_count: 2/2
 # all_valid: True
 # final_balances: {'merchant': 9746.50, 'customer_123': 189.00, 'customer_456': 64.50}
-# total_volume: 253.50
 ```
 
-Tamper with a single entry — the chain breaks and reports exactly where. Works via the API (`/v1/chains/{id}/verify-payments`) or fully offline with xycore's `BalanceProof` primitive.
-
-Built for compliance. SOX, PCI-DSS, MiFID II. Pair with digital signatures for non-repudiation. Pair with approval gates for multi-signer workflows on high-value transfers.
-
------
-
-### Works with anything
-
-```python
-from pruv import xy_wrap
-
-# Any function
-@xy_wrap
-async def my_workflow(task: str):
-    # your code here
-    pass
-
-# Any class
-wrapped = xy_wrap(my_service)
-
-# Any agent framework
-wrapped = xy_wrap(langchain_agent)     # LangChain
-wrapped = xy_wrap(crew)                # CrewAI
-wrapped = xy_wrap(openai_agent)        # OpenAI Agents
-```
-
-No framework favorites. No special integrations. One function wraps anything callable — services, scripts, pipelines, agents, workflows.
+Built for SOX, PCI-DSS, MiFID II. Pair with digital signatures for non-repudiation. Pair with approval gates for multi-signer workflows on high-value transfers.
 
 -----
 
 ### Approval gates
 
-High-risk operations pause and wait for a human.
+High-risk operations pause and wait for a human. Every approval is recorded in the chain — who approved, when, what they approved. Cryptographically signed. Non-repudiable.
 
 ```python
 wrapped = xy_wrap(
@@ -239,7 +233,7 @@ wrapped = xy_wrap(
 )
 ```
 
-The system can read all day. The moment it tries to write or deploy, a human has to approve. Every approval is recorded in the chain — who approved, when, what they approved. Cryptographically signed. Non-repudiable.
+The system can read all day. The moment it tries to write or deploy, a human approves. The approval is proof, not policy.
 
 -----
 
@@ -253,13 +247,13 @@ private_key, public_key = generate_keypair()
 wrapped = xy_wrap(my_service, sign=True, private_key=private_key)
 ```
 
-Ed25519 signatures on every entry. The signer cannot deny they performed the operation. Anyone with the public key can verify independently.
+Ed25519 signatures on every entry. The signer cannot deny they performed the operation. Anyone with the public key verifies independently.
 
 -----
 
-### Scan your project
+### Architecture scan
 
-Map your entire codebase — services, dependencies, env vars, connections — from source code. No config files. No manual setup.
+Map your entire codebase — services, dependencies, environment variables, connections — derived from source code. No config files. No manual setup.
 
 ```
 $ pruv scan
@@ -280,41 +274,27 @@ $ pruv scan
   Graph hash: a7f3c28e91b4
 ```
 
-Run it again next week. Diff the two scans. See exactly what changed in your architecture. Architecture version control, derived from source code.
+Run it again next week. Diff the two scans. The graph hash changes when your architecture changes. Architecture version control, derived from source.
 
 -----
 
-### How the protocol works
+### Where the layer lives
 
-Every operation transforms state. pruv captures both sides and creates proof.
+Any system where state changes and accountability matters. That is not a narrow category.
 
-```
-  X                    Y
-(before)             (after)
-  │                    │
-  └────────┬───────────┘
-           │
-          XY
-    (cryptographic proof)
-```
+**AI Agents & Automation** — An agent modifies 40 files, makes 12 API calls, deploys to production. A multi-agent pipeline hands off between three systems. When something goes wrong — or when someone needs to know what happened — the chain shows every action, every state change, every handoff. Independently verifiable. No trust required in the agent, the framework, or the operator.
 
-Chain them together. Each entry's X must match the previous entry's Y. Break one link, the whole chain breaks. Verification detects exactly where.
+**Financial Systems** — Money moves between accounts, platforms, and entities. Conservation is enforced cryptographically at every step. Reconciliation is not a manual process — it is a verification call. Auditors do not review logs. They verify chains.
 
-```
-Entry 0       Entry 1       Entry 2       Entry 3
-┌──────┐      ┌──────┐      ┌──────┐      ┌──────┐
-│ X: ø │─────▶│ X:Y₀ │─────▶│ X:Y₁ │─────▶│ X:Y₂ │
-│ Y:Y₀ │      │ Y:Y₁ │      │ Y:Y₂ │      │ Y:Y₃ │
-│XY:h₀ │      │XY:h₁ │      │XY:h₂ │      │XY:h₃ │
-└──────┘      └──────┘      └──────┘      └──────┘
-```
+**Operations & Infrastructure** — A deploy pipeline pushes to production. A config change cascades through 14 services. Something breaks. The postmortem does not start with "we think what happened was." It starts with the chain. Exact state at every moment. Rollback to any verified checkpoint.
 
-```python
-from pruv import XYChain
+**Healthcare & Compliance** — A patient record gets modified. A prescription gets filled. A prior authorization gets submitted. Regulators verify independently without access to your systems. The receipt is the audit.
 
-chain = XYChain(name="production")
-valid, break_index = chain.verify()
-```
+**Supply Chain & Logistics** — Goods move through suppliers, warehouses, customs, carriers, and retailers. Each handoff is a state change with a cryptographic receipt both parties can verify. Disputes resolve against the chain, not against competing claims.
+
+**Legal & Contracts** — A contract moves through drafts, reviews, approvals, and signatures. Every modification is a chain entry. Every approval gate is recorded. The chain is tamper-evident evidence of the document's lifecycle — exportable as proof in a dispute.
+
+**Multi-Party Workflows** — Work crosses organizational boundaries. Each handoff is a trust gap. pruv closes it. Every party verifies what the other parties did without trusting their systems.
 
 -----
 
@@ -325,30 +305,47 @@ valid, break_index = chain.verify()
 from xycore import XYChain
 chain = XYChain(name="local")
 
-# Or sync to cloud for dashboard, sharing, team features
+# Sync to cloud for dashboard, sharing, team features
 wrapped = xy_wrap(my_service, api_key="pv_live_...")
 ```
 
-xycore is the protocol. Zero dependencies. Standard library only. Works offline. Works without an account. Works forever.
+xycore is the protocol. It has no dependencies, no account requirement, no expiration. It works in air-gapped environments. It works offline. It works forever.
 
-The cloud adds the dashboard, team collaboration, shareable receipt links, embeddable badges, and PDF export. It's optional.
+pruv is the layer. The dashboard, the team collaboration, the shareable receipt links, the embeddable badges, the PDF export, the API. The protocol is the foundation. The layer is the product.
+
+-----
+
+### Verify a chain
+
+```python
+from pruv import XYChain
+
+chain = XYChain(name="production")
+valid, break_index = chain.verify()
+```
+
+If valid is True, the chain is intact. Every entry is what it was when it was written. Nobody touched it.
+
+If valid is False, break_index is exactly where the chain was broken. Not approximately. Exactly.
 
 -----
 
 ### Install
 
 ```bash
-pip install xycore    # protocol only, zero deps
+pip install xycore    # protocol only, zero dependencies
 pip install pruv      # full SDK
 ```
 
+-----
+
 ### Links
 
-- [pruv.dev](https://pruv.dev) — product site
+- [pruv.dev](https://pruv.dev) — product
 - [Dashboard](https://app.pruv.dev) — chain explorer, time travel, receipts
-- [Docs](https://docs.pruv.dev) — full documentation
+- [Docs](https://docs.pruv.dev) — documentation
 - [API Reference](https://api.pruv.dev/docs) — REST API
-- [xycore on PyPI](https://pypi.org/project/xycore/) — zero-dependency protocol
+- [xycore on PyPI](https://pypi.org/project/xycore/) — open protocol
 - [pruv on PyPI](https://pypi.org/project/pruv/) — full SDK
 - [Follow on X](https://x.com/pruvxy) — @pruvxy
 
