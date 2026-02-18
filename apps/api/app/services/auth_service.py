@@ -33,7 +33,8 @@ class AuthService:
 
     def _session(self) -> Session:
         if not self._session_factory:
-            raise RuntimeError("AuthService database not initialized. Call init_db() first.")
+            # Auto-initialize with SQLite for development/testing
+            self.init_db("sqlite:///pruv_dev.db")
         return self._session_factory()
 
     # ──── Users ────
@@ -43,9 +44,10 @@ class AuthService:
         email: str,
         name: str | None = None,
         plan: str = "free",
+        user_id: str | None = None,
     ) -> dict[str, Any]:
         """Create a new user in the database."""
-        user_id = uuid.uuid4().hex[:12]
+        user_id = user_id or uuid.uuid4().hex[:12]
         now = datetime.now(timezone.utc)
 
         with self._session() as session:
@@ -82,10 +84,22 @@ class AuthService:
         existing = self.get_user(user_id)
         if existing:
             return existing
-        return self.create_user(
-            email=f"{user_id}@pruv.dev",
-            name=f"User {user_id[:8]}",
-        )
+        try:
+            return self.create_user(
+                email=f"{user_id}@pruv.dev",
+                name=f"User {user_id[:8]}",
+                user_id=user_id,
+            )
+        except Exception:
+            # Handle race condition or duplicate email/id
+            existing = self.get_user(user_id)
+            if existing:
+                return existing
+            return self.create_user(
+                email=f"{user_id}_{uuid.uuid4().hex[:6]}@pruv.dev",
+                name=f"User {user_id[:8]}",
+                user_id=user_id,
+            )
 
     def update_user(self, user_id: str, updates: dict[str, Any]) -> dict[str, Any] | None:
         with self._session() as session:
@@ -187,7 +201,7 @@ class AuthService:
                 user_id=user["id"],
                 name=name,
                 key_hash=key_hash,
-                key_prefix=key[:12] + "...",
+                key_prefix=key[:12] + "\u2026",
                 scopes=resolved_scopes,
                 created_at=now,
             )
@@ -200,7 +214,7 @@ class AuthService:
             "name": name,
             "key": key,
             "key_hash": key_hash,
-            "key_prefix": key[:12] + "...",
+            "key_prefix": key[:12] + "\u2026",
             "scopes": resolved_scopes,
             "created_at": time.time(),
             "last_used_at": None,
@@ -257,7 +271,7 @@ class AuthService:
             session.add(user)
 
             # Create api key record
-            prefix = api_key[:12] + "..."
+            prefix = api_key[:12] + "\u2026"
             api_key_row = ApiKey(
                 id=uuid.uuid4().hex[:12],
                 user_id=user_id,

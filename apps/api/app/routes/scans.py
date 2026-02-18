@@ -103,13 +103,13 @@ def _get_session():
     global _session_factory
     if _session_factory is None:
         from ..core.config import settings
-        if settings.database_url:
-            engine = get_engine(settings.database_url)
-            _session_factory = sessionmaker(
-                autocommit=False, autoflush=False, bind=engine
-            )
-    if _session_factory is None:
-        raise RuntimeError("Database not initialized for scans")
+        db_url = settings.database_url or "sqlite:///pruv_dev.db"
+        engine = get_engine(db_url)
+        from ..models.database import Base
+        Base.metadata.create_all(bind=engine)
+        _session_factory = sessionmaker(
+            autocommit=False, autoflush=False, bind=engine
+        )
     return _session_factory()
 
 

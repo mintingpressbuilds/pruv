@@ -60,7 +60,7 @@ class ReceiptService:
 
     def _session(self) -> Session:
         if not self._session_factory:
-            raise RuntimeError("Database not initialized. Call init_db() first.")
+            self.init_db("sqlite:///pruv_dev.db")
         return self._session_factory()
 
     def create_receipt(

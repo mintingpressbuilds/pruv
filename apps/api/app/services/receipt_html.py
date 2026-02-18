@@ -32,8 +32,8 @@ def generate_receipt_html(
     status_icon = "&#x2713;" if all_verified else "&#x2717;"
     status_color = "#4ade80" if all_verified else "#f87171"
 
-    root_hash = entries[0]["y"] if entries else ""
-    head_hash = entries[-1]["y"] if entries else ""
+    root_hash = entries[0].get("y", entries[0].get("hash", "")) if entries else ""
+    head_hash = entries[-1].get("y", entries[-1].get("hash", "")) if entries else ""
     root_xy = entries[0].get("xy", "") if entries else ""
     head_xy = entries[-1].get("xy", "") if entries else ""
 
@@ -47,7 +47,7 @@ def generate_receipt_html(
             "index": e.get("index", i),
             "path": e.get("path", e.get("operation", f"entry-{i}")),
             "x": e.get("x", ""),
-            "y": e.get("y", ""),
+            "y": e.get("y", e.get("hash", "")),
             "xy": e.get("xy", ""),
             "operation": e.get("operation", e.get("path", "")),
             "timestamp": e.get("timestamp", 0),
@@ -61,7 +61,7 @@ def generate_receipt_html(
     timeline_html = ""
     for i, entry in enumerate(entries):
         path = html.escape(entry.get("path", entry.get("operation", f"entry-{i}")))
-        y_hash = entry.get("y", "")
+        y_hash = entry.get("y", entry.get("hash", ""))
         x_hash = entry.get("x", "")
         idx = entry.get("index", i)
         ft = html.escape(entry.get("file_type", ""))
