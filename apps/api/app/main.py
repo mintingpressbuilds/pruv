@@ -30,9 +30,11 @@ async def lifespan(app: FastAPI):
             logger.info("Database tables verified/created.")
 
             # Initialize PostgreSQL-backed services
+            from .services.auth_service import auth_service
             from .services.chain_service import chain_service
             from .services.receipt_service import receipt_service
 
+            auth_service.init_db(settings.database_url)
             chain_service.init_db(settings.database_url)
             receipt_service.init_db(settings.database_url)
             logger.info("Services initialized with PostgreSQL.")
