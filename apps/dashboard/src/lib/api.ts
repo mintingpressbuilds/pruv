@@ -648,6 +648,19 @@ export const scans = {
   async getStatus(id: string): Promise<ScanResult> {
     return request<ScanResult>(`/v1/scans/${id}`);
   },
+
+  async exportReceipt(scanId: string): Promise<void> {
+    const url = `${API_BASE_URL}/v1/scans/${scanId}/receipt`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to export receipt");
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = `pruv-receipt-${scanId}.html`;
+    a.click();
+    URL.revokeObjectURL(blobUrl);
+  },
 };
 
 // ─── API Keys ────────────────────────────────────────────────────────────────

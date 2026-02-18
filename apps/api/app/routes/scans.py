@@ -15,11 +15,11 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import sessionmaker
 
-from ..core.dependencies import check_rate_limit, get_current_user
-from ..core.rate_limit import RateLimitResult
+from ..core.dependencies import optional_user
 from ..models.database import ScanResult as ScanResultModel, get_engine
 from ..services.chain_service import chain_service
 
@@ -442,8 +442,7 @@ def _parse_github_url(url: str) -> tuple[str, str, str]:
 @router.post("", response_model=ScanResponse)
 async def trigger_scan(
     request: Request,
-    user: dict[str, Any] = Depends(get_current_user),
-    _rl: RateLimitResult = Depends(check_rate_limit),
+    user: dict[str, Any] | None = Depends(optional_user),
 ):
     """Trigger a scan by chain ID or uploaded JSON file."""
     scan_id = uuid.uuid4().hex[:12]
@@ -486,7 +485,7 @@ async def trigger_scan(
                     "message": "No entries found in uploaded file",
                 }]
                 return _make_result(scan_id, chain_id, findings, started_at,
-                                    user_id=user["id"], source="json_upload")
+                                    user_id=user["id"] if user else None, source="json_upload")
             else:
                 findings = _verify_entries(
                     entries,
@@ -495,12 +494,13 @@ async def trigger_scan(
                 )
 
             return _make_result(scan_id, chain_id, findings, started_at,
-                                user_id=user["id"], entries=entries, source="json_upload")
+                                user_id=user["id"] if user else None, entries=entries, source="json_upload")
 
         # FormData with chain_id but no file
         if chain_id_field:
             chain_id = str(chain_id_field)
-            chain = chain_service.get_chain(chain_id, user["id"])
+            user_id = user["id"] if user else None
+            chain = chain_service.get_chain(chain_id, user_id)
             if not chain:
                 raise HTTPException(status_code=404, detail="Chain not found")
 
@@ -516,14 +516,14 @@ async def trigger_scan(
                 try:
                     from ..services.receipt_service import receipt_service
                     receipt = receipt_service.create_receipt(
-                        chain_id=chain_id, user_id=user["id"], task="scan-verification",
+                        chain_id=chain_id, user_id=user["id"] if user else "anonymous", task="scan-verification",
                     )
                     receipt_id = receipt.get("id")
                 except Exception:
                     pass
 
             return _make_result(scan_id, chain_id, findings, started_at, receipt_id,
-                                user_id=user["id"], source="chain_id")
+                                user_id=user["id"] if user else None, source="chain_id")
 
         raise HTTPException(status_code=400, detail="Provide chain_id or upload a file")
 
@@ -542,7 +542,8 @@ async def trigger_scan(
     check_signatures = opts.get("check_signatures", True)
     generate_receipt = opts.get("generate_receipt", True)
 
-    chain = chain_service.get_chain(chain_id, user["id"])
+    user_id = user["id"] if user else None
+    chain = chain_service.get_chain(chain_id, user_id)
     if not chain:
         raise HTTPException(status_code=404, detail="Chain not found")
 
@@ -558,21 +559,20 @@ async def trigger_scan(
         try:
             from ..services.receipt_service import receipt_service
             receipt = receipt_service.create_receipt(
-                chain_id=chain_id, user_id=user["id"], task="scan-verification",
+                chain_id=chain_id, user_id=user_id or "anonymous", task="scan-verification",
             )
             receipt_id = receipt.get("id")
         except Exception:
             pass
 
     return _make_result(scan_id, chain_id, findings, started_at, receipt_id,
-                        user_id=user["id"], source="chain_id")
+                        user_id=user_id, source="chain_id")
 
 
 @router.post("/upload", response_model=ScanResponse)
 async def scan_zip_upload(
     request: Request,
-    user: dict[str, Any] = Depends(get_current_user),
-    _rl: RateLimitResult = Depends(check_rate_limit),
+    user: dict[str, Any] | None = Depends(optional_user),
 ):
     """Scan a ZIP file: extract, hash every file, build chain, verify."""
     scan_id = uuid.uuid4().hex[:12]
@@ -592,18 +592,17 @@ async def scan_zip_upload(
     files = _extract_zip_files(content)
     if not files:
         findings = [{"severity": "info", "type": "empty_archive", "message": "No scannable files found in ZIP"}]
-        return _make_result(scan_id, None, findings, started_at, user_id=user["id"], source="zip_upload")
+        return _make_result(scan_id, None, findings, started_at, user_id=user["id"] if user else None, source="zip_upload")
 
     entries, findings = _build_chain_from_files(files)
     return _make_result(scan_id, None, findings, started_at,
-                        user_id=user["id"], entries=entries, source="zip_upload")
+                        user_id=user["id"] if user else None, entries=entries, source="zip_upload")
 
 
 @router.post("/github", response_model=ScanResponse)
 async def scan_github_repo(
     body: GitHubScanRequest,
-    user: dict[str, Any] = Depends(get_current_user),
-    _rl: RateLimitResult = Depends(check_rate_limit),
+    user: dict[str, Any] | None = Depends(optional_user),
 ):
     """Scan a public GitHub repo: download zipball, extract, hash, build chain, verify."""
     import httpx
@@ -646,19 +645,18 @@ async def scan_github_repo(
     if not files:
         findings = [{"severity": "info", "type": "empty_repo", "message": "No scannable files found in repository"}]
         return _make_result(scan_id, None, findings, started_at,
-                            user_id=user["id"], source=f"github:{owner}/{repo}@{branch}")
+                            user_id=user["id"] if user else None, source=f"github:{owner}/{repo}@{branch}")
 
     entries, findings = _build_chain_from_files(files)
     return _make_result(scan_id, None, findings, started_at,
-                        user_id=user["id"], entries=entries,
+                        user_id=user["id"] if user else None, entries=entries,
                         source=f"github:{owner}/{repo}@{branch}")
 
 
 @router.post("/url", response_model=ScanResponse)
 async def scan_url(
     body: URLScanRequest,
-    user: dict[str, Any] = Depends(get_current_user),
-    _rl: RateLimitResult = Depends(check_rate_limit),
+    user: dict[str, Any] | None = Depends(optional_user),
 ):
     """Scan any URL: fetch content, hash it, create a single-entry chain."""
     import httpx
@@ -693,7 +691,7 @@ async def scan_url(
                             entries, findings = _build_chain_from_files(files)
                             return _make_result(
                                 scan_id, None, findings, started_at,
-                                user_id=user["id"], entries=entries,
+                                user_id=user["id"] if user else None, entries=entries,
                                 source=f"github:{owner}/{repo}@{branch}",
                             )
             except Exception:
@@ -741,7 +739,7 @@ async def scan_url(
 
     return _make_result(
         scan_id, None, [], started_at,
-        user_id=user["id"], entries=[entry],
+        user_id=user["id"] if user else None, entries=[entry],
         source=f"url:{url}",
     )
 
@@ -749,14 +747,8 @@ async def scan_url(
 @router.get("/{scan_id}/receipt")
 async def get_scan_receipt(
     scan_id: str,
-    user: dict[str, Any] = Depends(get_current_user),
-    _rl: RateLimitResult = Depends(check_rate_limit),
 ):
-    """Generate a self-contained HTML receipt for a scan.
-
-    The receipt includes embedded verification JavaScript that works offline.
-    """
-    from fastapi.responses import HTMLResponse
+    """Generate a self-contained HTML receipt for a scan. Public — no auth needed."""
     from ..services.receipt_html import generate_receipt_html
 
     try:
@@ -770,7 +762,7 @@ async def get_scan_receipt(
                 source=None,
                 started_at=scan.started_at.strftime("%Y-%m-%dT%H:%M:%SZ") if scan.started_at else "",
                 completed_at=scan.completed_at.strftime("%Y-%m-%dT%H:%M:%SZ") if scan.completed_at else None,
-                entries=[],  # DB scans don't store entry data — receipt will show findings only
+                entries=[],
                 findings=scan.findings or [],
                 summary=None,
             )
@@ -784,8 +776,6 @@ async def get_scan_receipt(
 @router.get("/{scan_id}", response_model=ScanResponse)
 async def get_scan_status(
     scan_id: str,
-    user: dict[str, Any] = Depends(get_current_user),
-    _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Get the status and results of a scan."""
     try:

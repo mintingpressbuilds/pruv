@@ -219,12 +219,19 @@ class SharedChainResponse(BaseModel):
 # ──── Auth Schemas ────
 
 
-VALID_SCOPES = {"read", "write", "admin"}
+VALID_SCOPES = {
+    "read", "write", "admin",
+    "chains:read", "chains:write",
+    "entries:read", "entries:write",
+    "receipts:read", "receipts:create",
+    "scan:trigger",
+}
 
 
 class ApiKeyCreate(BaseModel):
     name: str = Field(default="Default", min_length=1, max_length=255)
     scopes: list[str] = Field(default=["read", "write"], max_length=10)
+    prefix: str = Field(default="pv_live_")
 
     @field_validator("scopes")
     @classmethod
@@ -232,6 +239,13 @@ class ApiKeyCreate(BaseModel):
         invalid = set(v) - VALID_SCOPES
         if invalid:
             raise ValueError(f"Invalid scopes: {', '.join(sorted(invalid))}. Must be: {', '.join(sorted(VALID_SCOPES))}")
+        return v
+
+    @field_validator("prefix")
+    @classmethod
+    def validate_prefix(cls, v: str) -> str:
+        if v not in ("pv_live_", "pv_test_"):
+            raise ValueError("Prefix must be 'pv_live_' or 'pv_test_'")
         return v
 
 

@@ -30,6 +30,7 @@ async def create_api_key(
         user_id=user["id"],
         name=body.name,
         scopes=body.scopes,
+        prefix=body.prefix,
     )
     if not result:
         raise HTTPException(status_code=400, detail="Failed to create API key")

@@ -17,8 +17,8 @@ API_KEY_PREFIX_TEST = "pv_test_"
 
 
 def generate_api_key(prefix: str = API_KEY_PREFIX_LIVE) -> str:
-    """Generate a new API key with the given prefix."""
-    random_part = secrets.token_urlsafe(32)
+    """Generate a new API key with the given prefix + 32 random hex chars."""
+    random_part = secrets.token_hex(16)
     return f"{prefix}{random_part}"
 
 

@@ -88,6 +88,16 @@ async def check_rate_limit(
     return result
 
 
+async def optional_user(authorization: str | None = Header(None)) -> dict[str, Any] | None:
+    """Extract the current user if auth is present, otherwise return None."""
+    if not authorization:
+        return None
+    try:
+        return await get_current_user(authorization)
+    except HTTPException:
+        return None
+
+
 def require_scope(scope: str):
     """Create a dependency that requires a specific scope."""
     async def _check(user: dict[str, Any] = Depends(get_current_user)):
