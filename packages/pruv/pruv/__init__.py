@@ -32,48 +32,8 @@ from . import identity
 from .identity import AgentIdentity, IdentityAction, VerificationResult
 
 # Provenance
-from .provenance import Provenance, Artifact, ProvenanceVerification
-
-
-class _ProvenanceProxy:
-    """Proxy that initializes Provenance on first use."""
-
-    _instance = None
-
-    def origin(self, *args, api_key=None, **kwargs):
-        if api_key:
-            self._instance = Provenance(api_key=api_key)
-        if not self._instance:
-            raise RuntimeError("Call with api_key= on first use")
-        return self._instance.origin(*args, **kwargs)
-
-    def transition(self, *args, **kwargs):
-        if not self._instance:
-            raise RuntimeError("Register an artifact first")
-        return self._instance.transition(*args, **kwargs)
-
-    def verify(self, *args, **kwargs):
-        if not self._instance:
-            raise RuntimeError("Register an artifact first")
-        return self._instance.verify(*args, **kwargs)
-
-    def receipt(self, *args, **kwargs):
-        if not self._instance:
-            raise RuntimeError("Register an artifact first")
-        return self._instance.receipt(*args, **kwargs)
-
-    def history(self, *args, **kwargs):
-        if not self._instance:
-            raise RuntimeError("Register an artifact first")
-        return self._instance.history(*args, **kwargs)
-
-    def lookup(self, *args, **kwargs):
-        if not self._instance:
-            raise RuntimeError("Register an artifact first")
-        return self._instance.lookup(*args, **kwargs)
-
-
-provenance = _ProvenanceProxy()
+from . import provenance
+from .provenance import Artifact, Transition, ProvenanceVerificationResult
 
 __version__ = "1.0.0"
 
@@ -114,8 +74,8 @@ __all__ = [
     "IdentityAction",
     "VerificationResult",
     # Provenance
-    "Provenance",
-    "Artifact",
-    "ProvenanceVerification",
     "provenance",
+    "Artifact",
+    "Transition",
+    "ProvenanceVerificationResult",
 ]
