@@ -82,6 +82,11 @@ export function useRegisterIdentity() {
     mutationFn: (data: {
       name: string;
       agent_type?: string;
+      owner?: string;
+      scope?: string[];
+      purpose?: string;
+      valid_from?: string;
+      valid_until?: string;
       metadata?: Record<string, unknown>;
     }) => identities.register(data),
     onSuccess: () => {

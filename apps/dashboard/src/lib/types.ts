@@ -339,6 +339,11 @@ export interface AgentIdentity {
   id: string; // pi_ address
   name: string;
   agent_type: AgentType;
+  owner: string;
+  scope: string[];
+  purpose: string;
+  valid_from?: string;
+  valid_until?: string;
   public_key: string;
   chain_id: string;
   registered_at: string;

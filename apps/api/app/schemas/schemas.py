@@ -344,6 +344,11 @@ VALID_AGENT_TYPES = {"langchain", "crewai", "openai_agents", "custom"}
 class IdentityRegister(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     agent_type: str = Field(default="custom", max_length=50)
+    owner: str = Field(default="", max_length=255)
+    scope: list[str] = Field(default_factory=list)
+    purpose: str = Field(default="", max_length=500)
+    valid_from: str | None = Field(default=None)
+    valid_until: str | None = Field(default=None)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -356,6 +361,11 @@ class IdentityResponse(BaseModel):
     id: str
     name: str
     agent_type: str
+    owner: str = ""
+    scope: list[str] = Field(default_factory=list)
+    purpose: str = ""
+    valid_from: str | None = None
+    valid_until: str | None = None
     public_key: str
     chain_id: str
     registered_at: datetime | None = None
