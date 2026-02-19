@@ -187,6 +187,16 @@ a:hover { text-decoration: underline; }
   pointer-events: none;
 }
 
+.hero-category {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 3px;
+  text-transform: lowercase;
+  color: var(--dim);
+  margin-bottom: 16px;
+}
+
 .hero h1 {
   font-family: var(--mono);
   font-size: clamp(32px, 5vw, 56px);
@@ -1085,6 +1095,16 @@ a:hover { text-decoration: underline; }
   color: var(--dim);
 }
 
+/* ── Protocol line ── */
+.protocol-line {
+  font-family: var(--mono) !important;
+  font-size: 14px !important;
+  color: var(--dim) !important;
+  max-width: none !important;
+  opacity: 0.8 !important;
+  margin-top: 16px !important;
+}
+
 /* ── Footer ── */
 .footer {
   border-top: 1px solid var(--border);
@@ -1092,11 +1112,37 @@ a:hover { text-decoration: underline; }
   text-align: center;
 }
 
+.footer-category {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 3px;
+  text-transform: lowercase;
+  color: var(--dim);
+  margin-bottom: 8px;
+}
+
 .footer-primitive {
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--heading);
+  margin-bottom: 16px;
+}
+
+.footer-install {
+  font-family: var(--mono);
+  font-size: 13px;
   color: var(--dim);
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+}
+
+.footer-install code {
+  font-family: var(--mono);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 16px;
 }
 
 .footer-links {
