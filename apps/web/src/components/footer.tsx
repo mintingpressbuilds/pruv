@@ -4,8 +4,14 @@ export function Footer() {
   return (
     <footer className="footer">
       <div className="container">
+        <div className="footer-category">
+          pruv &mdash; digital verification infrastructure.
+        </div>
         <div className="footer-primitive">
-          pruv &mdash; verifiable proof for any system.
+          State changed. Prove it.
+        </div>
+        <div className="footer-install">
+          <code>$ pip install pruv</code>
         </div>
         <div className="footer-links">
           <a href="https://docs.pruv.dev" target="_blank" rel="noopener noreferrer">docs</a>

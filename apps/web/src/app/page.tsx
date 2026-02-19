@@ -11,6 +11,7 @@ export default function HomePage() {
       {/* ── S1: Hero ── */}
       <div className="container">
         <div className="hero">
+          <p className="hero-category">digital verification infrastructure.</p>
           <h1>
             prove what
             <br />
@@ -39,6 +40,14 @@ export default function HomePage() {
             >
               view docs &rarr;
             </a>
+            <a
+              href="https://app.pruv.dev/scan"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hero-docs-link"
+            >
+              scan a repo &rarr;
+            </a>
           </div>
         </div>
       </div>
@@ -65,9 +74,9 @@ export default function HomePage() {
           </div>
 
           <p className="gap-text">
-            Logs can be edited. Databases can be altered. pruv receipts are
-            cryptographically chained &mdash; tamper with one entry and the
-            entire chain breaks. Verification tells you exactly where.
+            Logs can be edited. Databases can be altered. pruv chains are
+            cryptographically linked &mdash; tamper with one entry and the
+            chain breaks. Verification reports exactly where.
           </p>
         </div>
       </div>
@@ -172,6 +181,43 @@ export default function HomePage() {
       {/* ── S6: Payment Verification ── */}
       <DeeperPayments />
 
+      {/* ── Time Travel ── */}
+      <div className="section">
+        <div className="container">
+          <div className="section-label">time travel</div>
+          <h2>Go back to a verified state.</h2>
+          <p>
+            Every chain entry captures actual state &mdash; not what the system
+            logged, not what it reported, but what it cryptographically
+            was at the moment of the operation.
+          </p>
+          <p>
+            Any entry can be opened. State before on the left. State after
+            on the right. The exact change, at the exact moment.
+            Any state can be restored.
+          </p>
+          <CodeBlock
+            label="python"
+            code={`from pruv import CheckpointManager
+
+manager = CheckpointManager(chain, project_dir="./my-project")
+
+checkpoint = manager.create("before-refactor")
+
+# Something goes wrong — restore to verified state
+manager.restore(checkpoint.id)
+
+# Or undo the last action
+manager.quick_undo()`}
+          />
+          <p className="how-note">
+            Recovery is no longer expensive, imprecise, or uncertain.
+            <br />
+            You go back to a verified state you can prove is what you think it is.
+          </p>
+        </div>
+      </div>
+
       {/* ── S7: Two Ways In ── */}
       <div className="section">
         <div className="container">
@@ -205,6 +251,44 @@ chain.verify()`}
             <br />
             Also integrates with LangChain, CrewAI, and any agent framework
             if that&apos;s what you&apos;re verifying.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Scan Anything ── */}
+      <div className="section">
+        <div className="container">
+          <div className="section-label">or scan anything</div>
+          <h2>Point it at a codebase. Get a verified map.</h2>
+          <CodeBlock
+            label="terminal"
+            code={`$ pruv scan ./my-project
+
+  Services (3)
+    ✓ FastAPI backend     python   port 8000
+    ✓ Next.js frontend    typescript
+    ✓ Stripe webhook      external
+
+  Connections
+    frontend → backend    via NEXT_PUBLIC_API_URL
+    backend → Supabase    via DATABASE_URL
+    backend → Stripe      via STRIPE_SECRET_KEY
+
+  Env Vars
+    9 defined · 1 missing · 2 shared
+
+  Graph hash: a7f3c28e91b4`}
+          />
+          <p>
+            No code changes. No integration. Point it at a codebase
+            and get a verified architecture map.
+          </p>
+          <p>
+            Or{" "}
+            <a href="https://app.pruv.dev/scan" target="_blank" rel="noopener noreferrer">
+              paste a GitHub URL in the dashboard
+            </a>
+            {" "}&mdash; no install needed.
           </p>
         </div>
       </div>
@@ -291,6 +375,9 @@ chain.verify()`}
 $ pip install pruv      # full SDK with cloud`}
             />
           </div>
+          <p className="protocol-line">
+            The protocol belongs to nobody. The infrastructure is the product.
+          </p>
         </div>
       </div>
 
