@@ -378,3 +378,53 @@ class IdentityVerifyResponse(BaseModel):
     action_count: int
     chain_intact: bool
     message: str
+
+
+# ──── Provenance Schemas ────
+
+
+class ProvenanceOriginRequest(BaseModel):
+    content_hash: str = Field(..., min_length=1, max_length=64)
+    name: str = Field(..., min_length=1, max_length=255)
+    creator: str = Field(..., min_length=1, max_length=255)
+    content_type: str = Field(default="application/octet-stream", max_length=100)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ProvenanceTransitionRequest(BaseModel):
+    new_hash: str = Field(..., min_length=1, max_length=64)
+    modifier: str = Field(..., min_length=1, max_length=255)
+    reason: str | None = Field(default=None, max_length=1000)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ArtifactResponse(BaseModel):
+    id: str
+    name: str
+    content_hash: str
+    content_type: str
+    creator: str
+    chain_id: str
+    created_at: datetime | None = None
+    current_hash: str
+    transition_count: int = 0
+    last_modified_at: datetime | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    model_config = {"from_attributes": True}
+
+
+class ArtifactListResponse(BaseModel):
+    artifacts: list[ArtifactResponse]
+    total: int
+
+
+class ProvenanceVerifyResponse(BaseModel):
+    valid: bool
+    artifact_id: str
+    name: str
+    origin_intact: bool
+    chain_intact: bool
+    transition_count: int
+    current_hash: str
+    message: str

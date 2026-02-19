@@ -5,6 +5,8 @@ import type {
   Entry,
   EntryValidation,
   IdentityVerification,
+  ProvenanceArtifact,
+  ProvenanceVerification,
   Receipt,
   PaginatedResponse,
   ApiError,
@@ -870,5 +872,107 @@ export const identities = {
 
   getReceiptUrl(id: string): string {
     return `${API_BASE_URL}/v1/identity/${id}/receipt`;
+  },
+};
+
+// ─── Provenance ─────────────────────────────────────────────────────────────
+
+interface BackendArtifact {
+  id: string;
+  name: string;
+  content_hash: string;
+  content_type: string;
+  creator: string;
+  chain_id: string;
+  created_at: number | string | null;
+  current_hash: string;
+  transition_count: number;
+  last_modified_at?: number | string | null;
+  metadata?: Record<string, unknown>;
+}
+
+function transformArtifact(raw: BackendArtifact): ProvenanceArtifact {
+  return {
+    id: raw.id,
+    name: raw.name,
+    content_hash: raw.content_hash,
+    content_type: raw.content_type ?? "application/octet-stream",
+    creator: raw.creator,
+    chain_id: raw.chain_id,
+    created_at:
+      typeof raw.created_at === "number"
+        ? new Date(raw.created_at * 1000).toISOString()
+        : raw.created_at ?? new Date().toISOString(),
+    current_hash: raw.current_hash,
+    transition_count: raw.transition_count ?? 0,
+    last_modified_at: raw.last_modified_at
+      ? typeof raw.last_modified_at === "number"
+        ? new Date(raw.last_modified_at * 1000).toISOString()
+        : raw.last_modified_at
+      : undefined,
+    metadata: raw.metadata ?? {},
+  };
+}
+
+export const provenanceApi = {
+  async list(): Promise<{ data: ProvenanceArtifact[]; total: number }> {
+    const raw = await request<{
+      artifacts: BackendArtifact[];
+      total: number;
+    }>("/v1/provenance");
+    return {
+      data: raw.artifacts.map(transformArtifact),
+      total: raw.total,
+    };
+  },
+
+  async get(id: string): Promise<ProvenanceArtifact> {
+    const raw = await request<BackendArtifact>(`/v1/provenance/${id}`);
+    return transformArtifact(raw);
+  },
+
+  async origin(data: {
+    content_hash: string;
+    name: string;
+    creator: string;
+    content_type?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<ProvenanceArtifact> {
+    const raw = await request<BackendArtifact>("/v1/provenance/origin", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return transformArtifact(raw);
+  },
+
+  async transition(
+    id: string,
+    data: {
+      new_hash: string;
+      modifier: string;
+      reason?: string;
+      metadata?: Record<string, unknown>;
+    }
+  ): Promise<unknown> {
+    return request(`/v1/provenance/${id}/transition`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  async verify(id: string): Promise<ProvenanceVerification> {
+    return request<ProvenanceVerification>(`/v1/provenance/${id}/verify`);
+  },
+
+  async history(
+    id: string,
+    params?: { limit?: number; offset?: number }
+  ): Promise<{ entries: unknown[]; total: number }> {
+    const qs = buildQueryString((params ?? {}) as Record<string, unknown>);
+    return request(`/v1/provenance/${id}/history${qs}`);
+  },
+
+  getReceiptUrl(id: string): string {
+    return `${API_BASE_URL}/v1/provenance/${id}/receipt`;
   },
 };

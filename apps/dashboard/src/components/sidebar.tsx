@@ -9,6 +9,7 @@ import {
   FileCheck,
   ScanSearch,
   Fingerprint,
+  FileSearch,
   Settings,
   Key,
   Users,
@@ -56,6 +57,11 @@ const navItems: NavItem[] = [
     href: "/identities",
     label: "identities",
     icon: <Fingerprint size={20} />,
+  },
+  {
+    href: "/provenance",
+    label: "provenance",
+    icon: <FileSearch size={20} />,
   },
   {
     href: "/settings",
