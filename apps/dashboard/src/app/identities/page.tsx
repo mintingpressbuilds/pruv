@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { useIdentities, useRegisterIdentity } from "@/hooks/use-identities";
 import type { AgentType } from "@/lib/types";
 import { Sidebar } from "@/components/sidebar";
+import { Header } from "@/components/header";
 
 const agentTypes: { value: AgentType; label: string }[] = [
   { value: "langchain", label: "LangChain" },
@@ -74,25 +75,20 @@ export default function IdentitiesPage() {
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1 ml-0 lg:ml-64">
+        <Header
+          title="identities"
+          subtitle="Persistent, verifiable identities for agents and systems"
+          actions={
+            <button
+              onClick={() => setShowRegister(true)}
+              className="flex items-center gap-2 rounded-lg bg-pruv-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-pruv-600 transition-colors"
+            >
+              <Plus size={16} />
+              Register Identity
+            </button>
+          }
+        />
     <div className="p-6 max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-semibold text-[var(--text-primary)]">
-            Agent Identities
-          </h1>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">
-            Persistent, verifiable identities for agents and systems
-          </p>
-        </div>
-        <button
-          onClick={() => setShowRegister(true)}
-          className="flex items-center gap-2 rounded-lg bg-pruv-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-pruv-600 transition-colors"
-        >
-          <Plus size={16} />
-          Register Identity
-        </button>
-      </div>
 
       {/* Search */}
       <div className="relative mb-4">
