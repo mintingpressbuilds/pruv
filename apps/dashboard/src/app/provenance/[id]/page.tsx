@@ -23,6 +23,7 @@ import {
   useProvenanceHistory,
 } from "@/hooks/use-provenance";
 import { provenanceApi } from "@/lib/api";
+import { Sidebar } from "@/components/sidebar";
 
 export default function ProvenanceDetailPage({
   params,
@@ -51,17 +52,19 @@ export default function ProvenanceDetailPage({
     toast.success("Verification complete");
   };
 
+  const entries = historyData?.entries ?? [];
+
+  let content: React.ReactNode;
+
   if (isLoading) {
-    return (
+    content = (
       <div className="p-6 max-w-5xl mx-auto">
         <div className="h-8 w-48 rounded bg-[var(--surface-secondary)] animate-pulse mb-6" />
         <div className="h-64 rounded-lg bg-[var(--surface-secondary)] animate-pulse" />
       </div>
     );
-  }
-
-  if (!artifact) {
-    return (
+  } else if (!artifact) {
+    content = (
       <div className="p-6 max-w-5xl mx-auto text-center py-16">
         <XCircle
           size={48}
@@ -76,11 +79,8 @@ export default function ProvenanceDetailPage({
         </Link>
       </div>
     );
-  }
-
-  const entries = historyData?.entries ?? [];
-
-  return (
+  } else {
+    content = (
     <div className="p-6 max-w-5xl mx-auto">
       {/* Breadcrumb */}
       <Link
@@ -348,6 +348,16 @@ export default function ProvenanceDetailPage({
             })}
           </div>
         )}
+      </div>
+    </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1 ml-0 lg:ml-64">
+        {content}
       </div>
     </div>
   );

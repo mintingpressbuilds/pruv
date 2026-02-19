@@ -15,6 +15,7 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { useIdentities, useRegisterIdentity } from "@/hooks/use-identities";
 import type { AgentType } from "@/lib/types";
+import { Sidebar } from "@/components/sidebar";
 
 const agentTypes: { value: AgentType; label: string }[] = [
   { value: "langchain", label: "LangChain" },
@@ -70,6 +71,9 @@ export default function IdentitiesPage() {
   };
 
   return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1 ml-0 lg:ml-64">
     <div className="p-6 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -323,6 +327,8 @@ print(result.message)`}
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+      </div>
     </div>
   );
 }

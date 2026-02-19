@@ -23,6 +23,7 @@ import {
   useIdentityHistory,
 } from "@/hooks/use-identities";
 import { identities } from "@/lib/api";
+import { Sidebar } from "@/components/sidebar";
 
 const agentTypeLabels: Record<string, string> = {
   langchain: "LangChain",
@@ -58,17 +59,19 @@ export default function IdentityDetailPage({
     toast.success("Verification complete");
   };
 
+  const actions = historyData?.actions ?? [];
+
+  let content: React.ReactNode;
+
   if (isLoading) {
-    return (
+    content = (
       <div className="p-6 max-w-5xl mx-auto">
         <div className="h-8 w-48 rounded bg-[var(--surface-secondary)] animate-pulse mb-6" />
         <div className="h-64 rounded-lg bg-[var(--surface-secondary)] animate-pulse" />
       </div>
     );
-  }
-
-  if (!identity) {
-    return (
+  } else if (!identity) {
+    content = (
       <div className="p-6 max-w-5xl mx-auto text-center py-16">
         <XCircle
           size={48}
@@ -83,11 +86,8 @@ export default function IdentityDetailPage({
         </Link>
       </div>
     );
-  }
-
-  const actions = historyData?.actions ?? [];
-
-  return (
+  } else {
+    content = (
     <div className="p-6 max-w-5xl mx-auto">
       {/* Breadcrumb */}
       <Link
@@ -313,6 +313,16 @@ export default function IdentityDetailPage({
             )}
           </div>
         )}
+      </div>
+    </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1 ml-0 lg:ml-64">
+        {content}
       </div>
     </div>
   );
