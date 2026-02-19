@@ -27,6 +27,50 @@ from .decorators import init, verified
 # Payment
 from .payment import PaymentChain, PaymentReceipt, PaymentVerification
 
+# Identity
+from .identity import Identity, AgentIdentity, IdentityVerification
+
+
+class _IdentityProxy:
+    """Proxy that initializes Identity on first use."""
+
+    _instance = None
+
+    def register(self, *args, api_key=None, **kwargs):
+        if api_key:
+            self._instance = Identity(api_key=api_key)
+        if not self._instance:
+            raise RuntimeError("Call with api_key= on first use")
+        return self._instance.register(*args, **kwargs)
+
+    def act(self, *args, **kwargs):
+        if not self._instance:
+            raise RuntimeError("Register an identity first")
+        return self._instance.act(*args, **kwargs)
+
+    def verify(self, *args, **kwargs):
+        if not self._instance:
+            raise RuntimeError("Register an identity first")
+        return self._instance.verify(*args, **kwargs)
+
+    def receipt(self, *args, **kwargs):
+        if not self._instance:
+            raise RuntimeError("Register an identity first")
+        return self._instance.receipt(*args, **kwargs)
+
+    def history(self, *args, **kwargs):
+        if not self._instance:
+            raise RuntimeError("Register an identity first")
+        return self._instance.history(*args, **kwargs)
+
+    def lookup(self, *args, **kwargs):
+        if not self._instance:
+            raise RuntimeError("Register an identity first")
+        return self._instance.lookup(*args, **kwargs)
+
+
+identity = _IdentityProxy()
+
 __version__ = "1.0.0"
 
 __all__ = [
@@ -60,4 +104,9 @@ __all__ = [
     "PaymentChain",
     "PaymentReceipt",
     "PaymentVerification",
+    # Identity
+    "Identity",
+    "AgentIdentity",
+    "IdentityVerification",
+    "identity",
 ]

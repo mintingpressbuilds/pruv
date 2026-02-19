@@ -1,7 +1,10 @@
 import type {
+  AgentIdentity,
+  AgentType,
   Chain,
   Entry,
   EntryValidation,
+  IdentityVerification,
   Receipt,
   PaginatedResponse,
   ApiError,
@@ -776,5 +779,96 @@ export const billing = {
 
   async getPortalUrl(): Promise<{ url: string }> {
     return request<{ url: string }>("/v1/settings/billing/portal");
+  },
+};
+
+// ─── Identity ───────────────────────────────────────────────────────────────
+
+interface BackendIdentity {
+  id: string;
+  name: string;
+  agent_type: string;
+  public_key: string;
+  chain_id: string;
+  registered_at: number | string | null;
+  action_count: number;
+  last_action_at?: number | string | null;
+  metadata?: Record<string, unknown>;
+}
+
+function transformIdentity(raw: BackendIdentity): AgentIdentity {
+  return {
+    id: raw.id,
+    name: raw.name,
+    agent_type: (raw.agent_type as AgentType) ?? "custom",
+    public_key: raw.public_key,
+    chain_id: raw.chain_id,
+    registered_at:
+      typeof raw.registered_at === "number"
+        ? new Date(raw.registered_at * 1000).toISOString()
+        : raw.registered_at ?? new Date().toISOString(),
+    action_count: raw.action_count ?? 0,
+    last_action_at: raw.last_action_at
+      ? typeof raw.last_action_at === "number"
+        ? new Date(raw.last_action_at * 1000).toISOString()
+        : raw.last_action_at
+      : undefined,
+    metadata: raw.metadata ?? {},
+  };
+}
+
+export const identities = {
+  async list(): Promise<{ data: AgentIdentity[]; total: number }> {
+    const raw = await request<{
+      identities: BackendIdentity[];
+      total: number;
+    }>("/v1/identity");
+    return {
+      data: raw.identities.map(transformIdentity),
+      total: raw.total,
+    };
+  },
+
+  async get(id: string): Promise<AgentIdentity> {
+    const raw = await request<BackendIdentity>(`/v1/identity/${id}`);
+    return transformIdentity(raw);
+  },
+
+  async register(data: {
+    name: string;
+    agent_type?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<AgentIdentity> {
+    const raw = await request<BackendIdentity>("/v1/identity/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return transformIdentity(raw);
+  },
+
+  async act(
+    id: string,
+    data: { action: string; data?: Record<string, unknown> }
+  ): Promise<unknown> {
+    return request(`/v1/identity/${id}/act`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  async verify(id: string): Promise<IdentityVerification> {
+    return request<IdentityVerification>(`/v1/identity/${id}/verify`);
+  },
+
+  async history(
+    id: string,
+    params?: { limit?: number; offset?: number }
+  ): Promise<{ actions: unknown[]; total: number }> {
+    const qs = buildQueryString((params ?? {}) as Record<string, unknown>);
+    return request(`/v1/identity/${id}/history${qs}`);
+  },
+
+  getReceiptUrl(id: string): string {
+    return `${API_BASE_URL}/v1/identity/${id}/receipt`;
   },
 };
