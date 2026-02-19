@@ -13,19 +13,17 @@ export default function HomePage() {
         <div className="hero">
           <p className="hero-category">digital verification infrastructure.</p>
           <h1>
-            prove what
+            The digital world has no
             <br />
-            <span className="accent">happened.</span>
+            verification <span className="accent">layer.</span>
           </h1>
           <p className="hero-sub">
-            Something changed in your system.
-            A payment processed. A deploy went out. A workflow ran.
-            Records were modified.
+            Every system &mdash; every pipeline, every payment, every agent,
+            every workflow &mdash; runs on trust. Trust in logs. Trust in
+            databases. Trust in whoever ran the process.
           </p>
           <p className="hero-sub hero-sub-dim">
-            Your logs say everything went fine.
-            <br />
-            Can you prove it?
+            That trust is manufactured. State changed. Prove it.
           </p>
           <div className="hero-actions">
             <div className="install-block">
