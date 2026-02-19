@@ -356,6 +356,33 @@ export interface IdentityVerification {
   message: string;
 }
 
+// ─── Provenance Types ───────────────────────────────────────────────────────
+
+export interface ProvenanceArtifact {
+  id: string; // pa_ address
+  name: string;
+  content_hash: string;
+  content_type: string;
+  creator: string;
+  chain_id: string;
+  created_at: string;
+  current_hash: string;
+  transition_count: number;
+  last_modified_at?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ProvenanceVerification {
+  valid: boolean;
+  artifact_id: string;
+  name: string;
+  origin_intact: boolean;
+  chain_intact: boolean;
+  transition_count: number;
+  current_hash: string;
+  message: string;
+}
+
 // ─── Filter / Sort Types ─────────────────────────────────────────────────────
 
 export interface ChainFilters {

@@ -210,6 +210,29 @@ class IdentityRecord(Base):
     )
 
 
+class ArtifactRecord(Base):
+    __tablename__ = "artifacts"
+
+    id = Column(String(43), primary_key=True)  # pa_ + 40 hex chars
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    content_hash = Column(String(64), nullable=False)  # origin hash
+    content_type = Column(String(100), default="application/octet-stream")
+    creator = Column(String(255), nullable=False)
+    chain_id = Column(String(36), nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    current_hash = Column(String(64), nullable=False)
+    transition_count = Column(Integer, default=0)
+    last_modified_at = Column(DateTime, nullable=True)
+    metadata_ = Column("metadata", JSON, default={})
+
+    __table_args__ = (
+        Index("idx_artifact_chain", "chain_id"),
+        Index("idx_artifact_creator", "creator"),
+        Index("idx_artifact_user_id", "user_id"),
+    )
+
+
 class ScanResult(Base):
     __tablename__ = "scan_results"
 
