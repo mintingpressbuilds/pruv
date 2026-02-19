@@ -14,7 +14,7 @@ from .core.config import settings
 from .middleware.cors import CORSConfig, SecurityHeadersMiddleware
 from .middleware.logging import RequestLoggingMiddleware
 from .models.database import Base, get_engine
-from .routes import admin, analytics, auth, chains, checkpoints, dashboard, receipts, scans, verify, webhooks
+from .routes import admin, analytics, auth, chains, checkpoints, dashboard, identity, receipts, scans, verify, webhooks
 from .schemas.schemas import HealthResponse
 
 logger = logging.getLogger("pruv.api")
@@ -34,9 +34,12 @@ async def lifespan(app: FastAPI):
         from .services.chain_service import chain_service
         from .services.receipt_service import receipt_service
 
+        from .services.identity_service import identity_service
+
         auth_service.init_db(db_url)
         chain_service.init_db(db_url)
         receipt_service.init_db(db_url)
+        identity_service.init_db(db_url)
         logger.info("Services initialized.")
     except Exception:
         logger.exception("Failed to initialize database.")
@@ -92,6 +95,7 @@ app.include_router(scans.router)
 app.include_router(verify.router)
 app.include_router(webhooks.router)
 app.include_router(analytics.router)
+app.include_router(identity.router)
 app.include_router(admin.router)
 
 

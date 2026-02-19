@@ -331,6 +331,31 @@ export interface XYProofData {
   memo?: string;
 }
 
+// ─── Identity Types ─────────────────────────────────────────────────────────
+
+export type AgentType = "langchain" | "crewai" | "openai_agents" | "custom";
+
+export interface AgentIdentity {
+  id: string; // pi_ address
+  name: string;
+  agent_type: AgentType;
+  public_key: string;
+  chain_id: string;
+  registered_at: string;
+  action_count: number;
+  last_action_at?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface IdentityVerification {
+  valid: boolean;
+  identity_id: string;
+  name: string;
+  action_count: number;
+  chain_intact: boolean;
+  message: string;
+}
+
 // ─── Filter / Sort Types ─────────────────────────────────────────────────────
 
 export interface ChainFilters {

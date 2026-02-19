@@ -189,6 +189,27 @@ class Webhook(Base):
     )
 
 
+class IdentityRecord(Base):
+    __tablename__ = "identities"
+
+    id = Column(String(43), primary_key=True)  # pi_ + 40 hex chars
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    agent_type = Column(String(50), default="custom")
+    public_key = Column(Text, nullable=False)
+    chain_id = Column(String(36), nullable=False)
+    registered_at = Column(DateTime, default=func.now(), nullable=False)
+    action_count = Column(Integer, default=0)
+    last_action_at = Column(DateTime, nullable=True)
+    metadata_ = Column("metadata", JSON, default={})
+
+    __table_args__ = (
+        Index("idx_identity_chain", "chain_id"),
+        Index("idx_identity_name", "name"),
+        Index("idx_identity_user_id", "user_id"),
+    )
+
+
 class ScanResult(Base):
     __tablename__ = "scan_results"
 

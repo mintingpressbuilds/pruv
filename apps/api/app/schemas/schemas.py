@@ -333,3 +333,48 @@ class PaymentVerifyResponse(BaseModel):
     final_balances: dict[str, float] = Field(default_factory=dict)
     total_volume: float
     message: str
+
+
+# ──── Identity Schemas ────
+
+
+VALID_AGENT_TYPES = {"langchain", "crewai", "openai_agents", "custom"}
+
+
+class IdentityRegister(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    agent_type: str = Field(default="custom", max_length=50)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class IdentityActRequest(BaseModel):
+    action: str = Field(..., min_length=1, max_length=255)
+    data: dict[str, Any] = Field(default_factory=dict)
+
+
+class IdentityResponse(BaseModel):
+    id: str
+    name: str
+    agent_type: str
+    public_key: str
+    chain_id: str
+    registered_at: datetime | None = None
+    action_count: int = 0
+    last_action_at: datetime | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    model_config = {"from_attributes": True}
+
+
+class IdentityListResponse(BaseModel):
+    identities: list[IdentityResponse]
+    total: int
+
+
+class IdentityVerifyResponse(BaseModel):
+    valid: bool
+    identity_id: str
+    name: str
+    action_count: int
+    chain_intact: bool
+    message: str

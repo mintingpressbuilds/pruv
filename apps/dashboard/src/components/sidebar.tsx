@@ -8,6 +8,7 @@ import {
   Link2,
   FileCheck,
   ScanSearch,
+  Fingerprint,
   Settings,
   Key,
   Users,
@@ -50,6 +51,11 @@ const navItems: NavItem[] = [
     href: "/scan",
     label: "scan",
     icon: <ScanSearch size={20} />,
+  },
+  {
+    href: "/identities",
+    label: "identities",
+    icon: <Fingerprint size={20} />,
   },
   {
     href: "/settings",
