@@ -15,6 +15,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { useArtifacts, useRegisterOrigin } from "@/hooks/use-provenance";
+import { Sidebar } from "@/components/sidebar";
 
 export default function ProvenancePage() {
   const { data, isLoading } = useArtifacts();
@@ -86,6 +87,9 @@ export default function ProvenancePage() {
   };
 
   return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1 ml-0 lg:ml-64">
     <div className="p-6 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -424,6 +428,8 @@ print(result.message)`}
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+      </div>
     </div>
   );
 }
