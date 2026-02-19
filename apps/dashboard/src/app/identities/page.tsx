@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { useIdentities, useRegisterIdentity } from "@/hooks/use-identities";
 import type { AgentType } from "@/lib/types";
 import { Sidebar } from "@/components/sidebar";
+import { Header } from "@/components/header";
 
 const agentTypes: { value: AgentType; label: string }[] = [
   { value: "langchain", label: "LangChain" },
@@ -35,6 +36,10 @@ export default function IdentitiesPage() {
   const [search, setSearch] = useState("");
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<AgentType>("custom");
+  const [newOwner, setNewOwner] = useState("");
+  const [newScope, setNewScope] = useState("");
+  const [newPurpose, setNewPurpose] = useState("");
+  const [newValidUntil, setNewValidUntil] = useState("");
   const [registered, setRegistered] = useState<{
     id: string;
     chain_id: string;
@@ -50,11 +55,19 @@ export default function IdentitiesPage() {
     : identities;
 
   const handleRegister = async () => {
-    if (!newName.trim()) return;
+    if (!newName.trim() || !newOwner.trim()) return;
+    const scopeList = newScope
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
     try {
       const result = await registerMutation.mutateAsync({
         name: newName.trim(),
         agent_type: newType,
+        owner: newOwner.trim(),
+        scope: scopeList,
+        purpose: newPurpose.trim(),
+        valid_until: newValidUntil || undefined,
       });
       setRegistered({ id: result.id, chain_id: result.chain_id });
       toast.success("Identity registered");
@@ -67,6 +80,10 @@ export default function IdentitiesPage() {
     setShowRegister(false);
     setNewName("");
     setNewType("custom");
+    setNewOwner("");
+    setNewScope("");
+    setNewPurpose("");
+    setNewValidUntil("");
     setRegistered(null);
   };
 
@@ -74,25 +91,20 @@ export default function IdentitiesPage() {
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1 ml-0 lg:ml-64">
+        <Header
+          title="identities"
+          subtitle="Persistent, verifiable identities for agents and systems"
+          actions={
+            <button
+              onClick={() => setShowRegister(true)}
+              className="flex items-center gap-2 rounded-lg bg-pruv-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-pruv-600 transition-colors"
+            >
+              <Plus size={16} />
+              Register Identity
+            </button>
+          }
+        />
     <div className="p-6 max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-semibold text-[var(--text-primary)]">
-            Agent Identities
-          </h1>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">
-            Persistent, verifiable identities for agents and systems
-          </p>
-        </div>
-        <button
-          onClick={() => setShowRegister(true)}
-          className="flex items-center gap-2 rounded-lg bg-pruv-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-pruv-600 transition-colors"
-        >
-          <Plus size={16} />
-          Register Identity
-        </button>
-      </div>
 
       {/* Search */}
       <div className="relative mb-4">
@@ -221,7 +233,7 @@ export default function IdentitiesPage() {
                   <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
                     Register New Identity
                   </h2>
-                  <div className="space-y-4">
+                  <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
                     <div>
                       <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
                         Agent Name
@@ -230,28 +242,83 @@ export default function IdentitiesPage() {
                         type="text"
                         value={newName}
                         onChange={(e) => setNewName(e.target.value)}
-                        placeholder="my-agent"
+                        placeholder="deployment-agent"
                         className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-pruv-500 focus:outline-none focus:ring-1 focus:ring-pruv-500"
                         autoFocus
                       />
                     </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
+                          Framework
+                        </label>
+                        <select
+                          value={newType}
+                          onChange={(e) =>
+                            setNewType(e.target.value as AgentType)
+                          }
+                          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] px-3 py-2.5 text-sm text-[var(--text-primary)] focus:border-pruv-500 focus:outline-none focus:ring-1 focus:ring-pruv-500"
+                        >
+                          {agentTypes.map((t) => (
+                            <option key={t.value} value={t.value}>
+                              {t.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
+                          Owner
+                        </label>
+                        <input
+                          type="text"
+                          value={newOwner}
+                          onChange={(e) => setNewOwner(e.target.value)}
+                          placeholder="your-org"
+                          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-pruv-500 focus:outline-none focus:ring-1 focus:ring-pruv-500"
+                        />
+                      </div>
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-                        Agent Type
+                        Scope
                       </label>
-                      <select
-                        value={newType}
-                        onChange={(e) =>
-                          setNewType(e.target.value as AgentType)
-                        }
+                      <input
+                        type="text"
+                        value={newScope}
+                        onChange={(e) => setNewScope(e.target.value)}
+                        placeholder="file.read, file.write, deploy.production"
+                        className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-pruv-500 focus:outline-none focus:ring-1 focus:ring-pruv-500"
+                      />
+                      <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                        Comma-separated list of allowed action scopes
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
+                        Purpose
+                      </label>
+                      <input
+                        type="text"
+                        value={newPurpose}
+                        onChange={(e) => setNewPurpose(e.target.value)}
+                        placeholder="Automated production deployments"
+                        className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-pruv-500 focus:outline-none focus:ring-1 focus:ring-pruv-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
+                        Valid Until
+                      </label>
+                      <input
+                        type="date"
+                        value={newValidUntil}
+                        onChange={(e) => setNewValidUntil(e.target.value)}
                         className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] px-3 py-2.5 text-sm text-[var(--text-primary)] focus:border-pruv-500 focus:outline-none focus:ring-1 focus:ring-pruv-500"
-                      >
-                        {agentTypes.map((t) => (
-                          <option key={t.value} value={t.value}>
-                            {t.label}
-                          </option>
-                        ))}
-                      </select>
+                      />
+                      <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                        Leave empty for no expiration
+                      </p>
                     </div>
                   </div>
                   <div className="mt-6 flex items-center justify-end gap-3">
@@ -264,7 +331,7 @@ export default function IdentitiesPage() {
                     <button
                       onClick={handleRegister}
                       disabled={
-                        !newName.trim() || registerMutation.isPending
+                        !newName.trim() || !newOwner.trim() || registerMutation.isPending
                       }
                       className="rounded-lg bg-pruv-500 px-4 py-2 text-sm font-medium text-white hover:bg-pruv-600 disabled:opacity-50 transition-colors"
                     >
@@ -298,12 +365,19 @@ export default function IdentitiesPage() {
                       <pre className="rounded-lg bg-[var(--surface-secondary)] border border-[var(--border)] p-3 font-mono text-xs text-[var(--text-secondary)] overflow-x-auto">
 {`import pruv
 
-# Record actions for this identity
-pruv.identity.act("${registered.id}", "action_name", {"key": "value"})
+# Record actions (never blocks — records in_scope true/false)
+pruv.identity.act(
+    agent_id="${registered.id}",
+    action="wrote config to /etc/app/config.yml",
+    action_scope="file.write"
+)
 
-# Verify the identity
+# Verify — returns full picture
 result = pruv.identity.verify("${registered.id}")
-print(result.message)`}
+# result.intact, result.active, result.in_scope_count
+
+# Revoke when done
+pruv.identity.revoke("${registered.id}", reason="Project concluded")`}
                       </pre>
                     </div>
                   </div>

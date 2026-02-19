@@ -39,6 +39,11 @@ async def register_identity(
         user_id=user["id"],
         name=body.name,
         agent_type=body.agent_type,
+        owner=body.owner,
+        scope=body.scope,
+        purpose=body.purpose,
+        valid_from=body.valid_from,
+        valid_until=body.valid_until,
         metadata=body.metadata,
     )
     return identity

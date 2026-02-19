@@ -24,6 +24,7 @@ import {
 } from "@/hooks/use-provenance";
 import { provenanceApi } from "@/lib/api";
 import { Sidebar } from "@/components/sidebar";
+import { Header } from "@/components/header";
 
 export default function ProvenanceDetailPage({
   params,
@@ -357,6 +358,32 @@ export default function ProvenanceDetailPage({
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1 ml-0 lg:ml-64">
+        <Header
+          title={artifact?.name ?? "provenance"}
+          actions={
+            artifact ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleVerify}
+                  disabled={verifying}
+                  className="flex items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] disabled:opacity-50 transition-colors"
+                >
+                  <Shield size={14} />
+                  {verifying ? "Verifying..." : "Verify"}
+                </button>
+                <a
+                  href={provenanceApi.getReceiptUrl(id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] transition-colors"
+                >
+                  <FileDown size={14} />
+                  Export Receipt
+                </a>
+              </div>
+            ) : undefined
+          }
+        />
         {content}
       </div>
     </div>

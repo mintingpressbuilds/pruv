@@ -16,6 +16,7 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { useArtifacts, useRegisterOrigin } from "@/hooks/use-provenance";
 import { Sidebar } from "@/components/sidebar";
+import { Header } from "@/components/header";
 
 export default function ProvenancePage() {
   const { data, isLoading } = useArtifacts();
@@ -90,25 +91,20 @@ export default function ProvenancePage() {
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1 ml-0 lg:ml-64">
+        <Header
+          title="provenance"
+          subtitle="Origin tracking and chain of custody for digital artifacts"
+          actions={
+            <button
+              onClick={() => setShowRegister(true)}
+              className="flex items-center gap-2 rounded-lg bg-pruv-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-pruv-600 transition-colors"
+            >
+              <Plus size={16} />
+              Register Artifact
+            </button>
+          }
+        />
     <div className="p-6 max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-semibold text-[var(--text-primary)]">
-            Artifact Provenance
-          </h1>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">
-            Origin tracking and chain of custody for digital artifacts
-          </p>
-        </div>
-        <button
-          onClick={() => setShowRegister(true)}
-          className="flex items-center gap-2 rounded-lg bg-pruv-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-pruv-600 transition-colors"
-        >
-          <Plus size={16} />
-          Register Artifact
-        </button>
-      </div>
 
       {/* Search */}
       <div className="relative mb-4">

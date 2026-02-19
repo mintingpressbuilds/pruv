@@ -790,6 +790,11 @@ interface BackendIdentity {
   id: string;
   name: string;
   agent_type: string;
+  owner?: string;
+  scope?: string[];
+  purpose?: string;
+  valid_from?: string | null;
+  valid_until?: string | null;
   public_key: string;
   chain_id: string;
   registered_at: number | string | null;
@@ -803,6 +808,11 @@ function transformIdentity(raw: BackendIdentity): AgentIdentity {
     id: raw.id,
     name: raw.name,
     agent_type: (raw.agent_type as AgentType) ?? "custom",
+    owner: raw.owner ?? "",
+    scope: raw.scope ?? [],
+    purpose: raw.purpose ?? "",
+    valid_from: raw.valid_from ?? undefined,
+    valid_until: raw.valid_until ?? undefined,
     public_key: raw.public_key,
     chain_id: raw.chain_id,
     registered_at:
@@ -839,6 +849,11 @@ export const identities = {
   async register(data: {
     name: string;
     agent_type?: string;
+    owner?: string;
+    scope?: string[];
+    purpose?: string;
+    valid_from?: string;
+    valid_until?: string;
     metadata?: Record<string, unknown>;
   }): Promise<AgentIdentity> {
     const raw = await request<BackendIdentity>("/v1/identity/register", {
