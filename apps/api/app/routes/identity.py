@@ -13,6 +13,7 @@ from fastapi.responses import HTMLResponse
 from ..core.dependencies import check_rate_limit, get_current_user, require_write
 from ..core.rate_limit import RateLimitResult
 from ..schemas.schemas import (
+    IdentityActByAgentId,
     IdentityActRequest,
     IdentityListResponse,
     IdentityRegister,
@@ -22,6 +23,9 @@ from ..schemas.schemas import (
 from ..services.identity_service import identity_service
 
 router = APIRouter(prefix="/v1/identity", tags=["identity"])
+
+# Secondary router for /api/identity endpoints
+api_router = APIRouter(prefix="/api/identity", tags=["identity"])
 
 
 @router.post("/register", response_model=IdentityResponse)
@@ -223,3 +227,29 @@ actions.forEach(a => {{
 </html>"""
 
     return HTMLResponse(content=html_content)
+
+
+# ──── /api/identity endpoints ────
+
+
+@api_router.post("/act")
+async def act_by_agent_id(
+    body: IdentityActByAgentId,
+    user: dict[str, Any] = Depends(require_write),
+    _rl: RateLimitResult = Depends(check_rate_limit),
+):
+    """Record an action for an agent by agent_id.
+
+    Accepts agent_id, action, and action_scope in the request body.
+    Appends an entry to the agent's identity chain with the scope recorded
+    in the entry data.
+    """
+    entry = identity_service.act(
+        identity_id=body.agent_id,
+        user_id=user["id"],
+        action=body.action,
+        data={"action_scope": body.action_scope},
+    )
+    if not entry:
+        raise HTTPException(status_code=404, detail="Identity not found")
+    return entry

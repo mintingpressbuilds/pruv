@@ -98,6 +98,7 @@ app.include_router(verify.router)
 app.include_router(webhooks.router)
 app.include_router(analytics.router)
 app.include_router(identity.router)
+app.include_router(identity.api_router)
 app.include_router(provenance.router)
 app.include_router(admin.router)
 
