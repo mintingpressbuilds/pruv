@@ -125,15 +125,15 @@ async def get_history(
 @router.get("/{identity_id}/receipt", response_class=HTMLResponse)
 async def get_identity_receipt(
     identity_id: str,
-    user: dict[str, Any] = Depends(get_current_user),
     _rl: RateLimitResult = Depends(check_rate_limit),
 ):
     """Export identity as a self-verifying HTML receipt.
 
+    Public endpoint — receipts are self-verifying documents.
     Shows: agent name, type, address, public key, action timeline,
     verification status.
     """
-    identity = identity_service.get_identity(identity_id, user["id"])
+    identity = identity_service.get_identity(identity_id)
     if not identity:
         raise HTTPException(status_code=404, detail="Identity not found")
 
