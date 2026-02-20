@@ -357,6 +357,12 @@ class IdentityActRequest(BaseModel):
     data: dict[str, Any] = Field(default_factory=dict)
 
 
+class IdentityActByAgentId(BaseModel):
+    agent_id: str = Field(..., min_length=1, max_length=255)
+    action: str = Field(..., min_length=1, max_length=255)
+    action_scope: str = Field(..., min_length=1, max_length=255)
+
+
 class IdentityResponse(BaseModel):
     id: str
     name: str
