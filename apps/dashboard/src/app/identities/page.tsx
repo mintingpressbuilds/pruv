@@ -30,6 +30,22 @@ function getAgentTypeLabel(type: string): string {
   return agentTypes.find((t) => t.value === type)?.label ?? type;
 }
 
+// Mirrored from packages/pruv/pruv/identity/models.py — OPENCLAW_SCOPE_GROUPS
+// Keep in sync: the Python grouped dict is the source of truth.
+const OPENCLAW_SCOPE_GROUPS: Record<string, string[]> = {
+  "File System": ["file.read", "file.write", "file.delete"],
+  Email: ["email.read", "email.send"],
+  Calendar: ["calendar.read", "calendar.write"],
+  Browser: ["browser.read", "browser.interact"],
+  System: ["system.execute", "network.external"],
+  Messaging: ["messaging.read", "messaging.send"],
+};
+
+function scopeLabel(scope: string): string {
+  // "file.read" → "read", "network.external" → "external"
+  return scope.split(".").slice(1).join(".");
+}
+
 export default function IdentitiesPage() {
   const { data, isLoading } = useIdentities();
   const registerMutation = useRegisterIdentity();
@@ -39,6 +55,7 @@ export default function IdentitiesPage() {
   const [newType, setNewType] = useState<AgentType>("custom");
   const [newOwner, setNewOwner] = useState("");
   const [newScope, setNewScope] = useState("");
+  const [openclawScopes, setOpenclawScopes] = useState<Set<string>>(new Set());
   const [newPurpose, setNewPurpose] = useState("");
   const [newValidUntil, setNewValidUntil] = useState("");
   const [registered, setRegistered] = useState<{
@@ -57,10 +74,13 @@ export default function IdentitiesPage() {
 
   const handleRegister = async () => {
     if (!newName.trim() || !newOwner.trim()) return;
-    const scopeList = newScope
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+    const scopeList =
+      newType === "openclaw"
+        ? Array.from(openclawScopes)
+        : newScope
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
     try {
       const result = await registerMutation.mutateAsync({
         name: newName.trim(),
@@ -83,6 +103,7 @@ export default function IdentitiesPage() {
     setNewType("custom");
     setNewOwner("");
     setNewScope("");
+    setOpenclawScopes(new Set());
     setNewPurpose("");
     setNewValidUntil("");
     setRegistered(null);
@@ -227,7 +248,7 @@ export default function IdentitiesPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl"
+              className={`w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl ${newType === "openclaw" && !registered ? "max-w-2xl" : "max-w-lg"}`}
             >
               {!registered ? (
                 <>
@@ -280,21 +301,142 @@ export default function IdentitiesPage() {
                         />
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-                        Scope
-                      </label>
-                      <input
-                        type="text"
-                        value={newScope}
-                        onChange={(e) => setNewScope(e.target.value)}
-                        placeholder="file.read, file.write, deploy.production"
-                        className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-pruv-500 focus:outline-none focus:ring-1 focus:ring-pruv-500"
-                      />
-                      <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                        Comma-separated list of allowed action scopes
-                      </p>
-                    </div>
+                    {newType === "openclaw" ? (
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-3">
+                          Agent Permissions — OpenClaw
+                        </label>
+                        <div className="grid grid-cols-3 gap-4">
+                          {Object.entries(OPENCLAW_SCOPE_GROUPS).map(
+                            ([category, scopes]) => (
+                              <div key={category}>
+                                <div className="text-xs font-semibold text-[var(--text-primary)] mb-2 pb-1 border-b border-[var(--border)]">
+                                  {category}
+                                </div>
+                                <div className="space-y-1.5">
+                                  {scopes.map((scope) => (
+                                    <label
+                                      key={scope}
+                                      className="flex items-center gap-2 cursor-pointer group"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={openclawScopes.has(scope)}
+                                        onChange={() => {
+                                          setOpenclawScopes((prev) => {
+                                            const next = new Set(prev);
+                                            if (next.has(scope)) {
+                                              next.delete(scope);
+                                            } else {
+                                              next.add(scope);
+                                            }
+                                            return next;
+                                          });
+                                        }}
+                                        className="h-3.5 w-3.5 rounded border-[var(--border)] bg-[var(--surface-secondary)] text-pruv-500 focus:ring-pruv-500 focus:ring-offset-0 accent-[var(--pruv-500,#7c5cfc)]"
+                                      />
+                                      <span className="text-xs text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] font-mono transition-colors">
+                                        {scopeLabel(scope)}
+                                      </span>
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+
+                        {/* Permissions summary */}
+                        {openclawScopes.size > 0 && (
+                          <div className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] p-3 text-xs">
+                            <div className="mb-2">
+                              <span className="font-medium text-pruv-500">
+                                Permissions granted:
+                              </span>
+                              {Object.entries(OPENCLAW_SCOPE_GROUPS)
+                                .filter(([, scopes]) =>
+                                  scopes.some((s) => openclawScopes.has(s))
+                                )
+                                .map(([category, scopes]) => {
+                                  const granted = scopes.filter((s) =>
+                                    openclawScopes.has(s)
+                                  );
+                                  const all = granted.length === scopes.length;
+                                  return (
+                                    <div
+                                      key={category}
+                                      className="ml-3 mt-0.5 text-[var(--text-secondary)]"
+                                    >
+                                      <span className="font-medium text-[var(--text-primary)]">
+                                        {category}
+                                      </span>
+                                      {"  "}
+                                      {all
+                                        ? "all"
+                                        : granted
+                                            .map((s) => scopeLabel(s))
+                                            .join(", ")}
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                            {Object.entries(OPENCLAW_SCOPE_GROUPS).some(
+                              ([, scopes]) =>
+                                scopes.some((s) => !openclawScopes.has(s))
+                            ) && (
+                              <div>
+                                <span className="font-medium text-[var(--text-tertiary)]">
+                                  Permissions not granted:
+                                </span>
+                                {Object.entries(OPENCLAW_SCOPE_GROUPS)
+                                  .filter(([, scopes]) =>
+                                    scopes.some((s) => !openclawScopes.has(s))
+                                  )
+                                  .map(([category, scopes]) => {
+                                    const denied = scopes.filter(
+                                      (s) => !openclawScopes.has(s)
+                                    );
+                                    const all =
+                                      denied.length === scopes.length;
+                                    return (
+                                      <div
+                                        key={category}
+                                        className="ml-3 mt-0.5 text-[var(--text-tertiary)]"
+                                      >
+                                        <span className="font-medium">
+                                          {category}
+                                        </span>
+                                        {"  "}
+                                        {all
+                                          ? "all"
+                                          : denied
+                                              .map((s) => scopeLabel(s))
+                                              .join(", ")}
+                                      </div>
+                                    );
+                                  })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
+                          Scope
+                        </label>
+                        <input
+                          type="text"
+                          value={newScope}
+                          onChange={(e) => setNewScope(e.target.value)}
+                          placeholder="file.read, file.write, deploy.production"
+                          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-pruv-500 focus:outline-none focus:ring-1 focus:ring-pruv-500"
+                        />
+                        <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                          Comma-separated list of allowed action scopes
+                        </p>
+                      </div>
+                    )}
                     <div>
                       <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
                         Purpose
