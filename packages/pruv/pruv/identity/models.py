@@ -48,24 +48,47 @@ class VerificationResult:
     active: bool  # is identity within valid_from/valid_until
 
 
-# Recommended scope vocabulary for OpenClaw agents.
+# Recommended scope vocabulary for OpenClaw agents, grouped by category.
 # OpenClaw runs with broad system-level permissions — these
 # scope values map to what OpenClaw agents actually do on
 # a user's machine. Use these when registering OpenClaw agents
 # to enable precise in-scope checking on every action.
+#
+# The grouped dict is the source of truth. The flat list is
+# derived from it so existing code that imports OPENCLAW_SCOPE_OPTIONS
+# keeps working unchanged.
 
+OPENCLAW_SCOPE_GROUPS: dict[str, list[str]] = {
+    "File System": [
+        "file.read",
+        "file.write",
+        "file.delete",
+    ],
+    "Email": [
+        "email.read",
+        "email.send",
+    ],
+    "Calendar": [
+        "calendar.read",
+        "calendar.write",
+    ],
+    "Browser": [
+        "browser.read",
+        "browser.interact",
+    ],
+    "System": [
+        "system.execute",
+        "network.external",
+    ],
+    "Messaging": [
+        "messaging.read",
+        "messaging.send",
+    ],
+}
+
+# Flat list derived from groups — backwards compatible
 OPENCLAW_SCOPE_OPTIONS = [
-    "file.read",
-    "file.write",
-    "file.delete",
-    "email.read",
-    "email.send",
-    "calendar.read",
-    "calendar.write",
-    "browser.read",
-    "browser.interact",
-    "system.execute",
-    "network.external",
-    "messaging.read",
-    "messaging.send",
+    scope
+    for scopes in OPENCLAW_SCOPE_GROUPS.values()
+    for scope in scopes
 ]
