@@ -88,176 +88,16 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ── S4: The Receipt ── */}
+      {/* ── S4: Scan ── */}
       <div className="section">
         <div className="container">
-          <div className="section-label">the receipt</div>
-          <h2>Every operation produces a receipt.</h2>
+          <div className="section-label">pruv.scan</div>
+          <h2>Hash every file. Get a verified fingerprint.</h2>
           <p>
-            Every receipt is cryptographically linked to the one before it.
-            The recipient can verify independently. No pruv account. No trust required.
+            Hash every file in a directory or repository. Produces a deterministic
+            project state fingerprint. Prove exactly what your codebase looked like
+            at any moment.
           </p>
-          <ReceiptCard />
-          <p className="receipt-export-text">
-            Export as PDF. Embed as badge. Share as link.
-            <br />
-            The proof stands on its own.
-          </p>
-        </div>
-      </div>
-
-      {/* ── S5: Who Needs This ── */}
-      <div className="section">
-        <div className="container">
-          <div className="section-label">who needs this</div>
-          <h2>You need pruv the moment someone asks a question you can&apos;t answer with proof.</h2>
-
-          <div className="needs-grid">
-            <div className="needs-item">
-              <h3>&ldquo;What exactly happened between 2am and 6am?&rdquo;</h3>
-              <p>
-                Something changed in production overnight. The postmortem starts with
-                &ldquo;we think what happened was&hellip;&rdquo; and ends with a best guess.
-              </p>
-              <p className="needs-answer">
-                pruv gives you the exact sequence &mdash; every state change, in order,
-                cryptographically linked. Not a reconstruction. The actual chain of what happened.
-              </p>
-            </div>
-
-            <div className="needs-item">
-              <h3>&ldquo;Can you prove this was processed correctly?&rdquo;</h3>
-              <p>
-                Money moved. Records changed. A workflow completed.
-                Your system says it went fine. But &ldquo;our system says so&rdquo; isn&apos;t proof &mdash; it&apos;s a claim.
-              </p>
-              <p className="needs-answer">
-                pruv gives you a receipt that a third party can verify independently
-                without access to your infrastructure.
-              </p>
-            </div>
-
-            <div className="needs-item">
-              <h3>&ldquo;Who approved this and when?&rdquo;</h3>
-              <p>
-                A change went out. A transaction was authorized. A document was signed off.
-                Now there&apos;s a dispute.
-              </p>
-              <p className="needs-answer">
-                pruv records every approval &mdash; who approved, what they approved, when &mdash;
-                with Ed25519 digital signatures. The signer cannot deny it.
-              </p>
-            </div>
-
-            <div className="needs-item">
-              <h3>&ldquo;What did the system do with that data?&rdquo;</h3>
-              <p>
-                Customer data, patient records, financial information moved through your system.
-                A regulator asks you to account for every access and modification.
-              </p>
-              <p className="needs-answer">
-                pruv chains every operation into a tamper-evident record.
-                Change one entry, the chain breaks, verification reports exactly where.
-              </p>
-            </div>
-
-            <div className="needs-item">
-              <h3>&ldquo;If this gets audited, are we covered?&rdquo;</h3>
-              <p>
-                SOX. PCI-DSS. MiFID II. HIPAA. Every compliance framework requires
-                provable audit trails. Not log files someone could edit.
-              </p>
-              <p className="needs-answer">
-                Cryptographic proof that an external auditor can verify
-                without trusting your infrastructure. That&apos;s pruv.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── S6: Payment Verification ── */}
-      <DeeperPayments />
-
-      {/* ── Time Travel ── */}
-      <div className="section">
-        <div className="container">
-          <div className="section-label">time travel</div>
-          <h2>Go back to a verified state.</h2>
-          <p>
-            Every chain entry captures actual state &mdash; not what the system
-            logged, not what it reported, but what it cryptographically
-            was at the moment of the operation.
-          </p>
-          <p>
-            Any entry can be opened. State before on the left. State after
-            on the right. The exact change, at the exact moment.
-            Any state can be restored.
-          </p>
-          <CodeBlock
-            label="python"
-            code={`from pruv import CheckpointManager
-
-manager = CheckpointManager(chain, project_dir="./my-project")
-
-checkpoint = manager.create("before-refactor")
-
-# Something goes wrong — restore to verified state
-manager.restore(checkpoint.id)
-
-# Or undo the last action
-manager.quick_undo()`}
-          />
-          <p className="how-note">
-            Recovery is no longer expensive, imprecise, or uncertain.
-            <br />
-            You go back to a verified state you can prove is what you think it is.
-          </p>
-        </div>
-      </div>
-
-      {/* ── S7: Two Ways In ── */}
-      <div className="section">
-        <div className="container">
-          <div className="section-label">two ways in</div>
-          <h2>Wrap anything</h2>
-          <CodeBlock
-            label="python"
-            code={`from pruv import xy_wrap
-
-@xy_wrap
-def charge_card(customer_id, amount):
-    stripe.charges.create(customer=customer_id, amount=amount)
-
-# every call. automatic receipts. zero changes to your logic.`}
-          />
-
-          <h2 className="second-way">Or build a chain</h2>
-          <CodeBlock
-            label="python"
-            code={`from pruv import Chain
-
-chain = Chain("deploy-pipeline")
-chain.add("tests_passed", {"suite": "integration", "passed": 142})
-chain.add("image_built", {"tag": "v2.4.1", "sha": "a3f8c2e"})
-chain.add("deployed", {"env": "production", "region": "us-east-1"})
-chain.verify()`}
-          />
-
-          <p className="two-ways-note">
-            Works with any function, any class, any service, any pipeline.
-            <br />
-            Also integrates with LangChain, CrewAI, and any agent framework
-            if that&apos;s what you&apos;re verifying.
-          </p>
-        </div>
-      </div>
-
-      {/* ── Scan Anything ── */}
-      <div className="section">
-        <div className="container">
-          <div className="section-label">or scan anything</div>
-          <h2>Point it at a codebase. Get a verified map.</h2>
           <CodeBlock
             label="terminal"
             code={`$ pruv scan ./my-project
@@ -281,12 +121,99 @@ chain.verify()`}
             No code changes. No integration. Point it at a codebase
             and get a verified architecture map.
           </p>
+        </div>
+      </div>
+
+      {/* ── S5: Identity ── */}
+      <div className="section">
+        <div className="container">
+          <div className="section-label">pruv.identity</div>
+          <h2>A passport for AI agents.</h2>
           <p>
-            Or{" "}
-            <a href="https://app.pruv.dev/scan" target="_blank" rel="noopener noreferrer">
-              paste a GitHub URL in the dashboard
-            </a>
-            {" "}&mdash; no install needed.
+            Register with declared owner, permissions, and validity period.
+            Every action checked against scope. Receipt shows what it did
+            and whether it stayed in bounds.
+          </p>
+          <CodeBlock
+            label="python"
+            code={`from pruv.identity import register, act, verify
+
+agent = register(
+    name="deploy-bot",
+    agent_type="openclaw",
+    owner="ops-team",
+    scope=["file.read", "system.execute"],
+    valid_until="2026-06-01"
+)
+
+act(agent, "deploy", {"env": "production", "tag": "v2.4.1"})
+receipt = verify(agent)   # in-scope, signed, tamper-evident`}
+          />
+        </div>
+      </div>
+
+      {/* ── S6: Provenance ── */}
+      <div className="section">
+        <div className="container">
+          <div className="section-label">pruv.provenance</div>
+          <h2>Chain of custody for any digital artifact.</h2>
+          <p>
+            Origin captured. Every modification recorded &mdash; who touched it,
+            why, what it looked like before and after. Tamper-evident.
+            Independently verifiable.
+          </p>
+          <CodeBlock
+            label="python"
+            code={`from pruv.provenance import track
+
+doc = track("contract-v3.pdf", origin="legal-team")
+doc.modify(actor="counsel", reason="clause 4.2 revision")
+doc.modify(actor="cfo", reason="final approval")
+doc.export_receipt()   # full chain of custody, verifiable`}
+          />
+        </div>
+      </div>
+
+      {/* ── S7: Checkpoint ── */}
+      <div className="section">
+        <div className="container">
+          <div className="section-label">pruv.checkpoint</div>
+          <h2>Time travel for any system state.</h2>
+          <p>
+            Every chain entry captures what your system was at that exact moment.
+            Open any entry, see state before and after, restore to any prior
+            verified state. Recovery is no longer expensive or uncertain.
+          </p>
+          <CodeBlock
+            label="python"
+            code={`from pruv import CheckpointManager
+
+manager = CheckpointManager(chain, project_dir="./my-project")
+
+checkpoint = manager.create("before-refactor")
+
+# Something goes wrong — restore to verified state
+manager.restore(checkpoint.id)
+
+# Or undo the last action
+manager.quick_undo()`}
+          />
+        </div>
+      </div>
+
+      {/* ── S8: Receipts ── */}
+      <div className="section">
+        <div className="container">
+          <div className="section-label">pruv.receipts</div>
+          <h2>Every operation produces a receipt.</h2>
+          <p>
+            Not a log. Not an assertion. Proof anyone can verify independently
+            &mdash; no account required, no trust required in pruv.
+            Export as PDF. Share via link. Embed as badge.
+          </p>
+          <ReceiptCard />
+          <p className="receipt-export-text">
+            The proof stands on its own.
           </p>
         </div>
       </div>

@@ -111,14 +111,10 @@ agent.action("send_email", {"to": "user@co.com", "body": "secret"}, sensitive_ke
 # body stored as: {"_redacted": true, "_hash": "a3f8..."}
 ```
 
-## Features
+## Products
 
-- **Agent**: Wrap any AI agent with automatic action verification
-- **@verified**: Decorator for automatic function call recording
-- **Scanner**: Scan any project for files, imports, env vars, frameworks, and services
-- **xy_wrap()**: Universal wrapper for any agent, function, or workflow
-- **Checkpoints**: Create snapshots, preview restore diffs, quick undo
-- **Approval Gates**: Webhook-based human approval for high-risk operations
-- **Cloud Sync**: Sync chains to api.pruv.dev
-- **Integrations**: LangChain, CrewAI, OpenClaw
-- **CLI**: `pruv scan`, `pruv verify`, `pruv export`, `pruv undo`, `pruv upload`
+- **pruv.scan** — Hash every file in a directory or repository. Produces a deterministic project state fingerprint. Prove exactly what your codebase looked like at any moment.
+- **pruv.identity** — A passport for AI agents. Register with declared owner, permissions, and validity period. Every action checked against scope. Receipt shows what it did and whether it stayed in bounds.
+- **pruv.provenance** — Chain of custody for any digital artifact. Origin captured. Every modification recorded — who touched it, why, what it looked like before and after. Tamper-evident. Independently verifiable.
+- **pruv.checkpoint** — Time travel for any system state. Every chain entry captures what your system was at that exact moment. Open any entry, see state before and after, restore to any prior verified state. Recovery is no longer expensive or uncertain.
+- **pruv.receipts** — Every operation produces a receipt. Not a log. Not an assertion. Proof anyone can verify independently — no account required, no trust required in pruv. Export as PDF. Share via link. Embed as badge.
