@@ -243,6 +243,52 @@ export default function HowItWorksPage() {
               </div>
             </div>
           </div>
+
+          <h2>What pruv covers</h2>
+
+          <div className="properties-list">
+            <div className="property-item">
+              <div className="property-name">pruv.scan</div>
+              <div className="property-desc">
+                Hash every file in a directory or repository. Produces a deterministic
+                project state fingerprint. Prove exactly what your codebase looked like
+                at any moment.
+              </div>
+            </div>
+            <div className="property-item">
+              <div className="property-name">pruv.identity</div>
+              <div className="property-desc">
+                A passport for AI agents. Register with declared owner, permissions,
+                and validity period. Every action checked against scope. Receipt shows
+                what it did and whether it stayed in bounds.
+              </div>
+            </div>
+            <div className="property-item">
+              <div className="property-name">pruv.provenance</div>
+              <div className="property-desc">
+                Chain of custody for any digital artifact. Origin captured. Every
+                modification recorded &mdash; who touched it, why, what it looked like
+                before and after. Tamper-evident. Independently verifiable.
+              </div>
+            </div>
+            <div className="property-item">
+              <div className="property-name">pruv.checkpoint</div>
+              <div className="property-desc">
+                Time travel for any system state. Every chain entry captures what your
+                system was at that exact moment. Open any entry, see state before and
+                after, restore to any prior verified state. Recovery is no longer
+                expensive or uncertain.
+              </div>
+            </div>
+            <div className="property-item">
+              <div className="property-name">pruv.receipts</div>
+              <div className="property-desc">
+                Every operation produces a receipt. Not a log. Not an assertion. Proof
+                anyone can verify independently &mdash; no account required, no trust
+                required in pruv. Export as PDF. Share via link. Embed as badge.
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
