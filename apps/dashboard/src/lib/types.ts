@@ -333,7 +333,7 @@ export interface XYProofData {
 
 // ─── Identity Types ─────────────────────────────────────────────────────────
 
-export type AgentType = "langchain" | "crewai" | "openai_agents" | "custom";
+export type AgentType = "langchain" | "crewai" | "openai_agents" | "openclaw" | "custom";
 
 export interface AgentIdentity {
   id: string; // pi_ address

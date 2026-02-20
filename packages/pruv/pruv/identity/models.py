@@ -10,7 +10,7 @@ class AgentIdentity:
 
     id: str  # uuid4
     name: str  # human readable agent name
-    framework: str  # "crewai" | "langchain" | "openai" | "custom"
+    framework: str  # "crewai" | "langchain" | "openai" | "openclaw" | "custom"
     owner: str  # org or individual identifier — accountable party
     scope: list[str]  # ["file.read", "file.write", "deploy.production"]
     purpose: str  # declared reason this agent exists
@@ -46,3 +46,26 @@ class VerificationResult:
     break_at: Optional[int]  # entry index where chain breaks, None if intact
     break_detail: Optional[dict]  # state before/after at break point
     active: bool  # is identity within valid_from/valid_until
+
+
+# Recommended scope vocabulary for OpenClaw agents.
+# OpenClaw runs with broad system-level permissions — these
+# scope values map to what OpenClaw agents actually do on
+# a user's machine. Use these when registering OpenClaw agents
+# to enable precise in-scope checking on every action.
+
+OPENCLAW_SCOPE_OPTIONS = [
+    "file.read",
+    "file.write",
+    "file.delete",
+    "email.read",
+    "email.send",
+    "calendar.read",
+    "calendar.write",
+    "browser.read",
+    "browser.interact",
+    "system.execute",
+    "network.external",
+    "messaging.read",
+    "messaging.send",
+]

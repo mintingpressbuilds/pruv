@@ -22,6 +22,7 @@ const agentTypes: { value: AgentType; label: string }[] = [
   { value: "langchain", label: "LangChain" },
   { value: "crewai", label: "CrewAI" },
   { value: "openai_agents", label: "OpenAI Agents" },
+  { value: "openclaw", label: "OpenClaw" },
   { value: "custom", label: "Custom" },
 ];
 
