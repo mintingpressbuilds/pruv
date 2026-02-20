@@ -1,6 +1,6 @@
 # pruv
 
-[![xycore](https://img.shields.io/badge/xycore-v1.0.1-green)](https://pypi.org/project/xycore/)
+[![xycore](https://img.shields.io/badge/xycore-v1.0.2-green)](https://pypi.org/project/xycore/)
 [![pruv](https://img.shields.io/badge/pruv-v1.0.1-green)](https://pypi.org/project/pruv/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://pypi.org/project/pruv/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -153,6 +153,53 @@ manager.quick_undo()
 ```
 
 This changes the economics of mistakes. Recovery is no longer expensive, imprecise, or uncertain. You go back to a verified state you can prove is what you think it is.
+
+-----
+
+### Agent identity
+
+AI agents need passports. Register with declared owner, permissions, and validity period. Every action checked against scope. Every action recorded on the chain. Receipt shows what it did and whether it stayed in bounds.
+
+```python
+agent = pruv.identity.register(
+    name="deployment-agent",
+    framework="openclaw",
+    owner="your-org",
+    scope=["file.read", "file.write", "deploy.production"],
+    valid_until="2026-12-31"
+)
+
+pruv.identity.act(
+    agent_id=agent.id,
+    action="deployed v2.1 to production",
+    action_scope="deploy.production"
+)
+
+receipt = pruv.identity.receipt(agent.id)
+```
+
+-----
+
+### Artifact provenance
+
+Chain of custody for any digital artifact. Origin captured. Every modification recorded — who touched it, why, what it looked like before and after. Tamper-evident. Cross-verifies the identity chain of every agent that touched it.
+
+```python
+artifact = pruv.provenance.origin(
+    content=document_bytes,
+    name="partnership-agreement",
+    owner="legal-team"
+)
+
+pruv.provenance.transition(
+    artifact_id=artifact.id,
+    updated_content=revised_bytes,
+    agent_id=agent.id,
+    reason="Legal review — section 4 revised"
+)
+
+receipt = pruv.provenance.receipt(artifact.id)
+```
 
 -----
 
