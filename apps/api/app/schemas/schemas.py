@@ -338,7 +338,7 @@ class PaymentVerifyResponse(BaseModel):
 # ──── Identity Schemas ────
 
 
-VALID_AGENT_TYPES = {"langchain", "crewai", "openai_agents", "custom"}
+VALID_AGENT_TYPES = {"langchain", "crewai", "openai_agents", "openclaw", "custom"}
 
 
 class IdentityRegister(BaseModel):

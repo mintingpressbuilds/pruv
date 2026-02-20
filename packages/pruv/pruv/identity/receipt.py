@@ -5,6 +5,13 @@ from datetime import datetime, timezone
 from .chain import IdentityChain
 from .models import AgentIdentity, VerificationResult
 
+FRAMEWORK_DISPLAY_NAMES = {
+    "crewai": "CrewAI",
+    "langchain": "LangChain",
+    "openai": "OpenAI Agents",
+    "openclaw": "OpenClaw",
+}
+
 
 def generate_receipt(
     agent: AgentIdentity, chain: IdentityChain, result: VerificationResult
@@ -97,8 +104,12 @@ def format_human_readable(
     lines.append("pruv.identity receipt")
     lines.append(sep)
     lines.append("")
+    framework_display = FRAMEWORK_DISPLAY_NAMES.get(
+        agent.framework,
+        agent.framework,  # fallback: use raw framework string
+    )
     lines.append(f"Agent:      {agent.name}")
-    lines.append(f"Framework:  {agent.framework}")
+    lines.append(f"Framework:  {framework_display}")
     lines.append(f"Owner:      {agent.owner}")
     lines.append(f"Purpose:    {agent.purpose}")
     lines.append("")

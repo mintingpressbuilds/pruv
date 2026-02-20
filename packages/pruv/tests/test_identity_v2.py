@@ -609,3 +609,62 @@ class TestEdgeCases:
         assert check_scope("file.read", ["file.read", "file.write"]) is True
         assert check_scope("db.admin", ["file.read", "file.write"]) is False
         assert check_scope("", []) is False
+
+
+# ─── 9. OpenClaw agent type ───────────────────────────────────────────────
+
+
+def test_openclaw_agent_registration_and_receipt():
+    """
+    OpenClaw registers correctly as a framework type.
+    Scope vocabulary works for in-scope checking.
+    Receipt displays framework as OpenClaw not openclaw.
+    """
+
+    # Register OpenClaw agent with recommended scope vocabulary
+    agent = register(
+        name="test-oc-agent",
+        framework="openclaw",
+        owner="test-org",
+        scope=["file.read", "file.write", "email.read"],
+        purpose="Test OpenClaw agent registration",
+        valid_until="2030-12-31",
+    )
+
+    assert agent.framework == "openclaw"
+    assert "file.read" in agent.scope
+    assert "email.read" in agent.scope
+
+    # Record an in-scope action
+    act(
+        agent_id=agent.id,
+        action="read config file from /etc/app/config.yml",
+        action_scope="file.read",
+    )
+
+    # Record an out-of-scope action
+    act(
+        agent_id=agent.id,
+        action="attempted system command execution",
+        action_scope="system.execute",  # not in declared scope
+    )
+
+    # Verify — one in scope, one out of scope
+    result = verify(agent.id)
+    assert result.intact is True
+    assert result.in_scope_count == 1
+    assert len(result.out_of_scope_actions) == 1
+    assert result.out_of_scope_actions[0].action_scope == "system.execute"
+
+    # Receipt shows OpenClaw not openclaw
+    r = receipt(agent.id)
+    assert "OpenClaw" in r["human_readable"]
+    assert "openclaw" not in r["human_readable"]
+
+    # Confirm OPENCLAW_SCOPE_OPTIONS is importable and complete
+    from pruv.identity.models import OPENCLAW_SCOPE_OPTIONS
+
+    assert "file.read" in OPENCLAW_SCOPE_OPTIONS
+    assert "system.execute" in OPENCLAW_SCOPE_OPTIONS
+    assert "messaging.send" in OPENCLAW_SCOPE_OPTIONS
+    assert len(OPENCLAW_SCOPE_OPTIONS) == 13
