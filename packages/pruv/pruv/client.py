@@ -85,6 +85,62 @@ class PruvClient:
         resp.raise_for_status()
         return resp.json()
 
+    # ── Identity endpoints ──
+
+    def register_identity(
+        self,
+        name: str,
+        agent_type: str = "custom",
+        owner: str = "",
+        scope: list[str] | None = None,
+        purpose: str = "",
+        valid_from: str | None = None,
+        valid_until: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "name": name,
+            "agent_type": agent_type,
+            "owner": owner,
+            "scope": scope or [],
+            "purpose": purpose,
+        }
+        if valid_from:
+            payload["valid_from"] = valid_from
+        if valid_until:
+            payload["valid_until"] = valid_until
+        if metadata:
+            payload["metadata"] = metadata
+        resp = self._http.post("/v1/identity/register", json=payload)
+        resp.raise_for_status()
+        return resp.json()
+
+    def act(
+        self,
+        agent_id: str,
+        action: str,
+        action_scope: str | None = None,
+        data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {"action": action}
+        if action_scope:
+            payload["action_scope"] = action_scope
+        if data:
+            payload["data"] = data
+        resp = self._http.post(f"/v1/identity/{agent_id}/act", json=payload)
+        resp.raise_for_status()
+        return resp.json()
+
+    def verify_identity(self, agent_id: str) -> dict[str, Any]:
+        resp = self._http.get(f"/v1/identity/{agent_id}/verify")
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_identity_receipt(self, agent_id: str) -> str:
+        resp = self._http.get(f"/v1/identity/{agent_id}/receipt")
+        resp.raise_for_status()
+        return resp.text
+
     def close(self) -> None:
         self._http.close()
 

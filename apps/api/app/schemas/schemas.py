@@ -354,6 +354,7 @@ class IdentityRegister(BaseModel):
 
 class IdentityActRequest(BaseModel):
     action: str = Field(..., min_length=1, max_length=255)
+    action_scope: str | None = Field(default=None, max_length=100)
     data: dict[str, Any] = Field(default_factory=dict)
 
 

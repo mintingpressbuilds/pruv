@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pruv-crewai"
+version = "0.1.0"
+description = "pruv verification layer for CrewAI agents"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "pruv>=1.0.0",
+    "crewai>=0.1.0",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Software Development :: Libraries",
+]
+
+[project.urls]
+Homepage = "https://pruv.dev"
+Documentation = "https://docs.pruv.dev"
+Repository = "https://github.com/mintingpressbuilds/pruv"
+
+[tool.setuptools.packages.find]
+include = ["pruv_crewai*"]
