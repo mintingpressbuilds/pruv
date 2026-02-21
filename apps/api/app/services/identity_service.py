@@ -177,6 +177,7 @@ class IdentityService:
         user_id: str,
         action: str,
         data: dict[str, Any] | None = None,
+        action_scope: str | None = None,
     ) -> dict[str, Any] | None:
         """Record an action for an identity."""
         with self._session() as session:
@@ -190,17 +191,21 @@ class IdentityService:
             if str(record.user_id) != user_id:
                 return None
 
+            y_state: dict[str, Any] = {
+                "action": action,
+                "identity": identity_id,
+                "ts": time.time(),
+                "data": data or {},
+            }
+            if action_scope:
+                y_state["action_scope"] = action_scope
+
             # Append entry to the identity's chain
             entry = chain_service.append_entry(
                 chain_id=record.chain_id,
                 user_id=user_id,
                 operation=action,
-                y_state={
-                    "action": action,
-                    "identity": identity_id,
-                    "ts": time.time(),
-                    "data": data or {},
-                },
+                y_state=y_state,
             )
 
             if not entry:

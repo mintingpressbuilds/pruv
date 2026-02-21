@@ -88,6 +88,7 @@ async def record_action(
         user_id=user["id"],
         action=body.action,
         data=body.data,
+        action_scope=body.action_scope,
     )
     if not entry:
         raise HTTPException(status_code=404, detail="Identity not found")
