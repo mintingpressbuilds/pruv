@@ -48,59 +48,66 @@ Each call records `action.start` and `action.complete` (or `action.error` on fai
 ## LangChain
 
 ```bash
-pip install pruv[langchain]
+pip install pruv-langchain
 ```
 
 ```python
-from pruv.integrations.langchain import PruvCallbackHandler
+from pruv_langchain import LangChainWrapper
 
-handler = PruvCallbackHandler(
-    agent_name="my-langchain-agent",
-    api_key="pv_live_xxx",
-)
-
-agent = initialize_agent(tools, llm, callbacks=[handler])
-agent.run("do something")
-
-chain = handler.pruv_agent.chain()
+wrapped = LangChainWrapper(agent, agent_id="agent-id", api_key="pv_live_xxx")
+result = wrapped.invoke({"input": "deploy to production"})
+receipt = wrapped.receipt()
 ```
 
-Records all LLM calls, tool usage, chain execution, and agent actions.
+Hooks into LangChain's native callback system. Records every tool call, LLM invocation, chain execution, and agent action.
 
 ## CrewAI
 
 ```bash
-pip install pruv[crewai]
+pip install pruv-crewai
 ```
 
 ```python
-from pruv.integrations.crewai import pruv_wrap_crew
+from pruv_crewai import CrewAIWrapper
 
-crew = Crew(agents=[...], tasks=[...])
-verified_crew = pruv_wrap_crew(crew, agent_name="my-crew", api_key="pv_live_xxx")
-result = verified_crew.kickoff()
-
-chain = verified_crew._pruv_agent.chain()
+wrapped = CrewAIWrapper(crew, agent_id="agent-id", api_key="pv_live_xxx")
+result = wrapped.kickoff()
+receipt = wrapped.receipt()
 ```
 
-Records crew kickoff, individual agent task execution, and results.
+Intercepts CrewAI lifecycle events — crew kickoff, task execution, agent handoffs, tool usage.
+
+## OpenAI Agents
+
+```bash
+pip install pruv-openai
+```
+
+```python
+from pruv_openai import OpenAIAgentWrapper
+
+wrapped = OpenAIAgentWrapper(agent, agent_id="agent-id", api_key="pv_live_xxx")
+result = await wrapped.run("analyze the quarterly report")
+receipt = wrapped.receipt()
+```
+
+Implements the OpenAI Agents SDK TracingProcessor protocol. Records tool calls, guardrail checks, agent handoffs, and LLM calls.
 
 ## OpenClaw
 
-```python
-from pruv.integrations.openclaw import OpenClawVerifier
-
-verifier = OpenClawVerifier(api_key="pv_live_xxx", agent_name="my-openclaw")
-
-verifier.before_skill("search", {"query": "latest news"})
-verifier.after_skill("search", results, success=True)
-verifier.file_accessed("/app/data.json", "read")
-verifier.api_called("https://api.example.com/v1", "GET", 200)
-
-chain = verifier.get_chain()
+```bash
+pip install pruv-openclaw
 ```
 
-Records skill execution, messages, file access, and API calls.
+```python
+from pruv_openclaw import PruvOpenClawPlugin
+
+plugin = PruvOpenClawPlugin(agent_id="agent-id", api_key="pv_live_xxx")
+# Config-driven — hooks into before_action / after_action automatically
+receipt = plugin.receipt()
+```
+
+Config-driven plugin with automatic scope mapping. File reads, writes, executions — all scope-checked and chained.
 
 ## Sensitive Data
 

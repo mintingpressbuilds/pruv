@@ -118,14 +118,56 @@ async def my_workflow(task: str):
 
 # Any class
 wrapped = xy_wrap(my_service)
-
-# Any agent framework
-wrapped = xy_wrap(langchain_agent)     # LangChain
-wrapped = xy_wrap(crew)                # CrewAI
-wrapped = xy_wrap(openai_agent)        # OpenAI Agents
 ```
 
-No framework opinions. No special integrations. One function wraps anything callable.
+No framework opinions. One function wraps anything callable.
+
+-----
+
+### Framework integrations
+
+Dedicated packages for every major agent framework. Install, wrap, ship. Every action recorded automatically.
+
+```bash
+pip install pruv-langchain    # LangChain
+pip install pruv-crewai       # CrewAI
+pip install pruv-openai       # OpenAI Agents
+pip install pruv-openclaw     # OpenClaw
+```
+
+```python
+from pruv_langchain import LangChainWrapper
+
+wrapped = LangChainWrapper(agent, agent_id="agent-id", api_key="pv_live_...")
+result = wrapped.invoke({"input": "deploy to production"})
+receipt = wrapped.receipt()
+```
+
+```python
+from pruv_crewai import CrewAIWrapper
+
+wrapped = CrewAIWrapper(crew, agent_id="agent-id", api_key="pv_live_...")
+result = wrapped.kickoff()
+receipt = wrapped.receipt()
+```
+
+```python
+from pruv_openai import OpenAIAgentWrapper
+
+wrapped = OpenAIAgentWrapper(agent, agent_id="agent-id", api_key="pv_live_...")
+result = await wrapped.run("analyze the quarterly report")
+receipt = wrapped.receipt()
+```
+
+```python
+from pruv_openclaw import PruvOpenClawPlugin
+
+plugin = PruvOpenClawPlugin(agent_id="agent-id", api_key="pv_live_...")
+# Config-driven — hooks into before_action / after_action automatically
+receipt = plugin.receipt()
+```
+
+Each wrapper records every action into the pruv identity chain. No manual logging. The developer's code is unchanged.
 
 -----
 

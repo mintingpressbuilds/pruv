@@ -218,7 +218,59 @@ manager.quick_undo()`}
         </div>
       </div>
 
-      {/* ── S8: Anomaly Detection ── */}
+      {/* ── S9: Framework Integrations ── */}
+      <div className="section">
+        <div className="container">
+          <div className="section-label">framework integrations</div>
+          <h2>One line. Every agent action recorded.</h2>
+          <p>
+            Dedicated packages for every major agent framework.
+            Install, wrap, ship. No manual logging.
+            Every action chained. Every receipt on demand.
+          </p>
+          <CodeBlock
+            label="bash"
+            code={`$ pip install pruv-langchain    # LangChain
+$ pip install pruv-crewai       # CrewAI
+$ pip install pruv-openai       # OpenAI Agents
+$ pip install pruv-openclaw     # OpenClaw`}
+          />
+          <CodeBlock
+            label="python — langchain"
+            code={`from pruv_langchain import LangChainWrapper
+
+wrapped = LangChainWrapper(agent, agent_id="agent-id", api_key="pv_live_...")
+result = wrapped.invoke({"input": "deploy to production"})
+receipt = wrapped.receipt()   # full chain of every tool call, LLM call, handoff`}
+          />
+          <CodeBlock
+            label="python — crewai"
+            code={`from pruv_crewai import CrewAIWrapper
+
+wrapped = CrewAIWrapper(crew, agent_id="agent-id", api_key="pv_live_...")
+result = wrapped.kickoff()
+receipt = wrapped.receipt()   # every task, every agent handoff, verified`}
+          />
+          <CodeBlock
+            label="python — openai agents"
+            code={`from pruv_openai import OpenAIAgentWrapper
+
+wrapped = OpenAIAgentWrapper(agent, agent_id="agent-id", api_key="pv_live_...")
+result = await wrapped.run("analyze the quarterly report")
+receipt = wrapped.receipt()   # tool calls, guardrails, handoffs — all chained`}
+          />
+          <CodeBlock
+            label="python — openclaw"
+            code={`from pruv_openclaw import PruvOpenClawPlugin
+
+plugin = PruvOpenClawPlugin(agent_id="agent-id", api_key="pv_live_...")
+# Config-driven — hooks into before_action / after_action automatically
+receipt = plugin.receipt()   # file reads, writes, executions — scope-checked`}
+          />
+        </div>
+      </div>
+
+      {/* ── S10: Anomaly Detection ── */}
       <div className="section">
         <div className="container">
           <div className="section-label">anomaly detection</div>
