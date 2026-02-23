@@ -289,6 +289,47 @@ export default function HowItWorksPage() {
               </div>
             </div>
           </div>
+
+          <h2>Framework integrations</h2>
+          <p>
+            Dedicated packages for every major AI agent framework. Install, wrap, ship.
+            Every action recorded automatically. No manual logging. One line of code.
+          </p>
+
+          <div className="properties-list">
+            <div className="property-item">
+              <div className="property-name">pruv-langchain</div>
+              <div className="property-desc">
+                Hooks into LangChain&apos;s native callback system. Records every tool call,
+                LLM invocation, chain execution, and agent action. Wrap with
+                LangChainWrapper &mdash; your agent code stays unchanged.
+              </div>
+            </div>
+            <div className="property-item">
+              <div className="property-name">pruv-crewai</div>
+              <div className="property-desc">
+                Intercepts CrewAI lifecycle events &mdash; crew kickoff, task execution,
+                agent handoffs, tool usage. Wrap with CrewAIWrapper &mdash; every crew
+                run produces a verified receipt.
+              </div>
+            </div>
+            <div className="property-item">
+              <div className="property-name">pruv-openai</div>
+              <div className="property-desc">
+                Implements the OpenAI Agents SDK TracingProcessor protocol. Records tool
+                calls, guardrail checks, agent handoffs, and LLM calls. Wrap with
+                OpenAIAgentWrapper &mdash; automatic scope detection from span types.
+              </div>
+            </div>
+            <div className="property-item">
+              <div className="property-name">pruv-openclaw</div>
+              <div className="property-desc">
+                Config-driven plugin with automatic scope mapping. Hooks into
+                before_action and after_action lifecycle. File reads, writes, executions
+                &mdash; all scope-checked and chained.
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
