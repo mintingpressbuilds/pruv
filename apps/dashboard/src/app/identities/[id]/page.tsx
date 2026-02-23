@@ -30,6 +30,7 @@ const agentTypeLabels: Record<string, string> = {
   langchain: "LangChain",
   crewai: "CrewAI",
   openai_agents: "OpenAI Agents",
+  openclaw: "OpenClaw",
   custom: "Custom",
 };
 
@@ -113,6 +114,17 @@ export default function IdentityDetailPage({
               <span className="rounded-full bg-[var(--surface-tertiary)] px-2 py-0.5 text-xs text-[var(--text-secondary)]">
                 {agentTypeLabels[identity.agent_type] ?? identity.agent_type}
               </span>
+              {identity.action_count > 0 && identity.last_action_at ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-500">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  Connected
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-tertiary)] px-2 py-0.5 text-xs font-medium text-[var(--text-tertiary)]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-tertiary)]" />
+                  Pending
+                </span>
+              )}
               <span className="text-xs text-[var(--text-tertiary)] font-mono">
                 {identity.id}
               </span>
@@ -178,6 +190,24 @@ export default function IdentityDetailPage({
         </motion.div>
       )}
 
+      {/* Pending setup guidance */}
+      {identity.action_count === 0 && !identity.last_action_at && (
+        <motion.div
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 mb-6"
+        >
+          <div className="flex items-center gap-2 text-sm text-amber-600">
+            <span className="h-2 w-2 rounded-full bg-amber-500" />
+            <span className="font-medium">Waiting for first action</span>
+          </div>
+          <p className="mt-1 text-xs text-[var(--text-secondary)] ml-4">
+            Copy the agent ID above and add it to your{" "}
+            {agentTypeLabels[identity.agent_type] ?? identity.agent_type} config to begin recording actions.
+          </p>
+        </motion.div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] p-4">
@@ -190,10 +220,20 @@ export default function IdentityDetailPage({
         </div>
         <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] p-4">
           <div className="text-xs text-[var(--text-tertiary)] mb-1">
-            Status
+            Framework
           </div>
-          <div className="text-sm font-medium text-pruv-500 mt-1">
-            {verification?.valid ? "Verified" : "Pending"}
+          <div className="flex items-center gap-1.5 mt-1">
+            {identity.action_count > 0 && identity.last_action_at ? (
+              <>
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                <span className="text-sm font-medium text-emerald-500">Connected</span>
+              </>
+            ) : (
+              <>
+                <span className="h-2 w-2 rounded-full bg-[var(--text-tertiary)]" />
+                <span className="text-sm font-medium text-[var(--text-tertiary)]">Pending</span>
+              </>
+            )}
           </div>
         </div>
         <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] p-4">

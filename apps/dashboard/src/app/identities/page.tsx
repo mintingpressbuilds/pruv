@@ -204,6 +204,17 @@ export default function IdentitiesPage() {
                       <span className="rounded-full bg-[var(--surface-tertiary)] px-2 py-0.5 text-xs text-[var(--text-secondary)]">
                         {getAgentTypeLabel(identity.agent_type)}
                       </span>
+                      {identity.action_count > 0 && identity.last_action_at ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-500">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          Connected
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-tertiary)] px-2 py-0.5 text-xs font-medium text-[var(--text-tertiary)]">
+                          <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-tertiary)]" />
+                          Pending
+                        </span>
+                      )}
                     </div>
                     <div className="mt-1 flex items-center gap-3 text-xs text-[var(--text-tertiary)] font-mono">
                       <span>{identity.id.slice(0, 16)}...</span>
