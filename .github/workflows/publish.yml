@@ -12,15 +12,22 @@ on:
         options:
           - xycore
           - pruv
+          - langchain
+          - crewai
+          - openai
+          - openclaw
           - both
+          - all-integrations
+          - all
 
 jobs:
   build-xycore:
     name: Build xycore
     if: >-
-      (github.event_name == 'release' && (startsWith(github.event.release.tag_name, 'xycore-') || !startsWith(github.event.release.tag_name, 'pruv-'))) ||
+      (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'xycore-')) ||
       inputs.package == 'xycore' ||
-      inputs.package == 'both'
+      inputs.package == 'both' ||
+      inputs.package == 'all'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,9 +51,10 @@ jobs:
   build-pruv:
     name: Build pruv
     if: >-
-      (github.event_name == 'release' && (startsWith(github.event.release.tag_name, 'pruv-') || !startsWith(github.event.release.tag_name, 'xycore-'))) ||
+      (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'pruv-v')) ||
       inputs.package == 'pruv' ||
-      inputs.package == 'both'
+      inputs.package == 'both' ||
+      inputs.package == 'all'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -66,6 +74,114 @@ jobs:
         with:
           name: pruv-dist
           path: packages/pruv/dist/
+
+  build-langchain:
+    name: Build pruv-langchain
+    if: >-
+      (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'langchain-v')) ||
+      inputs.package == 'langchain' ||
+      inputs.package == 'all-integrations' ||
+      inputs.package == 'all'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build pruv-langchain
+        run: python -m build packages/integrations/langchain
+
+      - name: Upload langchain artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: langchain-dist
+          path: packages/integrations/langchain/dist/
+
+  build-crewai:
+    name: Build pruv-crewai
+    if: >-
+      (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'crewai-v')) ||
+      inputs.package == 'crewai' ||
+      inputs.package == 'all-integrations' ||
+      inputs.package == 'all'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build pruv-crewai
+        run: python -m build packages/integrations/crewai
+
+      - name: Upload crewai artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: crewai-dist
+          path: packages/integrations/crewai/dist/
+
+  build-openai:
+    name: Build pruv-openai
+    if: >-
+      (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'openai-v')) ||
+      inputs.package == 'openai' ||
+      inputs.package == 'all-integrations' ||
+      inputs.package == 'all'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build pruv-openai
+        run: python -m build packages/integrations/openai
+
+      - name: Upload openai artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openai-dist
+          path: packages/integrations/openai/dist/
+
+  build-openclaw:
+    name: Build pruv-openclaw
+    if: >-
+      (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'openclaw-v')) ||
+      inputs.package == 'openclaw' ||
+      inputs.package == 'all-integrations' ||
+      inputs.package == 'all'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build pruv-openclaw
+        run: python -m build packages/integrations/openclaw
+
+      - name: Upload openclaw artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openclaw-dist
+          path: packages/integrations/openclaw/dist/
 
   publish-xycore:
     name: Publish xycore to PyPI
@@ -99,4 +215,72 @@ jobs:
           path: dist/
 
       - name: Publish pruv to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-langchain:
+    name: Publish pruv-langchain to PyPI
+    needs: build-langchain
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download langchain artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: langchain-dist
+          path: dist/
+
+      - name: Publish pruv-langchain to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-crewai:
+    name: Publish pruv-crewai to PyPI
+    needs: build-crewai
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download crewai artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: crewai-dist
+          path: dist/
+
+      - name: Publish pruv-crewai to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-openai:
+    name: Publish pruv-openai to PyPI
+    needs: build-openai
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download openai artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: openai-dist
+          path: dist/
+
+      - name: Publish pruv-openai to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-openclaw:
+    name: Publish pruv-openclaw to PyPI
+    needs: build-openclaw
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download openclaw artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: openclaw-dist
+          path: dist/
+
+      - name: Publish pruv-openclaw to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
