@@ -16,10 +16,14 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
+    const apiUrl =
+      process.env.API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "https://api.pruv.dev";
     return [
       {
         source: "/api/:path*",
-        destination: `${process.env.NEXT_PUBLIC_API_URL || "https://api.pruv.dev"}/:path*`,
+        destination: `${apiUrl}/:path*`,
       },
     ];
   },
