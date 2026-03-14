@@ -23,6 +23,7 @@ export function useSharedChain(
     queryKey: sharedChainKeys.detail(shareId),
     queryFn: () => shared.get(shareId),
     enabled: !!shareId,
+    retry: false,
     ...options,
   });
 }

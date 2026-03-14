@@ -682,19 +682,9 @@ export const shared = {
     entries: Entry[];
     verified: boolean;
   }> {
-    const url = `${API_BASE_URL}/v1/shared/${encodeURIComponent(shareId)}`;
-    const res = await fetch(url, {
-      headers: { "Content-Type": "application/json" },
-    });
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({
-        error: "unknown",
-        message: res.statusText,
-        status: res.status,
-      }));
-      throw error;
-    }
-    const raw: SharedChainData = await res.json();
+    const raw = await request<SharedChainData>(
+      `/v1/shared/${encodeURIComponent(shareId)}`
+    );
     return {
       chain: transformChain(raw.chain),
       entries: raw.entries.map(transformEntry),

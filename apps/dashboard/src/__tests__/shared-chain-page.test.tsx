@@ -103,7 +103,7 @@ describe("SharedChainPage", () => {
     expect(screen.getByText("loading shared chain...")).toBeInTheDocument();
   });
 
-  it("shows not found when API errors", async () => {
+  it("shows not found when API returns 404", async () => {
     mockGet.mockRejectedValue({ status: 404, message: "Not found" });
     renderPage();
 
@@ -113,6 +113,21 @@ describe("SharedChainPage", () => {
     expect(
       screen.getByText(/this link may have expired/)
     ).toBeInTheDocument();
+  });
+
+  it("shows connection error with retry button for non-404 errors", async () => {
+    mockGet.mockRejectedValue({ status: 500, message: "Server error" });
+    renderPage();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("unable to load shared chain")
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText(/could not reach the verification server/)
+    ).toBeInTheDocument();
+    expect(screen.getByText("retry")).toBeInTheDocument();
   });
 
   it("renders chain name and metadata on success", async () => {

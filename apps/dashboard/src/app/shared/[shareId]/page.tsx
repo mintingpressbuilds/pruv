@@ -180,16 +180,29 @@ export default function SharedChainPage() {
   // ─── Not found ──────────────────────────────────────────────────────────
 
   if (error || !data) {
+    const apiError = error as { status?: number; message?: string } | null;
+    const is404 = apiError?.status === 404;
+
     return (
       <div className="min-h-screen bg-[var(--surface)] flex items-center justify-center">
-        <div className="text-center space-y-3">
+        <div className="text-center space-y-3 max-w-sm">
           <ShieldX size={48} className="text-[var(--text-tertiary)] mx-auto" />
           <h1 className="text-lg font-semibold text-[var(--text-primary)]">
-            shared chain not found
+            {is404 ? "shared chain not found" : "unable to load shared chain"}
           </h1>
-          <p className="text-sm text-[var(--text-secondary)] max-w-sm">
-            this link may have expired or the chain may no longer be shared.
+          <p className="text-sm text-[var(--text-secondary)]">
+            {is404
+              ? "this link may have expired or the chain may no longer be shared."
+              : "could not reach the verification server. check your connection and try again."}
           </p>
+          {!is404 && (
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            >
+              retry
+            </button>
+          )}
         </div>
       </div>
     );
