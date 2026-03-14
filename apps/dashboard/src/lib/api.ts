@@ -35,7 +35,9 @@ import type {
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://api.pruv.dev";
+  typeof window !== "undefined"
+    ? "/api"
+    : process.env.NEXT_PUBLIC_API_URL || "https://api.pruv.dev";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
