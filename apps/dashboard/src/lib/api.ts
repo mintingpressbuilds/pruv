@@ -668,6 +668,41 @@ export const scans = {
   },
 };
 
+// ─── Shared (Public) ────────────────────────────────────────────────────────
+
+export interface SharedChainData {
+  chain: BackendChain;
+  entries: BackendEntry[];
+  verified: boolean;
+}
+
+export const shared = {
+  async get(shareId: string): Promise<{
+    chain: Chain;
+    entries: Entry[];
+    verified: boolean;
+  }> {
+    const url = `${API_BASE_URL}/v1/shared/${encodeURIComponent(shareId)}`;
+    const res = await fetch(url, {
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({
+        error: "unknown",
+        message: res.statusText,
+        status: res.status,
+      }));
+      throw error;
+    }
+    const raw: SharedChainData = await res.json();
+    return {
+      chain: transformChain(raw.chain),
+      entries: raw.entries.map(transformEntry),
+      verified: raw.verified,
+    };
+  },
+};
+
 // ─── API Keys ────────────────────────────────────────────────────────────────
 
 export const apiKeys = {
