@@ -126,7 +126,7 @@ describe("useSharedChain", () => {
     expect(mockGet).not.toHaveBeenCalled();
   });
 
-  it("handles API errors", async () => {
+  it("handles API errors without retrying", async () => {
     mockGet.mockRejectedValue({
       error: "not_found",
       message: "Shared chain not found",
@@ -142,6 +142,8 @@ describe("useSharedChain", () => {
     });
 
     expect(result.current.error).toBeTruthy();
+    // Should only call once (no retries)
+    expect(mockGet).toHaveBeenCalledTimes(1);
   });
 
   it("returns unverified chain data when server says broken", async () => {
